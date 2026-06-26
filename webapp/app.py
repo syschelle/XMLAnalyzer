@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.140"
+APP_VERSION = "v0.143"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 # Zentraler Perzentilwert für die Performance-Auswertung.
@@ -715,6 +715,7 @@ def analyze_performance_csv(file_storage, filename="performance.csv"):
             "rowNr": idx,
             "startDate": start_raw,
             "startSort": start_dt.isoformat() if start_dt else start_raw,
+            "startEpochMs": int(start_dt.timestamp() * 1000) if start_dt else None,
             "studyInstanceUid": study_uid,
             "firstDisplayMs": first_ms,
             "firstDisplayRaw": (r.get("First Display") or "").strip(),
@@ -756,9 +757,11 @@ def analyze_performance_csv(file_storage, filename="performance.csv"):
     def _stats_for_group(group_rows, key, label):
         fvals = [r["firstDisplayMs"] for r in group_rows if r.get("firstDisplayMs") is not None]
         fulls = [r["fullStudyMs"] for r in group_rows if r.get("fullStudyMs") is not None]
+        object_counts = [r["objectCount"] for r in group_rows if isinstance(r.get("objectCount"), int)]
         return {
             key: label,
             "count": len(group_rows),
+            "objectCountAvg": _fmt_decimal(_avg(object_counts), 1),
             "firstAvg": _fmt_ms_seconds(_avg(fvals)),
             "firstP90": _fmt_ms_seconds(_percentile(fvals, PERFORMANCE_PERCENTILE)),
             "fullAvg": _fmt_ms_seconds(_avg(fulls)),
@@ -3048,7 +3051,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.140
+  APP_VERSION: v0.143
 
 jobs:
   build-export-xml-web:
@@ -3163,12 +3166,12 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.140`
+- `v0.143`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
 
-`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.140` if you want to pin a fixed version.
+`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.143` if you want to pin a fixed version.
 
 The default image owner is `syschelle`, matching the current GitHub repository owner. Override `IMAGE_OWNER` only when publishing the image under a different GitHub user or organization.
 

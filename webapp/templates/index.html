@@ -142,20 +142,66 @@
       line-height: 1.4;
     }
 
+    .perf-chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 16px;
+    }
+
+    .perf-chart-panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at top left, rgba(107, 145, 134, 0.16), transparent 38%),
+        linear-gradient(180deg, var(--head-bg) 0%, var(--card) 100%);
+      padding: 12px;
+      min-width: 0;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .perf-chart-panel h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .perf-chart-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .perf-chart-panel-meta {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-align: right;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
     .perf-chart-box {
       position: relative;
       width: 100%;
-      min-height: 360px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: linear-gradient(180deg, var(--head-bg) 0%, var(--card) 100%);
+      min-height: 320px;
       overflow: hidden;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.22);
     }
 
     .perf-chart-svg {
       width: 100%;
-      height: 360px;
+      height: 320px;
       display: block;
+    }
+
+    .perf-chart-export-btn {
+      font-size: 12px;
+      padding: 7px 11px;
+      border-radius: 8px;
     }
 
     .perf-chart-empty {
@@ -918,10 +964,10 @@
       </div>
       <div class="table-wrap">
         <table id="performance-modalities-table">
-          <tr><th>Modalität</th><th>Anzahl</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          <tr><th>Modalität</th><th>Anzahl</th><th>Object count Ø</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
           {% for m in result.performance_modalities %}
           <tr>
-            <td>{{ m.modality }}</td><td>{{ m.count }}</td><td>{{ m.firstAvg or '-' }}</td><td>{{ m.firstP90 or '-' }}</td><td>{{ m.fullAvg or '-' }}</td><td>{{ m.fullP90 or '-' }}</td><td>{{ m.notHungCount }}</td><td>{{ m.priorCount }}</td><td>{{ m.slowCount }}</td>
+            <td>{{ m.modality }}</td><td>{{ m.count }}</td><td>{{ m.objectCountAvg or '-' }}</td><td>{{ m.firstAvg or '-' }}</td><td>{{ m.firstP90 or '-' }}</td><td>{{ m.fullAvg or '-' }}</td><td>{{ m.fullP90 or '-' }}</td><td>{{ m.notHungCount }}</td><td>{{ m.priorCount }}</td><td>{{ m.slowCount }}</td>
           </tr>
           {% endfor %}
         </table>
@@ -932,10 +978,10 @@
       <h2>Performance nach Hanging (<span>{{ result.performance_hangings|length }}</span>)</h2>
       <div class="table-wrap">
         <table id="performance-hangings-table">
-          <tr><th>Hanging</th><th>Anzahl</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          <tr><th>Hanging</th><th>Anzahl</th><th>Object count Ø</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
           {% for h in result.performance_hangings %}
           <tr>
-            <td>{{ h.hanging }}</td><td>{{ h.count }}</td><td>{{ h.firstAvg or '-' }}</td><td>{{ h.firstP90 or '-' }}</td><td>{{ h.fullAvg or '-' }}</td><td>{{ h.fullP90 or '-' }}</td><td>{{ h.notHungCount }}</td><td>{{ h.priorCount }}</td><td>{{ h.slowCount }}</td>
+            <td>{{ h.hanging }}</td><td>{{ h.count }}</td><td>{{ h.objectCountAvg or '-' }}</td><td>{{ h.firstAvg or '-' }}</td><td>{{ h.firstP90 or '-' }}</td><td>{{ h.fullAvg or '-' }}</td><td>{{ h.fullP90 or '-' }}</td><td>{{ h.notHungCount }}</td><td>{{ h.priorCount }}</td><td>{{ h.slowCount }}</td>
           </tr>
           {% endfor %}
         </table>
@@ -969,7 +1015,7 @@
         <table id="performance-table">
           <tr><th>Start Date</th><th>User</th><th>Modality</th><th>Object count</th><th>Prior</th><th>First Display</th><th>Full Study</th><th>CFind</th><th>Bandwidth</th><th>Hangup Type</th><th>Hanging</th><th>Study Instance UID</th><th>Base Study</th></tr>
           {% for r in result.performance_rows %}
-          <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}" data-row="{{ r.rowNr }}" data-start="{{ r.startDate|e }}" data-first-ms="{{ r.firstDisplayMs if r.firstDisplayMs is not none else '' }}" data-full-ms="{{ r.fullStudyMs if r.fullStudyMs is not none else '' }}" data-hanging="{{ r.hanging|e }}">
+          <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}" data-row="{{ r.rowNr }}" data-start="{{ r.startDate|e }}" data-start-epoch="{{ r.startEpochMs if r.startEpochMs is not none else '' }}" data-first-ms="{{ r.firstDisplayMs if r.firstDisplayMs is not none else '' }}" data-full-ms="{{ r.fullStudyMs if r.fullStudyMs is not none else '' }}" data-hanging="{{ r.hanging|e }}">
             <td>{{ r.startDate }}</td>
             <td>{{ r.user }}</td>
             <td>{{ r.modality }}</td>
@@ -989,14 +1035,15 @@
       </div>
       <div class="perf-chart-wrap">
         <div class="h2-row" style="margin-bottom:10px;">
-          <h2 style="margin:0; font-size:16px;">Messzeiten-Diagramm</h2>
-          <span id="performance-chart-meta" class="perf-chart-meta">Alle Modalitäten · X-Achse: Messungen in zeitlicher Reihenfolge</span>
+          <h2 style="margin:0; font-size:16px;">Messzeiten-Diagramme nach Modalität</h2>
+          <div class="toolbar" style="margin:0;">
+            <span id="performance-chart-meta" class="perf-chart-meta">Alle Modalitäten · X-Achse: Start Date</span>
+            <button type="button" id="performance-chart-pdf-export" class="toggle-btn perf-chart-export-btn">Diagramme als PDF</button>
+          </div>
         </div>
-        <p class="perf-chart-note">Zeigt First Display und Full Study für die aktuell gefilterten Messungen. Initial werden alle Modalitäten gemeinsam in einem Diagramm dargestellt; über den Modalitätsfilter kann die Ansicht eingegrenzt werden.</p>
-        <div class="perf-chart-box">
-          <svg id="performance-chart" class="perf-chart-svg" viewBox="0 0 1000 360" preserveAspectRatio="none" role="img" aria-label="Diagramm der Messzeiten für First Display und Full Study"></svg>
-          <div id="performance-chart-empty" class="perf-chart-empty" style="display:none;">Keine Messungen für die aktuelle Filterauswahl vorhanden.</div>
-        </div>
+        <p class="perf-chart-note">Zeigt First Display und Full Study für die aktuell gefilterten Messungen über die Messzeit. Initial wird für jede Modalität ein eigenes Diagramm angezeigt; über den Modalitätsfilter kann die Ansicht auf eine Modalität eingegrenzt werden.</p>
+        <div id="performance-chart-grid" class="perf-chart-grid"></div>
+        <div id="performance-chart-empty" class="perf-chart-empty" style="display:none; position:relative; min-height:160px; border:1px solid var(--line); border-radius:12px;">Keine Messungen für die aktuelle Filterauswahl vorhanden.</div>
         <div class="perf-chart-legend">
           <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>First Display</span>
           <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>Full Study</span>
@@ -2996,9 +3043,10 @@
         const hangupSelect = document.getElementById('performance-hangup-filter');
         const userSelect = document.getElementById('performance-user-filter');
         const slowBtn = document.getElementById('performance-slow-toggle');
-        const chartSvg = document.getElementById('performance-chart');
+        const chartGrid = document.getElementById('performance-chart-grid');
         const chartEmpty = document.getElementById('performance-chart-empty');
         const chartMeta = document.getElementById('performance-chart-meta');
+        const chartPdfBtn = document.getElementById('performance-chart-pdf-export');
         if (!rows.length || !countEl) return;
         let slowOnly = false;
         function norm(v) { return (v || '').toString().toLowerCase(); }
@@ -3025,65 +3073,97 @@
           else if (residual > 1) niceStep = 2 * magnitude;
           return niceStep * 5;
         }
-        function renderPerformanceChart(visibleRows) {
-          if (!chartSvg || !chartEmpty) return;
-          const data = visibleRows.map(function (row, idx) {
-            const first = Number(row.getAttribute('data-first-ms') || '');
-            const full = Number(row.getAttribute('data-full-ms') || '');
-            return {
-              xIndex: idx + 1,
-              rowNr: row.getAttribute('data-row') || String(idx + 1),
-              start: row.getAttribute('data-start') || '',
-              modality: row.getAttribute('data-modality') || '',
-              hanging: row.getAttribute('data-hanging') || '',
-              firstMs: Number.isFinite(first) ? first : null,
-              fullMs: Number.isFinite(full) ? full : null,
-            };
-          });
+        function formatChartTime(epochMs) {
+          if (!Number.isFinite(epochMs)) return '';
+          const d = new Date(epochMs);
+          if (Number.isNaN(d.getTime())) return '';
+          const pad = function (n) { return String(n).padStart(2, '0'); };
+          return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        }
+        function buildPerformanceChartSvg(data, modalityLabel) {
           const values = [];
+          const timeValues = [];
           data.forEach(function (item) {
             if (item.firstMs !== null) values.push(item.firstMs);
             if (item.fullMs !== null) values.push(item.fullMs);
+            if (item.startEpochMs !== null) timeValues.push(item.startEpochMs);
           });
-          const selectedModality = (modalitySelect && modalitySelect.value) ? modalitySelect.value : 'Alle Modalitäten';
-          if (chartMeta) {
-            chartMeta.textContent = selectedModality + ' · X-Achse: Messungen in zeitlicher Reihenfolge · sichtbar: ' + visibleRows.length;
-          }
-          if (!data.length || !values.length) {
-            chartSvg.innerHTML = '';
-            chartEmpty.style.display = '';
-            return;
-          }
-          chartEmpty.style.display = 'none';
+          if (!data.length || !values.length) return '';
+          const safeId = 'perfChart' + Math.random().toString(36).slice(2);
           const width = 1000;
-          const height = 360;
-          const pad = { top: 18, right: 20, bottom: 42, left: 58 };
+          const height = 320;
+          const pad = { top: 18, right: 28, bottom: 54, left: 62 };
           const innerW = width - pad.left - pad.right;
           const innerH = height - pad.top - pad.bottom;
-          const maxVal = niceMax(Math.max.apply(null, values));
-          const x = function (index) {
+          const thresholdValues = [10000, 30000].filter(function (v) { return Math.max.apply(null, values) >= v * 0.75; });
+          const maxVal = niceMax(Math.max.apply(null, values.concat(thresholdValues)));
+          const hasTimeAxis = timeValues.length > 0;
+          const minTime = hasTimeAxis ? Math.min.apply(null, timeValues) : null;
+          const maxTime = hasTimeAxis ? Math.max.apply(null, timeValues) : null;
+          const useTimeScale = hasTimeAxis && minTime !== null && maxTime !== null && maxTime > minTime;
+          const x = function (item) {
+            if (useTimeScale && item.startEpochMs !== null) {
+              return pad.left + ((item.startEpochMs - minTime) / (maxTime - minTime)) * innerW;
+            }
             if (data.length <= 1) return pad.left + innerW / 2;
-            return pad.left + ((index - 1) / (data.length - 1)) * innerW;
+            return pad.left + ((item.xIndex - 1) / (data.length - 1)) * innerW;
           };
           const y = function (ms) {
             return pad.top + innerH - (Math.max(0, ms) / maxVal) * innerH;
           };
+          function makePath(points) {
+            if (!points.length) return '';
+            if (points.length === 1) return 'M ' + points[0][0].toFixed(2) + ' ' + points[0][1].toFixed(2);
+            let d = 'M ' + points[0][0].toFixed(2) + ' ' + points[0][1].toFixed(2);
+            for (let i = 1; i < points.length; i += 1) {
+              const prev = points[i - 1];
+              const curr = points[i];
+              const midX = (prev[0] + curr[0]) / 2;
+              d += ' C ' + midX.toFixed(2) + ' ' + prev[1].toFixed(2) + ', ' + midX.toFixed(2) + ' ' + curr[1].toFixed(2) + ', ' + curr[0].toFixed(2) + ' ' + curr[1].toFixed(2);
+            }
+            return d;
+          }
+          function makeAreaPath(points) {
+            if (points.length < 2) return '';
+            const baseY = height - pad.bottom;
+            return makePath(points) + ' L ' + points[points.length - 1][0].toFixed(2) + ' ' + baseY + ' L ' + points[0][0].toFixed(2) + ' ' + baseY + ' Z';
+          }
           const ticks = 5;
           const grid = [];
           for (let i = 0; i <= ticks; i += 1) {
             const value = (maxVal / ticks) * i;
             const py = y(value);
-            grid.push('<line x1="' + pad.left + '" y1="' + py.toFixed(2) + '" x2="' + (width - pad.right) + '" y2="' + py.toFixed(2) + '" stroke="rgba(107,114,128,0.22)" stroke-width="1" />');
+            grid.push('<line x1="' + pad.left + '" y1="' + py.toFixed(2) + '" x2="' + (width - pad.right) + '" y2="' + py.toFixed(2) + '" stroke="rgba(107,114,128,0.20)" stroke-width="1" />');
             grid.push('<text x="' + (pad.left - 10) + '" y="' + (py + 4).toFixed(2) + '" text-anchor="end" font-size="11" fill="currentColor">' + escapeHtml((value / 1000).toFixed(1) + ' s') + '</text>');
           }
+          const thresholdLines = [];
+          [
+            { value: 10000, label: '10 s First Display' },
+            { value: 30000, label: '30 s Full Study' }
+          ].forEach(function (t) {
+            if (maxVal < t.value) return;
+            const py = y(t.value);
+            thresholdLines.push('<line x1="' + pad.left + '" y1="' + py.toFixed(2) + '" x2="' + (width - pad.right) + '" y2="' + py.toFixed(2) + '" stroke="rgba(120,120,120,0.55)" stroke-width="1.4" stroke-dasharray="6 5" />');
+            thresholdLines.push('<text x="' + (width - pad.right - 4) + '" y="' + (py - 4).toFixed(2) + '" text-anchor="end" font-size="11" fill="currentColor">' + escapeHtml(t.label) + '</text>');
+          });
           const xLabels = [];
-          xLabels.push('<text x="' + pad.left + '" y="' + (height - 12) + '" text-anchor="start" font-size="11" fill="currentColor">1</text>');
-          if (data.length > 1) {
-            xLabels.push('<text x="' + (width - pad.right) + '" y="' + (height - 12) + '" text-anchor="end" font-size="11" fill="currentColor">' + data.length + '</text>');
+          if (useTimeScale) {
+            const xTickCount = 3;
+            for (let i = 0; i <= xTickCount; i += 1) {
+              const t = minTime + ((maxTime - minTime) / xTickCount) * i;
+              const px = pad.left + (innerW / xTickCount) * i;
+              xLabels.push('<line x1="' + px.toFixed(2) + '" y1="' + (height - pad.bottom) + '" x2="' + px.toFixed(2) + '" y2="' + (height - pad.bottom + 5) + '" stroke="currentColor" stroke-width="1" />');
+              xLabels.push('<text x="' + px.toFixed(2) + '" y="' + (height - 30) + '" text-anchor="' + (i === 0 ? 'start' : (i === xTickCount ? 'end' : 'middle')) + '" font-size="11" fill="currentColor">' + escapeHtml(formatChartTime(t)) + '</text>');
+            }
+          } else {
+            xLabels.push('<text x="' + pad.left + '" y="' + (height - 30) + '" text-anchor="start" font-size="11" fill="currentColor">1</text>');
+            if (data.length > 1) {
+              xLabels.push('<text x="' + (width - pad.right) + '" y="' + (height - 30) + '" text-anchor="end" font-size="11" fill="currentColor">' + data.length + '</text>');
+            }
           }
           const series = [
-            { key: 'firstMs', label: 'First Display', color: '#2563eb' },
-            { key: 'fullMs', label: 'Full Study', color: '#dc2626' }
+            { key: 'firstMs', label: 'First Display', color: '#2563eb', gradient: 'firstArea' },
+            { key: 'fullMs', label: 'Full Study', color: '#dc2626', gradient: 'fullArea' }
           ];
           const seriesMarkup = series.map(function (serie) {
             const points = [];
@@ -3091,28 +3171,141 @@
             data.forEach(function (item) {
               const ms = item[serie.key];
               if (ms === null) return;
-              const px = x(item.xIndex);
+              const px = x(item);
               const py = y(ms);
-              points.push(px.toFixed(2) + ',' + py.toFixed(2));
-              const title = serie.label + ': ' + fmtMs(ms) + ' | Messung ' + item.rowNr + ' | ' + (item.modality || '-') + ' | ' + (item.start || '-') + ' | ' + (item.hanging || '-');
-              circles.push('<circle cx="' + px.toFixed(2) + '" cy="' + py.toFixed(2) + '" r="3.4" fill="' + serie.color + '"><title>' + escapeHtml(title) + '</title></circle>');
+              points.push([px, py]);
+              const isSlowPoint = (serie.key === 'firstMs' && ms >= 10000) || (serie.key === 'fullMs' && ms >= 30000);
+              const title = serie.label + ': ' + fmtMs(ms) + ' | Start Date: ' + (item.start || '-') + ' | Messung ' + item.rowNr + ' | ' + (item.modality || '-') + ' | ' + (item.hanging || '-');
+              circles.push('<circle cx="' + px.toFixed(2) + '" cy="' + py.toFixed(2) + '" r="' + (isSlowPoint ? '4.8' : '3.6') + '" fill="' + serie.color + '" stroke="#fff" stroke-width="1.6"><title>' + escapeHtml(title) + '</title></circle>');
             });
-            const polyline = points.length >= 2
-              ? '<polyline fill="none" stroke="' + serie.color + '" stroke-width="2" points="' + points.join(' ') + '" />'
-              : '';
-            return polyline + circles.join('');
+            const linePath = makePath(points);
+            const areaPath = makeAreaPath(points);
+            const area = areaPath ? '<path d="' + areaPath + '" fill="url(#' + safeId + '-' + serie.gradient + ')" />' : '';
+            const line = linePath ? '<path d="' + linePath + '" fill="none" stroke="' + serie.color + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#' + safeId + '-softShadow)" />' : '';
+            return area + line + circles.join('');
           }).join('');
-
-          chartSvg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-          chartSvg.innerHTML = ''
-            + '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="transparent" />'
-            + '<g style="color: var(--muted);">' + grid.join('') + '</g>'
+          return ''
+            + '<svg class="perf-chart-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none" role="img" aria-label="Messzeiten für Modalität ' + escapeHtml(modalityLabel) + '">'
+            + '<defs>'
+            + '<linearGradient id="' + safeId + '-firstArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2563eb" stop-opacity="0.18"/><stop offset="100%" stop-color="#2563eb" stop-opacity="0.02"/></linearGradient>'
+            + '<linearGradient id="' + safeId + '-fullArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#dc2626" stop-opacity="0.16"/><stop offset="100%" stop-color="#dc2626" stop-opacity="0.02"/></linearGradient>'
+            + '<filter id="' + safeId + '-softShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.18"/></filter>'
+            + '</defs>'
+            + '<rect x="0" y="0" width="' + width + '" height="' + height + '" rx="14" fill="transparent" />'
+            + '<g style="color: var(--muted);">' + grid.join('') + thresholdLines.join('') + '</g>'
             + '<line x1="' + pad.left + '" y1="' + (height - pad.bottom) + '" x2="' + (width - pad.right) + '" y2="' + (height - pad.bottom) + '" stroke="currentColor" stroke-width="1.2" />'
             + '<line x1="' + pad.left + '" y1="' + pad.top + '" x2="' + pad.left + '" y2="' + (height - pad.bottom) + '" stroke="currentColor" stroke-width="1.2" />'
-            + '<text x="' + (width / 2) + '" y="' + (height - 8) + '" text-anchor="middle" font-size="12" fill="currentColor">Messung</text>'
-            + '<text x="16" y="' + (pad.top + innerH / 2) + '" text-anchor="middle" transform="rotate(-90 16 ' + (pad.top + innerH / 2) + ')" font-size="12" fill="currentColor">Zeit in Sekunden</text>'
+            + '<text x="' + (width / 2) + '" y="' + (height - 8) + '" text-anchor="middle" font-size="12" fill="currentColor">Start Date</text>'
+            + '<text x="17" y="' + (pad.top + innerH / 2) + '" text-anchor="middle" transform="rotate(-90 17 ' + (pad.top + innerH / 2) + ')" font-size="12" fill="currentColor">Zeit in Sekunden</text>'
             + xLabels.join('')
-            + seriesMarkup;
+            + seriesMarkup
+            + '</svg>';
+        }
+        function renderPerformanceChart(visibleRows) {
+          if (!chartGrid || !chartEmpty) return;
+          const data = visibleRows.map(function (row, idx) {
+            const first = Number(row.getAttribute('data-first-ms') || '');
+            const full = Number(row.getAttribute('data-full-ms') || '');
+            const epoch = Number(row.getAttribute('data-start-epoch') || '');
+            return {
+              xIndex: idx + 1,
+              rowNr: row.getAttribute('data-row') || String(idx + 1),
+              start: row.getAttribute('data-start') || '',
+              startEpochMs: Number.isFinite(epoch) ? epoch : null,
+              modality: row.getAttribute('data-modality') || '-',
+              hanging: row.getAttribute('data-hanging') || '',
+              firstMs: Number.isFinite(first) ? first : null,
+              fullMs: Number.isFinite(full) ? full : null,
+            };
+          });
+          const selectedModality = (modalitySelect && modalitySelect.value) ? modalitySelect.value : '';
+          const groups = new Map();
+          data.forEach(function (item) {
+            const key = item.modality || '-';
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(item);
+          });
+          const labels = Array.from(groups.keys()).sort(function (a, b) { return a.localeCompare(b, 'de'); });
+          if (chartMeta) {
+            chartMeta.textContent = (selectedModality || 'Alle Modalitäten') + ' · X-Achse: Start Date · Diagramme: ' + labels.length + ' · sichtbar: ' + visibleRows.length;
+          }
+          chartGrid.innerHTML = '';
+          if (!labels.length) {
+            chartEmpty.style.display = '';
+            return;
+          }
+          chartEmpty.style.display = 'none';
+          labels.forEach(function (label) {
+            const rowsForModality = groups.get(label) || [];
+            const valuesAvailable = rowsForModality.some(function (item) { return item.firstMs !== null || item.fullMs !== null; });
+            if (!valuesAvailable) return;
+            const firstValues = rowsForModality.map(function (item) { return item.firstMs; }).filter(function (v) { return v !== null; });
+            const fullValues = rowsForModality.map(function (item) { return item.fullMs; }).filter(function (v) { return v !== null; });
+            const avg = function (arr) {
+              if (!arr.length) return '-';
+              return fmtMs(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length);
+            };
+            const panel = document.createElement('div');
+            panel.className = 'perf-chart-panel';
+            const head = document.createElement('div');
+            head.className = 'perf-chart-panel-head';
+            const title = document.createElement('h3');
+            title.textContent = label + ' (' + rowsForModality.length + ')';
+            const meta = document.createElement('div');
+            meta.className = 'perf-chart-panel-meta';
+            meta.textContent = 'Ø First: ' + avg(firstValues) + ' · Ø Full: ' + avg(fullValues);
+            head.appendChild(title);
+            head.appendChild(meta);
+            const box = document.createElement('div');
+            box.className = 'perf-chart-box';
+            box.innerHTML = buildPerformanceChartSvg(rowsForModality, label);
+            panel.appendChild(head);
+            panel.appendChild(box);
+            chartGrid.appendChild(panel);
+          });
+          if (!chartGrid.children.length) {
+            chartEmpty.style.display = '';
+          }
+        }
+        function exportPerformanceChartsPdf() {
+          if (!chartGrid || !chartGrid.children.length) {
+            if (chartPdfBtn) {
+              const old = chartPdfBtn.textContent;
+              chartPdfBtn.textContent = 'Keine Diagramme';
+              setTimeout(function () { chartPdfBtn.textContent = old; }, 1400);
+            }
+            return;
+          }
+          const panels = Array.from(chartGrid.querySelectorAll('.perf-chart-panel')).map(function (panel) {
+            const title = panel.querySelector('h3') ? panel.querySelector('h3').innerText : 'Modalität';
+            const meta = panel.querySelector('.perf-chart-panel-meta') ? panel.querySelector('.perf-chart-panel-meta').innerText : '';
+            const svg = panel.querySelector('svg');
+            if (!svg) return '';
+            return '<section class="chart-page"><h2>' + escapeHtml(title) + '</h2><div class="meta">' + escapeHtml(meta) + '</div><div class="svg-wrap">' + svg.outerHTML + '</div></section>';
+          }).filter(Boolean);
+          const subtitle = chartMeta ? chartMeta.textContent : '';
+          const html = '<!doctype html><html><head><meta charset="utf-8"><title>Performance Diagramme</title>'
+            + '<style>'
+            + '@page{size:A4 landscape;margin:10mm;}'
+            + 'body{font-family:Arial,sans-serif;color:#111;margin:0;}'
+            + '.cover{margin:0 0 10mm;padding-bottom:5mm;border-bottom:1px solid #d1d5db;}'
+            + 'h1{font-size:20px;margin:0 0 4px;} h2{font-size:15px;margin:0 0 3px;}'
+            + '.meta{font-size:11px;color:#555;margin:0 0 8px;}'
+            + '.chart-page{page-break-inside:avoid;break-inside:avoid;margin-bottom:10mm;}'
+            + '.svg-wrap{border:1px solid #d1d5db;border-radius:10px;padding:6px;}'
+            + 'svg{width:100%;height:155mm;display:block;}'
+            + '.legend{font-size:11px;color:#555;margin-top:5px;}'
+            + '</style></head><body>'
+            + '<div class="cover"><h1>Performance Messzeiten-Diagramme</h1><div class="meta">Erstellt: ' + new Date().toLocaleString('de-DE') + '<br>' + escapeHtml(subtitle) + '</div><div class="legend">Blau = First Display · Rot = Full Study · gestrichelte Linien = Langsam-Schwellen</div></div>'
+            + panels.join('')
+            + '</body></html>';
+          const w = window.open('', '_blank');
+          if (!w) return;
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          setTimeout(function () { w.print(); }, 250);
         }
         function applyPerformanceFilter() {
           const q = norm(searchInput && searchInput.value).trim();
@@ -3143,6 +3336,7 @@
         if (hangupSelect) hangupSelect.addEventListener('change', applyPerformanceFilter);
         if (userSelect) userSelect.addEventListener('change', applyPerformanceFilter);
         if (slowBtn) slowBtn.addEventListener('click', function () { slowOnly = !slowOnly; applyPerformanceFilter(); });
+        if (chartPdfBtn) chartPdfBtn.addEventListener('click', exportPerformanceChartsPdf);
         applyPerformanceFilter();
       })();
 

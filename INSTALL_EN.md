@@ -47,12 +47,12 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.140`
+- `v0.143`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
 
-`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.140` if you want to pin a fixed version.
+`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.143` if you want to pin a fixed version.
 
 The default image owner is `syschelle`, matching the current GitHub repository owner. Override `IMAGE_OWNER` only when publishing the image under a different GitHub user or organization.
 
