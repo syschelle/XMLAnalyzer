@@ -23,13 +23,13 @@ docker compose up -d --build
 Use this variant when the image was built by GitHub Actions and pushed to GitHub Container Registry.
 
 ```bash
-IMAGE_OWNER=<github-user-or-org> IMAGE_TAG=latest API_KEY=<your-api-key> docker compose -f docker-compose.image.yml up -d
+IMAGE_OWNER=syschelle IMAGE_TAG=latest API_KEY=<your-api-key> docker compose -f docker-compose.image.yml up -d
 ```
 
 Example image names used by `docker-compose.image.yml`:
 
 ```text
-ghcr.io/<github-user-or-org>/export-xml-web:latest
+ghcr.io/syschelle/export-xml-web:latest
 ```
 
 ## GitHub Actions image build
@@ -47,14 +47,14 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.138`
+- `v0.139`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
 
-`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.138` if you want to pin a fixed version.
+`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.139` if you want to pin a fixed version.
 
-The image owner is the GitHub repository owner in lower case. For deployment with `docker-compose.image.yml`, set `IMAGE_OWNER` to the same owner.
+The default image owner is `syschelle`, matching the current GitHub repository owner. Override `IMAGE_OWNER` only when publishing the image under a different GitHub user or organization.
 
 ## Open
 - http://localhost:18080

@@ -1,6 +1,6 @@
 services:
   export-xml-web:
-    image: ghcr.io/${IMAGE_OWNER:-REPLACE_WITH_GITHUB_OWNER}/export-xml-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_OWNER:-syschelle}/export-xml-web:${IMAGE_TAG:-latest}
     container_name: export-xml-web
     ports:
       - "18080:8080"

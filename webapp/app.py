@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.138"
+APP_VERSION = "v0.139"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 # Zentraler Perzentilwert für die Performance-Auswertung.
@@ -3021,7 +3021,7 @@ def download_bundle():
 
     compose_image_content = """services:
   export-xml-web:
-    image: ghcr.io/${IMAGE_OWNER:-REPLACE_WITH_GITHUB_OWNER}/export-xml-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_OWNER:-syschelle}/export-xml-web:${IMAGE_TAG:-latest}
     container_name: export-xml-web
     ports:
       - "18080:8080"
@@ -3048,7 +3048,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.138
+  APP_VERSION: v0.139
 
 jobs:
   build-export-xml-web:
@@ -3139,13 +3139,13 @@ docker compose up -d --build
 Use this variant when the image was built by GitHub Actions and pushed to GitHub Container Registry.
 
 ```bash
-IMAGE_OWNER=<github-user-or-org> IMAGE_TAG=latest API_KEY=<your-api-key> docker compose -f docker-compose.image.yml up -d
+IMAGE_OWNER=syschelle IMAGE_TAG=latest API_KEY=<your-api-key> docker compose -f docker-compose.image.yml up -d
 ```
 
 Example image names used by `docker-compose.image.yml`:
 
 ```text
-ghcr.io/<github-user-or-org>/export-xml-web:latest
+ghcr.io/syschelle/export-xml-web:latest
 ```
 
 ## GitHub Actions image build
@@ -3163,14 +3163,14 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.138`
+- `v0.139`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
 
-`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.138` if you want to pin a fixed version.
+`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.139` if you want to pin a fixed version.
 
-The image owner is the GitHub repository owner in lower case. For deployment with `docker-compose.image.yml`, set `IMAGE_OWNER` to the same owner.
+The default image owner is `syschelle`, matching the current GitHub repository owner. Override `IMAGE_OWNER` only when publishing the image under a different GitHub user or organization.
 
 ## Open
 - http://localhost:18080
