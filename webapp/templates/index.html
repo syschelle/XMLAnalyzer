@@ -120,6 +120,81 @@
       color: var(--text);
     }
 
+
+    .perf-chart-wrap {
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    .perf-chart-meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+      line-height: 1.35;
+    }
+
+    .perf-chart-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0 0 10px;
+      line-height: 1.4;
+    }
+
+    .perf-chart-box {
+      position: relative;
+      width: 100%;
+      min-height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--head-bg) 0%, var(--card) 100%);
+      overflow: hidden;
+    }
+
+    .perf-chart-svg {
+      width: 100%;
+      height: 360px;
+      display: block;
+    }
+
+    .perf-chart-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .perf-chart-legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .perf-chart-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .perf-chart-swatch {
+      width: 18px;
+      height: 4px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
     form {
       display: flex;
       gap: 10px;
@@ -894,7 +969,7 @@
         <table id="performance-table">
           <tr><th>Start Date</th><th>User</th><th>Modality</th><th>Object count</th><th>Prior</th><th>First Display</th><th>Full Study</th><th>CFind</th><th>Bandwidth</th><th>Hangup Type</th><th>Hanging</th><th>Study Instance UID</th><th>Base Study</th></tr>
           {% for r in result.performance_rows %}
-          <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}">
+          <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}" data-row="{{ r.rowNr }}" data-start="{{ r.startDate|e }}" data-first-ms="{{ r.firstDisplayMs if r.firstDisplayMs is not none else '' }}" data-full-ms="{{ r.fullStudyMs if r.fullStudyMs is not none else '' }}" data-hanging="{{ r.hanging|e }}">
             <td>{{ r.startDate }}</td>
             <td>{{ r.user }}</td>
             <td>{{ r.modality }}</td>
@@ -911,6 +986,21 @@
           </tr>
           {% endfor %}
         </table>
+      </div>
+      <div class="perf-chart-wrap">
+        <div class="h2-row" style="margin-bottom:10px;">
+          <h2 style="margin:0; font-size:16px;">Messzeiten-Diagramm</h2>
+          <span id="performance-chart-meta" class="perf-chart-meta">Alle Modalitäten · X-Achse: Messungen in zeitlicher Reihenfolge</span>
+        </div>
+        <p class="perf-chart-note">Zeigt First Display und Full Study für die aktuell gefilterten Messungen. Initial werden alle Modalitäten gemeinsam in einem Diagramm dargestellt; über den Modalitätsfilter kann die Ansicht eingegrenzt werden.</p>
+        <div class="perf-chart-box">
+          <svg id="performance-chart" class="perf-chart-svg" viewBox="0 0 1000 360" preserveAspectRatio="none" role="img" aria-label="Diagramm der Messzeiten für First Display und Full Study"></svg>
+          <div id="performance-chart-empty" class="perf-chart-empty" style="display:none;">Keine Messungen für die aktuelle Filterauswahl vorhanden.</div>
+        </div>
+        <div class="perf-chart-legend">
+          <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>First Display</span>
+          <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>Full Study</span>
+        </div>
       </div>
     </div>
 
@@ -2906,15 +2996,131 @@
         const hangupSelect = document.getElementById('performance-hangup-filter');
         const userSelect = document.getElementById('performance-user-filter');
         const slowBtn = document.getElementById('performance-slow-toggle');
+        const chartSvg = document.getElementById('performance-chart');
+        const chartEmpty = document.getElementById('performance-chart-empty');
+        const chartMeta = document.getElementById('performance-chart-meta');
         if (!rows.length || !countEl) return;
         let slowOnly = false;
         function norm(v) { return (v || '').toString().toLowerCase(); }
+        function escapeHtml(value) {
+          return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
+        function fmtMs(ms) {
+          if (ms === null || ms === undefined || ms === '' || Number.isNaN(ms)) return '-';
+          return (Number(ms) / 1000).toFixed(2) + ' s';
+        }
+        function niceMax(value) {
+          if (!value || value <= 0) return 1000;
+          const rough = value / 5;
+          const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
+          const residual = rough / magnitude;
+          let niceStep = magnitude;
+          if (residual > 5) niceStep = 10 * magnitude;
+          else if (residual > 2) niceStep = 5 * magnitude;
+          else if (residual > 1) niceStep = 2 * magnitude;
+          return niceStep * 5;
+        }
+        function renderPerformanceChart(visibleRows) {
+          if (!chartSvg || !chartEmpty) return;
+          const data = visibleRows.map(function (row, idx) {
+            const first = Number(row.getAttribute('data-first-ms') || '');
+            const full = Number(row.getAttribute('data-full-ms') || '');
+            return {
+              xIndex: idx + 1,
+              rowNr: row.getAttribute('data-row') || String(idx + 1),
+              start: row.getAttribute('data-start') || '',
+              modality: row.getAttribute('data-modality') || '',
+              hanging: row.getAttribute('data-hanging') || '',
+              firstMs: Number.isFinite(first) ? first : null,
+              fullMs: Number.isFinite(full) ? full : null,
+            };
+          });
+          const values = [];
+          data.forEach(function (item) {
+            if (item.firstMs !== null) values.push(item.firstMs);
+            if (item.fullMs !== null) values.push(item.fullMs);
+          });
+          const selectedModality = (modalitySelect && modalitySelect.value) ? modalitySelect.value : 'Alle Modalitäten';
+          if (chartMeta) {
+            chartMeta.textContent = selectedModality + ' · X-Achse: Messungen in zeitlicher Reihenfolge · sichtbar: ' + visibleRows.length;
+          }
+          if (!data.length || !values.length) {
+            chartSvg.innerHTML = '';
+            chartEmpty.style.display = '';
+            return;
+          }
+          chartEmpty.style.display = 'none';
+          const width = 1000;
+          const height = 360;
+          const pad = { top: 18, right: 20, bottom: 42, left: 58 };
+          const innerW = width - pad.left - pad.right;
+          const innerH = height - pad.top - pad.bottom;
+          const maxVal = niceMax(Math.max.apply(null, values));
+          const x = function (index) {
+            if (data.length <= 1) return pad.left + innerW / 2;
+            return pad.left + ((index - 1) / (data.length - 1)) * innerW;
+          };
+          const y = function (ms) {
+            return pad.top + innerH - (Math.max(0, ms) / maxVal) * innerH;
+          };
+          const ticks = 5;
+          const grid = [];
+          for (let i = 0; i <= ticks; i += 1) {
+            const value = (maxVal / ticks) * i;
+            const py = y(value);
+            grid.push('<line x1="' + pad.left + '" y1="' + py.toFixed(2) + '" x2="' + (width - pad.right) + '" y2="' + py.toFixed(2) + '" stroke="rgba(107,114,128,0.22)" stroke-width="1" />');
+            grid.push('<text x="' + (pad.left - 10) + '" y="' + (py + 4).toFixed(2) + '" text-anchor="end" font-size="11" fill="currentColor">' + escapeHtml((value / 1000).toFixed(1) + ' s') + '</text>');
+          }
+          const xLabels = [];
+          xLabels.push('<text x="' + pad.left + '" y="' + (height - 12) + '" text-anchor="start" font-size="11" fill="currentColor">1</text>');
+          if (data.length > 1) {
+            xLabels.push('<text x="' + (width - pad.right) + '" y="' + (height - 12) + '" text-anchor="end" font-size="11" fill="currentColor">' + data.length + '</text>');
+          }
+          const series = [
+            { key: 'firstMs', label: 'First Display', color: '#2563eb' },
+            { key: 'fullMs', label: 'Full Study', color: '#dc2626' }
+          ];
+          const seriesMarkup = series.map(function (serie) {
+            const points = [];
+            const circles = [];
+            data.forEach(function (item) {
+              const ms = item[serie.key];
+              if (ms === null) return;
+              const px = x(item.xIndex);
+              const py = y(ms);
+              points.push(px.toFixed(2) + ',' + py.toFixed(2));
+              const title = serie.label + ': ' + fmtMs(ms) + ' | Messung ' + item.rowNr + ' | ' + (item.modality || '-') + ' | ' + (item.start || '-') + ' | ' + (item.hanging || '-');
+              circles.push('<circle cx="' + px.toFixed(2) + '" cy="' + py.toFixed(2) + '" r="3.4" fill="' + serie.color + '"><title>' + escapeHtml(title) + '</title></circle>');
+            });
+            const polyline = points.length >= 2
+              ? '<polyline fill="none" stroke="' + serie.color + '" stroke-width="2" points="' + points.join(' ') + '" />'
+              : '';
+            return polyline + circles.join('');
+          }).join('');
+
+          chartSvg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+          chartSvg.innerHTML = ''
+            + '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="transparent" />'
+            + '<g style="color: var(--muted);">' + grid.join('') + '</g>'
+            + '<line x1="' + pad.left + '" y1="' + (height - pad.bottom) + '" x2="' + (width - pad.right) + '" y2="' + (height - pad.bottom) + '" stroke="currentColor" stroke-width="1.2" />'
+            + '<line x1="' + pad.left + '" y1="' + pad.top + '" x2="' + pad.left + '" y2="' + (height - pad.bottom) + '" stroke="currentColor" stroke-width="1.2" />'
+            + '<text x="' + (width / 2) + '" y="' + (height - 8) + '" text-anchor="middle" font-size="12" fill="currentColor">Messung</text>'
+            + '<text x="16" y="' + (pad.top + innerH / 2) + '" text-anchor="middle" transform="rotate(-90 16 ' + (pad.top + innerH / 2) + ')" font-size="12" fill="currentColor">Zeit in Sekunden</text>'
+            + xLabels.join('')
+            + seriesMarkup;
+        }
         function applyPerformanceFilter() {
           const q = norm(searchInput && searchInput.value).trim();
           const modality = (modalitySelect && modalitySelect.value) || '';
           const hangup = (hangupSelect && hangupSelect.value) || '';
           const user = (userSelect && userSelect.value) || '';
           let visible = 0;
+          const visibleRows = [];
           rows.forEach(function (row) {
             const searchOk = !q || norm(row.getAttribute('data-search')).includes(q);
             const modalityOk = !modality || (row.getAttribute('data-modality') || '') === modality;
@@ -2923,10 +3129,14 @@
             const slowOk = !slowOnly || (row.getAttribute('data-slow') || '') === 'ja';
             const ok = searchOk && modalityOk && hangupOk && userOk && slowOk;
             row.style.display = ok ? '' : 'none';
-            if (ok) visible += 1;
+            if (ok) {
+              visible += 1;
+              visibleRows.push(row);
+            }
           });
           countEl.textContent = String(visible);
           if (slowBtn) slowBtn.textContent = slowOnly ? 'Alle anzeigen' : 'Nur langsame anzeigen';
+          renderPerformanceChart(visibleRows);
         }
         if (searchInput) searchInput.addEventListener('input', applyPerformanceFilter);
         if (modalitySelect) modalitySelect.addEventListener('change', applyPerformanceFilter);
