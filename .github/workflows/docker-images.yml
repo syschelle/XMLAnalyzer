@@ -16,7 +16,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.136
+  APP_VERSION: v0.138
 
 jobs:
   build-export-xml-web:
@@ -43,9 +43,7 @@ jobs:
             if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
               echo "${image}:${GITHUB_REF_NAME}"
             fi
-            if [[ "${GITHUB_REF_NAME}" == "main" || "${GITHUB_REF_NAME}" == "master" ]]; then
-              echo "${image}:latest"
-            fi
+            echo "${image}:latest"
             echo "EOF"
           } >> "${GITHUB_OUTPUT}"
 
@@ -81,4 +79,4 @@ jobs:
         run: |
           echo "Image gebaut: ${{ steps.image.outputs.image }}:${APP_VERSION}"
           echo "docker-compose.image.yml starten mit:"
-          echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,} IMAGE_TAG=${APP_VERSION} docker compose -f docker-compose.image.yml up -d"
+          echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,} IMAGE_TAG=latest docker compose -f docker-compose.image.yml up -d"

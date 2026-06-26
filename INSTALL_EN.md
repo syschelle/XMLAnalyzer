@@ -5,37 +5,56 @@ This guide explains how to run the export.xml, Licensefile and Performance Analy
 ## Requirements
 - Docker Engine / Docker Desktop
 - Docker Compose v2 (`docker compose`)
-
-## Compose files
-
-This project currently provides two Docker Compose files:
-
-- `docker-compose.yml` builds the application image locally from the included `webapp/` source.
-- `docker-compose.image.yml` runs a prebuilt image from GitHub Container Registry (`ghcr.io/syschelle/xmlanalyzer:v0.131`).
-
-Status: the prebuilt-image setup is prepared but not released yet. Until the image is published and accessible, use `docker-compose.yml`.
+- For the GitHub workflow: GitHub Actions with package write permissions enabled
 
 ## API key (recommended)
-Set `API_KEY` in the Compose file and use the same value in request header `X-API-Key`.
+Set `API_KEY` in `docker-compose.yml` or pass it as an environment variable when using `docker-compose.image.yml`.
+Use the same value in request header `X-API-Key`.
 If `API_KEY` is empty or missing, API access is open.
 
-## Start from local source
-
-Use this mode when you received the full deploy bundle including `webapp/`.
+## Local start with build from source
+Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
 ```bash
 docker compose up -d --build
 ```
 
-## Start from prebuilt image
-
-Use this mode only after the GHCR image has been released and is accessible.
-This mode does not require a local build.
+## Start with prebuilt GitHub Container Registry image
+Use this variant when the image was built by GitHub Actions and pushed to GitHub Container Registry.
 
 ```bash
-docker compose -f docker-compose.image.yml pull
-docker compose -f docker-compose.image.yml up -d
+IMAGE_OWNER=<github-user-or-org> IMAGE_TAG=latest API_KEY=<your-api-key> docker compose -f docker-compose.image.yml up -d
 ```
+
+Example image names used by `docker-compose.image.yml`:
+
+```text
+ghcr.io/<github-user-or-org>/export-xml-web:latest
+```
+
+## GitHub Actions image build
+The workflow is stored here:
+
+```text
+.github/workflows/docker-images.yml
+```
+
+It builds the Docker image from:
+
+```text
+webapp/Dockerfile
+```
+
+The workflow pushes these tags to GitHub Container Registry:
+
+- `v0.138`
+- `sha-<short-sha>`
+- `latest` for the current published image
+- the Git tag name when a `v*` tag is pushed
+
+`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.138` if you want to pin a fixed version.
+
+The image owner is the GitHub repository owner in lower case. For deployment with `docker-compose.image.yml`, set `IMAGE_OWNER` to the same owner.
 
 ## Open
 - http://localhost:18080
@@ -44,21 +63,11 @@ docker compose -f docker-compose.image.yml up -d
 ## API example
 ```bash
 curl -X POST "http://localhost:18080/api/v1/export-xml/analyze"   -H "X-API-Key: <your-key>"   -F "file=@/path/to/export.xml;type=application/xml"
-
-# Performance CSV API
-curl -X POST "http://localhost:18080/api/v1/performance/analyze"   -H "X-API-Key: <your-key>"   -F "file=@/path/to/performance.csv;type=text/csv"
 ```
 
 ## Stop
-
-For the local-build Compose file:
-
 ```bash
 docker compose down
-```
-
-For the prebuilt-image Compose file:
-
-```bash
+# or, for the image based compose file:
 docker compose -f docker-compose.image.yml down
 ```

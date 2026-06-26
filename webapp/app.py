@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.131"
+APP_VERSION = "v0.138"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 # Zentraler Perzentilwert für die Performance-Auswertung.
@@ -3019,6 +3019,101 @@ def download_bundle():
     restart: unless-stopped
 """
 
+    compose_image_content = """services:
+  export-xml-web:
+    image: ghcr.io/${IMAGE_OWNER:-REPLACE_WITH_GITHUB_OWNER}/export-xml-web:${IMAGE_TAG:-latest}
+    container_name: export-xml-web
+    ports:
+      - "18080:8080"
+    environment:
+      API_KEY: "${API_KEY:-CHANGE_ME_TO_A_LONG_RANDOM_SECRET}"
+    restart: unless-stopped
+"""
+
+    github_workflow_content = """name: Build Docker images
+
+"on":
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: export-xml-web
+  APP_VERSION: v0.138
+
+jobs:
+  build-export-xml-web:
+    name: Build export-xml-web image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Docker image tags
+        id: image
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="${REGISTRY}/${owner}/${IMAGE_NAME}"
+          short_sha="${GITHUB_SHA::12}"
+
+          {
+            echo "image=${image}"
+            echo "tags<<EOF"
+            echo "${image}:${APP_VERSION}"
+            echo "${image}:sha-${short_sha}"
+            if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+              echo "${image}:${GITHUB_REF_NAME}"
+            fi
+            echo "${image}:latest"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./webapp
+          file: ./webapp/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.image.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=export-xml-web
+            org.opencontainers.image.description=export.xml, Lizenzfile und Performance Analyzer
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ env.APP_VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Show compose image values
+        shell: bash
+        run: |
+          echo "Image gebaut: ${{ steps.image.outputs.image }}:${APP_VERSION}"
+          echo "docker-compose.image.yml starten mit:"
+          echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,} IMAGE_TAG=latest docker compose -f docker-compose.image.yml up -d"
+"""
+
     install_en_content = """# Installation Guide (Docker)
 
 This guide explains how to run the export.xml, Licensefile and Performance Analyzer on an external system.
@@ -3026,15 +3121,56 @@ This guide explains how to run the export.xml, Licensefile and Performance Analy
 ## Requirements
 - Docker Engine / Docker Desktop
 - Docker Compose v2 (`docker compose`)
+- For the GitHub workflow: GitHub Actions with package write permissions enabled
 
 ## API key (recommended)
-Set `API_KEY` in `docker-compose.yml` and use the same value in request header `X-API-Key`.
+Set `API_KEY` in `docker-compose.yml` or pass it as an environment variable when using `docker-compose.image.yml`.
+Use the same value in request header `X-API-Key`.
 If `API_KEY` is empty or missing, API access is open.
 
-## Start
+## Local start with build from source
+Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
+
 ```bash
 docker compose up -d --build
 ```
+
+## Start with prebuilt GitHub Container Registry image
+Use this variant when the image was built by GitHub Actions and pushed to GitHub Container Registry.
+
+```bash
+IMAGE_OWNER=<github-user-or-org> IMAGE_TAG=latest API_KEY=<your-api-key> docker compose -f docker-compose.image.yml up -d
+```
+
+Example image names used by `docker-compose.image.yml`:
+
+```text
+ghcr.io/<github-user-or-org>/export-xml-web:latest
+```
+
+## GitHub Actions image build
+The workflow is stored here:
+
+```text
+.github/workflows/docker-images.yml
+```
+
+It builds the Docker image from:
+
+```text
+webapp/Dockerfile
+```
+
+The workflow pushes these tags to GitHub Container Registry:
+
+- `v0.138`
+- `sha-<short-sha>`
+- `latest` for the current published image
+- the Git tag name when a `v*` tag is pushed
+
+`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.138` if you want to pin a fixed version.
+
+The image owner is the GitHub repository owner in lower case. For deployment with `docker-compose.image.yml`, set `IMAGE_OWNER` to the same owner.
 
 ## Open
 - http://localhost:18080
@@ -3042,20 +3178,22 @@ docker compose up -d --build
 
 ## API example
 ```bash
-curl -X POST "http://localhost:18080/api/v1/export-xml/analyze" \
-  -H "X-API-Key: <your-key>" \
-  -F "file=@/path/to/export.xml;type=application/xml"
+curl -X POST "http://localhost:18080/api/v1/export-xml/analyze"   -H "X-API-Key: <your-key>"   -F "file=@/path/to/export.xml;type=application/xml"
 ```
 
 ## Stop
 ```bash
 docker compose down
+# or, for the image based compose file:
+docker compose -f docker-compose.image.yml down
 ```
 """
 
     buf = BytesIO()
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("docker-compose.yml", compose_content)
+        zf.writestr("docker-compose.image.yml", compose_image_content)
+        zf.writestr(".github/workflows/docker-images.yml", github_workflow_content)
         zf.writestr("INSTALL_EN.md", install_en_content)
 
         for p in app_dir.rglob("*"):
