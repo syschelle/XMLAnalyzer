@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.143"
+APP_VERSION = "v0.144"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 # Zentraler Perzentilwert für die Performance-Auswertung.
@@ -3051,7 +3051,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.143
+  APP_VERSION: v0.144
 
 jobs:
   build-export-xml-web:
@@ -3166,12 +3166,12 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.143`
+- `v0.144`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
 
-`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.143` if you want to pin a fixed version.
+`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.144` if you want to pin a fixed version.
 
 The default image owner is `syschelle`, matching the current GitHub repository owner. Override `IMAGE_OWNER` only when publishing the image under a different GitHub user or organization.
 

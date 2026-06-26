@@ -144,8 +144,9 @@
 
     .perf-chart-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
-      gap: 16px;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      width: 100%;
     }
 
     .perf-chart-panel {
@@ -154,8 +155,9 @@
       background:
         radial-gradient(circle at top left, rgba(107, 145, 134, 0.16), transparent 38%),
         linear-gradient(180deg, var(--head-bg) 0%, var(--card) 100%);
-      padding: 12px;
+      padding: 14px;
       min-width: 0;
+      width: 100%;
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
       page-break-inside: avoid;
       break-inside: avoid;
@@ -186,7 +188,7 @@
     .perf-chart-box {
       position: relative;
       width: 100%;
-      min-height: 320px;
+      min-height: 380px;
       overflow: hidden;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.22);
@@ -194,7 +196,7 @@
 
     .perf-chart-svg {
       width: 100%;
-      height: 320px;
+      height: 380px;
       display: block;
     }
 
@@ -1041,7 +1043,7 @@
             <button type="button" id="performance-chart-pdf-export" class="toggle-btn perf-chart-export-btn">Diagramme als PDF</button>
           </div>
         </div>
-        <p class="perf-chart-note">Zeigt First Display und Full Study für die aktuell gefilterten Messungen über die Messzeit. Initial wird für jede Modalität ein eigenes Diagramm angezeigt; über den Modalitätsfilter kann die Ansicht auf eine Modalität eingegrenzt werden.</p>
+        <p class="perf-chart-note">Zeigt First Display und Full Study für die aktuell gefilterten Messungen über die Messzeit. Initial wird für jede Modalität ein eigenes Diagramm untereinander über die gesamte verfügbare Breite angezeigt; über den Modalitätsfilter kann die Ansicht auf eine Modalität eingegrenzt werden.</p>
         <div id="performance-chart-grid" class="perf-chart-grid"></div>
         <div id="performance-chart-empty" class="perf-chart-empty" style="display:none; position:relative; min-height:160px; border:1px solid var(--line); border-radius:12px;">Keine Messungen für die aktuelle Filterauswahl vorhanden.</div>
         <div class="perf-chart-legend">
@@ -3091,7 +3093,7 @@
           if (!data.length || !values.length) return '';
           const safeId = 'perfChart' + Math.random().toString(36).slice(2);
           const width = 1000;
-          const height = 320;
+          const height = 380;
           const pad = { top: 18, right: 28, bottom: 54, left: 62 };
           const innerW = width - pad.left - pad.right;
           const innerH = height - pad.top - pad.bottom;
