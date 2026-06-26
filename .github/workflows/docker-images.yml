@@ -1,0 +1,84 @@
+name: Build Docker images
+
+"on":
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: export-xml-web
+  APP_VERSION: v0.136
+
+jobs:
+  build-export-xml-web:
+    name: Build export-xml-web image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Docker image tags
+        id: image
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="${REGISTRY}/${owner}/${IMAGE_NAME}"
+          short_sha="${GITHUB_SHA::12}"
+
+          {
+            echo "image=${image}"
+            echo "tags<<EOF"
+            echo "${image}:${APP_VERSION}"
+            echo "${image}:sha-${short_sha}"
+            if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+              echo "${image}:${GITHUB_REF_NAME}"
+            fi
+            if [[ "${GITHUB_REF_NAME}" == "main" || "${GITHUB_REF_NAME}" == "master" ]]; then
+              echo "${image}:latest"
+            fi
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./webapp
+          file: ./webapp/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.image.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=export-xml-web
+            org.opencontainers.image.description=export.xml, Lizenzfile und Performance Analyzer
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ env.APP_VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Show compose image values
+        shell: bash
+        run: |
+          echo "Image gebaut: ${{ steps.image.outputs.image }}:${APP_VERSION}"
+          echo "docker-compose.image.yml starten mit:"
+          echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,} IMAGE_TAG=${APP_VERSION} docker compose -f docker-compose.image.yml up -d"
