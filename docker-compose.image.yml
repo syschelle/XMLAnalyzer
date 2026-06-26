@@ -1,0 +1,9 @@
+services:
+  export-xml-web:
+    image: ghcr.io/syschelle/xmlanalyzer:v0.131
+    container_name: export-xml-web
+    ports:
+      - "18080:8080"
+    environment:
+      API_KEY: "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
+    restart: unless-stopped
