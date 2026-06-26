@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anleitung – export.xml, Lizenzfile und Performance Analyzer</title>
+  <style>
+    body { font-family: Inter, Segoe UI, Arial, sans-serif; margin: 0; background:#f4f7f6; color:#1f2937; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:14px; }
+    h1 { margin:0 0 8px; }
+    h2 { margin: 0 0 10px; font-size: 20px; }
+    h3 { margin: 12px 0 6px; font-size: 16px; }
+    p, li { line-height: 1.45; }
+    code { background:#eef2f7; border-radius:6px; padding:1px 6px; }
+    .tip { background:#eef7f3; border:1px solid #cde7da; border-radius:10px; padding:10px 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Anleitung zur Webapp</h1>
+      <p><strong>export.xml, Lizenzfile und Performance Analyzer</strong> hilft dir, Konfigurationsdateien, Lizenzfiles und Performance-CSV-Dateien schnell auszuwerten und die Ergebnisse zu filtern sowie nach Excel/PDF zu exportieren.</p>
+    </div>
+
+    <div class="card">
+      <h2>1) Schnellstart</h2>
+      <ol>
+        <li>Datei auswählen (<code>.xml</code> oder <code>performance.csv</code>).</li>
+        <li>Auf <strong>Analysieren</strong> klicken.</li>
+        <li>Oben die Dateityp-Erkennung prüfen (<em>Konfigurationsfile</em>, <em>Lizenzfile</em> oder <em>Performance CSV</em>).</li>
+        <li>Über die Sprungleiste zu den gewünschten Bereichen wechseln.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>2) Bedienung der Tabellen</h2>
+      <ul>
+        <li><strong>Horizontales Scrollen:</strong> Bei breiten Tabellen gibt es Scrollbalken oben und unten.</li>
+        <li><strong>Spaltenfilter:</strong> Viele Tabellen haben Suchfelder oder Dropdowns in der 2. Kopfzeile.</li>
+        <li><strong>Kombinierbare Filter:</strong> Mehrere Filter gleichzeitig sind möglich.</li>
+        <li><strong>Zähler:</strong> Die Zahl im Titel zeigt die aktuell sichtbaren Treffer.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>3) Bereich „Workstations Lizenzen“</h2>
+      <h3>Suche nach Workstation</h3>
+      <p>Über die Felder <strong>Computer</strong>, <strong>AET</strong> und <strong>MAC</strong> kannst du gezielt einzelne Geräte suchen.</p>
+
+      <h3>Filter nach Lizenzspalten</h3>
+      <p>In jeder Lizenzspalte gibt es eine Checkbox <strong>ja</strong>. Ist sie aktiv, werden nur Zeilen angezeigt, die diese Lizenz enthalten.</p>
+
+      <h3>Lizenzsuchfeld (rechts neben Excel Export)</h3>
+      <p>Du kannst einen Lizenznamen eintippen. Die Eingabe bietet vorhandene Lizenznamen als Vorschläge an. Beim Suchen werden nur passende Lizenzspalten angezeigt; alle anderen werden ausgeblendet.</p>
+
+      <div class="tip">
+        Tipp: Für große Datenmengen zuerst Lizenzfeld einschränken, danach optional Computer/AET/MAC ergänzen – das ist meist am schnellsten.
+      </div>
+    </div>
+
+
+    <div class="card">
+      <h2>4) Bereich „Performance CSV“</h2>
+      <p>Die Datei muss nicht manuell vorbereitet werden, wenn sie als <code>performance.csv</code> mit Semikolon-Trennung geliefert wird. Die App erkennt typische Spalten wie <code>First Display</code>, <code>Full Study</code>, <code>Modality</code>, <code>Hanging</code>, <code>Hangup Type</code> und <code>User</code>.</p>
+      <ul>
+        <li><strong>Übersicht:</strong> zeigt Anzahl Messungen, Zeitraum, langsame Messungen und zentrale Laufzeitwerte.</li>
+        <li><strong>Gruppen:</strong> Auswertung nach Modalität, Hanging und User.</li>
+        <li><strong>Details:</strong> filterbare Einzelzeilen mit Suche, Dropdowns und Button „Nur langsame anzeigen“.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>5) Export</h2>
+      <ul>
+        <li><strong>Excel Export:</strong> Exportiert den aktuell sichtbaren/gefilterten Zustand der Tabelle.</li>
+        <li><strong>Auswertung (PDF):</strong> Exportiert ausgewählte Tabellen als PDF (ohne reine Bedienelemente wie Filterzeilen).</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>6) API-Schnittstelle (extern, z. B. SAP)</h2>
+      <p>Für externe Aufrufe steht die API <code>POST /api/v1/export-xml/analyze</code> bereit.</p>
+      <ul>
+        <li><strong>Upload:</strong> <code>multipart/form-data</code> mit Feld <code>file</code> (empfohlen)</li>
+        <li><strong>Alternativ:</strong> XML direkt im Body mit <code>Content-Type: application/xml</code></li>
+        <li><strong>Sicherheit:</strong> Wenn im Deployment <code>API_KEY</code> gesetzt ist, muss der Header <code>X-API-Key</code> mitgesendet werden.</li>
+      </ul>
+      <p>Beispiel:</p>
+      <pre><code>curl -X POST "https://&lt;host&gt;/api/v1/export-xml/analyze" \
+  -H "X-API-Key: &lt;secret&gt;" \
+  -F "file=@/pfad/export.xml;type=application/xml"</code></pre>
+    </div>
+
+    <div class="card">
+      <h2>7) Hinweise zur Performance</h2>
+      <ul>
+        <li>Bei sehr vielen Workstations können breite Tabellen schwergewichtig sein.</li>
+        <li>Die App ist bereits auf große Listen optimiert (Debounce, weniger DOM-Updates, Vorindexierung).</li>
+        <li>Falls es trotzdem hakt: Filter zunächst grob setzen (z. B. Lizenz), dann weiter verfeinern.</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

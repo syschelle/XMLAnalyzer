@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScriptAccess Code</title>
+  <style>
+    body { font-family: Inter, Segoe UI, Roboto, Arial, sans-serif; background:#f3f6f5; color:#1f2937; margin:0; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 24px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; }
+    .code { font-size: 34px; font-weight: 700; letter-spacing: 1px; margin: 14px 0; }
+    .muted { color:#6b7280; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1 style="margin:0 0 8px;">ScriptAccess Code</h1>
+      <div class="muted">Generiert am: {{ generated_at }}</div>
+      <div class="code">{{ code }}</div>
+      <div class="muted">Hinweis: Diese Seite rekonstruiert die Code-Generierung aus den gefundenen Klassenhinweisen.</div>
+    </div>
+  </div>
+</body>
+</html>

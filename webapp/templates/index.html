@@ -1,0 +1,3711 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>export.xml, Lizenzfile und Performance Analyzer</title>
+  <script>
+    (function () {
+      const m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
+      const theme = m ? decodeURIComponent(m[1]) : 'light';
+      document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #f3f6f5;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --head-bg: #f8fafc;
+      --accent: #4b6b63;
+      --accent-hover: #3f5b54;
+      --accent-soft: #dfe9e6;
+      --stale: #fee2e2;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+      --hero-a: #5b786f;
+      --hero-b: #4b6b63;
+      --hero-c: #6c8c83;
+      --row-alt: #f7faf9;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f1514;
+      --card: #18201e;
+      --text: #e5ecea;
+      --muted: #9aa9a4;
+      --line: #2a3733;
+      --head-bg: #1d2825;
+      --accent: #6b9186;
+      --accent-hover: #5a7d73;
+      --accent-soft: #22302c;
+      --stale: #4a2328;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      --hero-a: #2f4540;
+      --hero-b: #3a5750;
+      --hero-c: #4b6f66;
+      --row-alt: #1f2a27;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, var(--accent-soft) 0%, var(--bg) 220px);
+      color: var(--text);
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 16px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--hero-a), var(--hero-b) 60%, var(--hero-c));
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hero h1 { margin: 0 0 6px; font-size: 24px; }
+    .hero p { margin: 0; opacity: 0.9; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    h2 { margin: 0 0 12px; font-size: 18px; }
+
+    .h2-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .old-ws-hint {
+      color: #dc2626;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .perf-p90-hint {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+      max-width: 620px;
+      line-height: 1.35;
+    }
+
+    .perf-p90-hint strong {
+      color: var(--text);
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="file"] {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px;
+    }
+
+    input[type="file"]::file-selector-button {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #5f8177 0%, var(--accent) 100%);
+      color: #fff;
+      padding: 6px 10px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    button {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 10px;
+      background: linear-gradient(180deg, #5f8177 0%, var(--accent) 100%);
+      color: #fff;
+      padding: 9px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      box-shadow: 0 2px 8px rgba(75, 107, 99, 0.25);
+    }
+
+    button:hover {
+      background: linear-gradient(180deg, #55756d 0%, var(--accent-hover) 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 5px 14px rgba(63, 91, 84, 0.28);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 10px;
+      flex-wrap: wrap;
+    }
+
+
+    .toggle-btn {
+      background: linear-gradient(180deg, #6c7f7a 0%, #586965 100%);
+      color: #fff;
+      padding: 7px 11px;
+      font-size: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(88, 105, 101, 0.25);
+    }
+
+    .search-input {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 10px;
+      min-width: 280px;
+      max-width: 420px;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    .inline-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .inline-filter input {
+      width: auto;
+      min-width: 0;
+    }
+
+    th.sortable-th {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th.sortable-th:hover {
+      filter: brightness(1.08);
+    }
+
+    .sort-indicator {
+      display: inline-block;
+      min-width: 1.2em;
+      margin-left: 4px;
+      font-weight: 800;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: var(--card);
+    }
+
+    .stat .k { color: var(--muted); font-size: 12px; }
+    .stat .v { font-size: 18px; font-weight: 700; margin-top: 2px; color: var(--text); }
+
+    .table-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .table-wrap-top-scroll {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      border-radius: 10px 10px 0 0;
+      height: 14px;
+      background: var(--card);
+      margin-bottom: -1px;
+    }
+
+    .table-wrap-top-scroll-inner {
+      height: 1px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+      border: 1px solid var(--line);
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 2px 4px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: linear-gradient(180deg, #5f8177 0%, var(--accent) 100%);
+      color: #fff;
+      z-index: 1;
+      font-weight: 700;
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    th.th-deprecated {
+      background: linear-gradient(180deg, #b91c1c 0%, #991b1b 100%) !important;
+      color: #fff !important;
+    }
+
+    tr:nth-child(even) td { background: var(--row-alt); }
+
+    .stale { background: var(--stale); }
+    tr.stale-row td { background: var(--stale) !important; }
+
+    .hp-inactive td {
+      background: color-mix(in srgb, #fecaca 70%, var(--card) 30%) !important;
+    }
+
+    :root[data-theme="dark"] .hp-inactive td {
+      background: color-mix(in srgb, #7f1d1d 45%, var(--card) 55%) !important;
+    }
+
+    .perf-slow td {
+      background: color-mix(in srgb, #fed7aa 65%, var(--card) 35%) !important;
+    }
+
+    :root[data-theme="dark"] .perf-slow td {
+      background: color-mix(in srgb, #7c2d12 52%, var(--card) 48%) !important;
+    }
+
+    .dp-duplicate td {
+      background: var(--dp-dup-bg, color-mix(in srgb, #fef3c7 70%, var(--card) 30%)) !important;
+    }
+
+    .perm-verboten td {
+      background: color-mix(in srgb, #fecaca 68%, var(--card) 32%) !important;
+    }
+
+    .dup-hint {
+      float: right;
+      color: #b91c1c;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .perm-erlaubt td {
+      background: color-mix(in srgb, #bbf7d0 66%, var(--card) 34%) !important;
+    }
+
+    .perm-vererbt td {
+      background: color-mix(in srgb, #d1d5db 55%, var(--card) 45%) !important;
+    }
+
+    td.cap-yes {
+      background: color-mix(in srgb, #bbf7d0 70%, var(--card) 30%) !important;
+      color: #14532d;
+      font-weight: 600;
+    }
+
+    td.cap-no {
+      background: color-mix(in srgb, #fecaca 72%, var(--card) 28%) !important;
+      color: #7f1d1d;
+      font-weight: 600;
+    }
+
+    :root[data-theme="dark"] td.cap-yes {
+      background: color-mix(in srgb, #14532d 60%, var(--card) 40%) !important;
+      color: #d1fae5;
+    }
+
+    :root[data-theme="dark"] td.cap-no {
+      background: color-mix(in srgb, #7f1d1d 62%, var(--card) 38%) !important;
+      color: #fee2e2;
+    }
+
+    :root[data-theme="dark"] .dp-duplicate td,
+    :root[data-theme="dark"] .perm-verboten td,
+    :root[data-theme="dark"] .perm-erlaubt td,
+    :root[data-theme="dark"] .perm-vererbt td {
+      color: #111 !important;
+    }
+
+    :root[data-theme="dark"] tr.stale-row td,
+    :root[data-theme="dark"] .hp-inactive td {
+      color: #fff !important;
+    }
+
+    .perm-tree-wrap {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--card);
+      padding: 10px;
+      max-height: 640px;
+      overflow: auto;
+    }
+
+    .perm-tree,
+    .perm-tree ul {
+      list-style: none;
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .perm-tree > li { padding-left: 0; }
+
+    .perm-node {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 0;
+      font-size: 13px;
+    }
+
+    .perm-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .perm-badge.erlaubt { background: #bbf7d0; color: #14532d; }
+    .perm-badge.verboten { background: #fecaca; color: #7f1d1d; }
+    .perm-badge.vererbt { background: #e5e7eb; color: #374151; }
+
+    :root[data-theme="dark"] .perm-badge.erlaubt { background: #14532d; color: #d1fae5; }
+    :root[data-theme="dark"] .perm-badge.verboten { background: #7f1d1d; color: #fee2e2; }
+    :root[data-theme="dark"] .perm-badge.vererbt { background: #374151; color: #e5e7eb; }
+
+    .perm-meta {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .perm-label-erlaubt { color: #166534; }
+    .perm-label-verboten { color: #991b1b; }
+
+    :root[data-theme="dark"] .perm-label-erlaubt { color: #86efac; }
+    :root[data-theme="dark"] .perm-label-verboten { color: #fca5a5; }
+
+    .code-btn {
+      background: linear-gradient(180deg, #5f8177 0%, var(--accent) 100%);
+      color: #fff;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      box-shadow: 0 2px 8px rgba(75, 107, 99, 0.22);
+    }
+
+    .code-btn:hover {
+      background: linear-gradient(180deg, #55756d 0%, var(--accent-hover) 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 5px 14px rgba(63, 91, 84, 0.28);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 20px;
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .modal-card {
+      width: min(1100px, 96vw);
+      max-height: 90vh;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .modal-code {
+      width: 100%;
+      height: min(70vh, 680px);
+      border: 0;
+      resize: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      padding: 12px;
+      outline: none;
+      white-space: pre;
+      overflow: auto;
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .theme-toggle {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(2px);
+      box-shadow: none;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: none;
+      transform: translateY(-1px);
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      height: 36px;
+      padding: 0 2px;
+      background: transparent;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .hero-actions .pdf-btn,
+    .hero-actions .theme-toggle {
+      min-height: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      font-size: 14px;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    .section-jump {
+      position: sticky;
+      top: 8px;
+      z-index: 20;
+      background: linear-gradient(180deg, #5f8177 0%, var(--accent) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 10px;
+      padding: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      box-shadow: 0 8px 20px rgba(45, 71, 64, 0.32);
+    }
+
+    .section-jump a {
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.16);
+      transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    }
+
+    .section-jump a:hover {
+      background: rgba(255, 255, 255, 0.28);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
+    }
+
+    .pdf-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: none;
+      color: #fff;
+      padding: 9px 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    a.pdf-btn {
+      text-decoration: none;
+      display: inline-block;
+      line-height: 1.2;
+    }
+
+    .pdf-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: none;
+    }
+
+    .pdf-select-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 8px;
+      padding: 10px 12px;
+      overflow: auto;
+      max-height: min(50vh, 420px);
+    }
+
+    .pdf-select-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .mac-cell {
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .aet-tooltip-cell {
+      cursor: help;
+      text-decoration: underline dotted;
+      text-underline-offset: 2px;
+    }
+
+    .aet-tooltip-cell.copied {
+      background: color-mix(in srgb, var(--accent-soft) 70%, #9fe3be 30%);
+    }
+
+    .xml-tooltip {
+      position: fixed;
+      z-index: 2000;
+      max-width: min(900px, 90vw);
+      max-height: min(70vh, 700px);
+      overflow: auto;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      background: var(--card);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+      display: none;
+      pointer-events: none;
+    }
+
+    .copy-toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 2200;
+      background: #166534;
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 140ms ease, transform 140ms ease;
+      pointer-events: none;
+    }
+
+    .copy-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .build-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+    }
+
+    .build-overlay.show {
+      display: flex;
+    }
+
+    .build-overlay-card {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-weight: 700;
+      box-shadow: var(--shadow);
+    }
+
+    @media (max-width: 1200px) {
+      .wrap { padding: 12px; }
+      .card { padding: 12px; }
+      th, td { padding: 1px 3px; font-size: 12px; }
+      .hero h1 { font-size: 20px; }
+    }
+
+    @media (max-width: 900px) {
+      table { min-width: 900px; }
+      .stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div id="build-overlay" class="build-overlay" data-auto-show="{{ '1' if result else '0' }}" aria-hidden="true">
+    <div class="build-overlay-card">Listen werden aufgebaut … bitte warten.</div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1>export.xml, Lize<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit;">n</button>zfile und Performance Analyzer</h1>
+        <p>Upload und Analyse von export.xml, Lizenzfile und performance.csv.</p>
+      </div>
+      <div class="hero-actions">
+        <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener" class="pdf-btn">Anleitung</a>
+        <button type="button" id="script-access-open" class="pdf-btn" style="display:none;">ScriptAccess Code</button>
+        <a href="#" data-app-link="download_bundle" class="pdf-btn">Deploy Download</a>
+        <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback" class="pdf-btn">Feedback</a>
+        {% if not (result and result.xml_kind == 'licensefile') %}
+        <button type="button" id="pdf-export-open" class="pdf-btn">Auswertung</button>
+        {% endif %}
+        <button type="button" id="theme-toggle" class="theme-toggle">🌙 Dunkel</button>
+        <span class="version-badge">{{ APP_VERSION }}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <form id="analyze-form" method="post" enctype="multipart/form-data">
+        <input type="file" name="xml_file" accept=".xml,.csv" required>
+        <button type="submit">Analysieren</button>
+        <span style="margin-left:10px; color: var(--muted); font-size: 12px;"><strong>Upload-Limit:</strong> 200 MB · unterstützt: export.xml, Lizenzfile, performance.csv</span>
+        {% if detected_type %}
+        <span style="margin-left:10px;"><strong>Dateityp-Erkennung:</strong> {{ detected_type }}</span>
+        {% endif %}
+      </form>
+      {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    </div>
+
+    {% if result %}
+    {% if result.xml_kind == 'licensefile' %}
+    <button type="button" id="script-access-license-trigger" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;" aria-hidden="true" tabindex="-1">scriptaccess</button>
+    <div class="card">
+      <h2>Übersicht Lizenzfile:{% if result.issuer and (result.issuer.name or result.issuer.location or result.issuer.country) %} {{ result.issuer.name }}{% if result.issuer.location %}, {{ result.issuer.location }}{% endif %}{% if result.issuer.country %} ({{ result.issuer.country }}){% endif %}{% endif %}</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Diagnost</div><div class="v">{{ result.license_overview.diagnost }}</div></div>
+        <div class="stat"><div class="k">Review</div><div class="v">{{ result.license_overview.review }}</div></div>
+        <div class="stat"><div class="k">Review advanced</div><div class="v">{{ result.license_overview.review_advanced }}</div></div>
+        <div class="stat"><div class="k">Deprecated</div><div class="v">{{ result.license_overview.deprecated }}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Client-based Licenses (<span id="license-matrix-visible-count">{{ result.license_matrix_rows|length }}</span>)</h2>
+      <div class="toolbar">
+        <button type="button" id="license-matrix-dup-toggle" class="toggle-btn">Nur Duplikate anzeigen</button>
+      </div>
+      <div class="table-wrap">
+        <table id="license-matrix-table">
+          <tr>
+            <th>Count</th><th>Description</th><th>MAC</th><th>Lizenztyp</th><th>Deprecated Typ</th>
+          </tr>
+          <tr>
+            <th></th>
+            <th id="license-filter-description"></th>
+            <th id="license-filter-mac"></th>
+            <th id="license-filter-license-text"></th>
+            <th id="license-filter-deprecated-type"></th>
+          </tr>
+          {% set license_dup_palette = ['#BFDBFE', '#FCA5A5', '#C4B5FD', '#86EFAC', '#F9A8D4', '#A7F3D0', '#FBCFE8', '#99F6E4'] %}
+          {% for r in result.license_matrix_rows %}
+          <tr class="license-matrix-row {% if r.isDuplicate %}dp-duplicate{% endif %}" data-license-text="{{ r.license_text|e }}" data-deprecated-type="{{ r.deprecated_license_text|e }}" data-dup="{{ 'ja' if r.isDuplicate else 'nein' }}" {% if r.isDuplicate %}style="--dp-dup-bg: {{ license_dup_palette[(r.duplicateGroup or 0) % (license_dup_palette|length)] }};"{% endif %}>
+            <td>{{ r.count }}</td><td>{{ r.description }}</td><td>{{ r.mac }}</td>
+            <td>{{ r.license_text }}</td>
+            <td>{{ r.deprecated_license_text }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    {% elif result.xml_kind == 'performancecsv' %}
+    <div class="section-jump">
+      <a href="#sec-perf-overview">Übersicht</a>
+      <a href="#sec-perf-modalities">Modalitäten</a>
+      <a href="#sec-perf-hangings">Hangings</a>
+      <a href="#sec-perf-users">User</a>
+      <a href="#sec-perf-details">Details</a>
+    </div>
+
+    <div class="card" id="sec-perf-overview">
+      <h2>Performance-Auswertung: {{ filename }}</h2>
+      {% if result.missing_headers %}
+      <p class="error">Hinweis: Folgende erwartete Spalten fehlen: {{ result.missing_headers|join(', ') }}</p>
+      {% endif %}
+      <div class="stats">
+        <div class="stat"><div class="k">Messungen</div><div class="v">{{ result.performance_summary.rows_total }}</div></div>
+        <div class="stat"><div class="k">User</div><div class="v">{{ result.performance_summary.users_total }}</div></div>
+        <div class="stat"><div class="k">Modalitäten</div><div class="v">{{ result.performance_summary.modalities_total }}</div></div>
+        <div class="stat"><div class="k">Hangings</div><div class="v">{{ result.performance_summary.hanging_total }}</div></div>
+        <div class="stat"><div class="k">mit Priors</div><div class="v">{{ result.performance_summary.prior_count }}</div></div>
+        <div class="stat"><div class="k">nicht initial gehängt</div><div class="v">{{ result.performance_summary.not_hung_count }}</div></div>
+        <div class="stat"><div class="k">langsame Messungen</div><div class="v">{{ result.performance_summary.slow_count }}</div></div>
+        <div class="stat"><div class="k">Zeitraum</div><div class="v" style="font-size:15px;">{{ result.performance_summary.date_min }}{% if result.performance_summary.date_max %}<br>{{ result.performance_summary.date_max }}{% endif %}</div></div>
+        <div class="stat"><div class="k">First Display Ø / {{ result.performance_percentile_label }}</div><div class="v">{{ result.performance_summary.first_avg or '-' }} / {{ result.performance_summary.first_p90 or '-' }}</div></div>
+        <div class="stat"><div class="k">Full Study Ø / {{ result.performance_percentile_label }}</div><div class="v">{{ result.performance_summary.full_avg or '-' }} / {{ result.performance_summary.full_p90 or '-' }}</div></div>
+        <div class="stat"><div class="k">CFind Ø</div><div class="v">{{ result.performance_summary.cfind_avg or '-' }}</div></div>
+        <div class="stat"><div class="k">Bandwidth Ø</div><div class="v">{{ result.performance_summary.bandwidth_avg or '-' }}</div></div>
+      </div>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">
+        Schwellen für <strong>langsam</strong>: First Display ≥ 10 s oder Full Study ≥ 30 s. CSV-Encoding erkannt: {{ result.encoding }}, Trennzeichen: <code>{{ result.delimiter }}</code>.
+      </p>
+    </div>
+
+    <div class="card" id="sec-perf-modalities">
+      <div class="h2-row">
+        <h2>Performance nach Modalität (<span>{{ result.performance_modalities|length }}</span>)</h2>
+        <span class="perf-p90-hint">{{ result.performance_percentile_hint }}</span>
+      </div>
+      <div class="table-wrap">
+        <table id="performance-modalities-table">
+          <tr><th>Modalität</th><th>Anzahl</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          {% for m in result.performance_modalities %}
+          <tr>
+            <td>{{ m.modality }}</td><td>{{ m.count }}</td><td>{{ m.firstAvg or '-' }}</td><td>{{ m.firstP90 or '-' }}</td><td>{{ m.fullAvg or '-' }}</td><td>{{ m.fullP90 or '-' }}</td><td>{{ m.notHungCount }}</td><td>{{ m.priorCount }}</td><td>{{ m.slowCount }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-perf-hangings">
+      <h2>Performance nach Hanging (<span>{{ result.performance_hangings|length }}</span>)</h2>
+      <div class="table-wrap">
+        <table id="performance-hangings-table">
+          <tr><th>Hanging</th><th>Anzahl</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          {% for h in result.performance_hangings %}
+          <tr>
+            <td>{{ h.hanging }}</td><td>{{ h.count }}</td><td>{{ h.firstAvg or '-' }}</td><td>{{ h.firstP90 or '-' }}</td><td>{{ h.fullAvg or '-' }}</td><td>{{ h.fullP90 or '-' }}</td><td>{{ h.notHungCount }}</td><td>{{ h.priorCount }}</td><td>{{ h.slowCount }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-perf-users">
+      <h2>Performance nach User (<span>{{ result.performance_users|length }}</span>)</h2>
+      <div class="table-wrap">
+        <table id="performance-users-table">
+          <tr><th>User</th><th>Anzahl</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          {% for u in result.performance_users %}
+          <tr>
+            <td>{{ u.user }}</td><td>{{ u.count }}</td><td>{{ u.firstAvg or '-' }}</td><td>{{ u.firstP90 or '-' }}</td><td>{{ u.fullAvg or '-' }}</td><td>{{ u.fullP90 or '-' }}</td><td>{{ u.notHungCount }}</td><td>{{ u.priorCount }}</td><td>{{ u.slowCount }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-perf-details">
+      <h2>Performance Details (<span id="performance-visible-count">{{ result.performance_rows|length }}</span>/{{ result.performance_rows|length }})</h2>
+      <div class="toolbar">
+        <button type="button" id="performance-slow-toggle" class="toggle-btn">Nur langsame anzeigen</button>
+        <input type="text" id="performance-search" class="search-input" placeholder="Performance suchen (User, Hanging, Study UID, Modalität ...)" />
+        <select id="performance-modality-filter" class="search-input"><option value="">Modalität: alle</option>{% for v in result.performance_filters.modalities %}<option value="{{ v|e }}">{{ v }}</option>{% endfor %}</select>
+        <select id="performance-hangup-filter" class="search-input"><option value="">Hangup Type: alle</option>{% for v in result.performance_filters.hangup_types %}<option value="{{ v|e }}">{{ v }}</option>{% endfor %}</select>
+        <select id="performance-user-filter" class="search-input"><option value="">User: alle</option>{% for v in result.performance_filters.users %}<option value="{{ v|e }}">{{ v }}</option>{% endfor %}</select>
+      </div>
+      <div class="table-wrap">
+        <table id="performance-table">
+          <tr><th>Start Date</th><th>User</th><th>Modality</th><th>Object count</th><th>Prior</th><th>First Display</th><th>Full Study</th><th>CFind</th><th>Bandwidth</th><th>Hangup Type</th><th>Hanging</th><th>Study Instance UID</th><th>Base Study</th></tr>
+          {% for r in result.performance_rows %}
+          <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}">
+            <td>{{ r.startDate }}</td>
+            <td>{{ r.user }}</td>
+            <td>{{ r.modality }}</td>
+            <td>{{ r.objectCount }}</td>
+            <td>{{ r.prior }}</td>
+            <td title="{{ r.firstDisplayRaw }} ms">{{ r.firstDisplaySec or r.firstDisplayRaw }}</td>
+            <td title="{{ r.fullStudyRaw }} ms">{{ r.fullStudySec or r.fullStudyRaw }}</td>
+            <td title="{{ r.cfindRaw }} ms">{{ r.cfindSec or r.cfindRaw }}</td>
+            <td>{{ r.bandwidth }}</td>
+            <td>{{ r.hangupType }}</td>
+            <td>{{ r.hanging }}</td>
+            <td>{{ r.studyInstanceUid }}</td>
+            <td>{{ r.baseStudy }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="section-jump">
+      <a href="#sec-overview">Übersicht</a>
+      <a href="#sec-archives">Archive</a>
+      <a href="#sec-store">Speichern</a>
+      <a href="#sec-scripts">Scripts</a>
+      <a href="#sec-worklist">AL Standard</a>
+      <a href="#sec-worklist-scheduled">AL Geplant</a>
+      <a href="#sec-import-workflows">Import Workflows</a>
+      <a href="#sec-export-workflows">Export Workflows</a>
+      <a href="#sec-mcs">Media Creation Server</a>
+      <a href="#sec-dicom-printers-mcs">DICOM Printer</a>
+      <a href="#sec-roles">Rollen</a>
+      <a href="#sec-permissions">Berechtigungen</a>
+      <a href="#sec-hanging-condition-sets">Bedingungssets</a>
+      <a href="#sec-hanging">Hangingprotokolle</a>
+      <a href="#sec-user-bundles">Profile</a>
+      <a href="#sec-workstations-license">Workstations Lizenzen</a>
+      <a href="#sec-workstations">Workstations</a>
+    </div>
+
+    <div class="card" id="sec-overview">
+      <h2>Übersicht: {{ filename }}</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Archive</div><div class="v">{{ result.archives|length }}</div></div>
+        <div class="stat"><div class="k">Sendeziele</div><div class="v">{{ result.dicom_endpoints|length }}</div></div>
+        <div class="stat"><div class="k">AL Standard</div><div class="v">{{ result.worklist_bundles|length }}</div></div>
+        <div class="stat"><div class="k">AL Geplant</div><div class="v">{{ result.scheduled_worklist_bundles|length }}</div></div>
+        <div class="stat"><div class="k">Profile</div><div class="v">{{ result.user_worklist_stats.owners_total }}</div></div>
+        <div class="stat"><div class="k">Import Workflows</div><div class="v">{{ result.import_workflows|length }}</div></div>
+        <div class="stat"><div class="k">Export Workflows</div><div class="v">{{ result.export_workflows|length }}</div></div>
+        <div class="stat"><div class="k">Media Creation Server</div><div class="v">{{ result.media_creation_servers|length }}</div></div>
+        <div class="stat"><div class="k">DICOM Printer</div><div class="v">{{ result.dicom_printers_by_mcs|length }}</div></div>
+        <div class="stat"><div class="k">Scripts</div><div class="v">{{ result.scripts|length }}</div></div>
+        <div class="stat"><div class="k">Hangingprotokolle (deaktiviert: {{ result.hanging_stats.inactive_count }})</div><div class="v">{{ result.hanging_protocols|length }}</div></div>
+        <div class="stat"><div class="k">Rollenanzahl</div><div class="v">{{ result.enterprise_roles|length }}</div></div>
+        <div class="stat"><div class="k">Workstations</div><div class="v">{{ result.workstation_stats.devices_total }}</div></div>
+        <div class="stat"><div class="k">Alte Workstations</div><div class="v">{{ result.workstation_stats.stale_devices_total }}</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="sec-archives">
+      <h2>Archive (<span id="archive-visible-count">{{ result.archives|length }}</span>/{{ result.archives|length }}) <span class="dup-hint">Duplikate = gleicher Hintergrund</span></h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th class="sortable-th" data-archive-sort="name">Name <span class="sort-indicator"></span></th><th class="sortable-th" data-archive-sort="role">Rolle <span class="sort-indicator"></span></th><th>Typ</th><th>Host</th><th>Port</th><th class="sortable-th" data-archive-sort="calledAET">CalledAET <span class="sort-indicator"></span></th><th class="sortable-th" data-archive-sort="callingAET">CallingAET <span class="sort-indicator"></span></th><th>CallingAET2</th><th>Secure Connection</th><th>automaticStudyMonitoring</th><th>useCGet</th></tr>
+          <tr class="filter-row"><th><input type="text" id="archive-name-search" class="search-input" placeholder="Name suchen..." /></th><th><select id="archive-role-search" class="search-input"><option value="">Rolle: alle</option></select></th><th></th><th></th><th></th><th><input type="text" id="archive-called-aet-search" class="search-input" placeholder="CalledAET suchen..." /></th><th><input type="text" id="archive-calling-aet-search" class="search-input" placeholder="CallingAET suchen..." /></th><th></th><th></th><th></th><th></th></tr>
+          {% set archive_dup_palette = ['#BFDBFE', '#FCA5A5', '#C4B5FD', '#86EFAC', '#F9A8D4', '#A7F3D0', '#FBCFE8', '#99F6E4'] %}
+          {% for a in result.archives %}
+          <tr class="archive-row {% if a.isDuplicate %}dp-duplicate{% endif %}" data-name="{{ a.name|e }}" data-role="{{ a.role|e }}" data-roles='{{ a.roles|tojson }}' data-calling-aet="{{ a.callingAET|e }}" data-called-aet="{{ a.calledAET|e }}" data-dup="{{ 'ja' if a.isDuplicate else 'nein' }}" {% if a.isDuplicate %}style="--dp-dup-bg: {{ archive_dup_palette[(a.duplicateGroup or 0) % (archive_dup_palette|length)] }};"{% endif %}>
+            <td>{{ a.name }}</td><td>{{ a.role }}</td><td>{{ a.type }}</td><td>{{ a.host }}</td>
+            <td>{{ a.port }}</td><td>{{ a.calledAET }}</td><td>{{ a.callingAET }}</td><td>{{ a.callingAET2 }}</td><td>{{ a.secureConnection }}</td><td>{{ a.automaticStudyMonitoring }}</td><td>{{ a.useCGet }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-store">
+      <h2>Speichern (<span id="store-visible-count">{{ result.dicom_endpoints|length }}</span>/{{ result.dicom_endpoints|length }}) <span class="dup-hint">Duplikate = gleicher Hintergrund</span></h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th class="sortable-th" data-store-sort="description">Description <span class="sort-indicator"></span></th><th class="sortable-th" data-store-sort="role">Rolle <span class="sort-indicator"></span></th><th>Host</th><th>Port</th><th class="sortable-th" data-store-sort="callingAET">CallingAET <span class="sort-indicator"></span></th><th class="sortable-th" data-store-sort="calledAET">CalledAET <span class="sort-indicator"></span></th><th>Secure</th><th>C-MOVE</th><th>close_on_each</th><th>disableDirectImport</th></tr>
+          <tr class="filter-row"><th><input type="text" id="store-description-search" class="search-input" placeholder="Description suchen..." /></th><th><select id="store-role-search" class="search-input"><option value="">Rolle: alle</option></select></th><th></th><th></th><th><input type="text" id="store-calling-aet-search" class="search-input" placeholder="CallingAET suchen..." /></th><th><input type="text" id="store-called-aet-search" class="search-input" placeholder="CalledAET suchen..." /></th><th></th><th></th><th></th><th></th></tr>
+          {% set store_dup_palette = ['#BFDBFE', '#FCA5A5', '#C4B5FD', '#86EFAC', '#F9A8D4', '#A7F3D0', '#FBCFE8', '#99F6E4'] %}
+          {% for e in result.dicom_endpoints %}
+          <tr class="store-row {% if e.isDuplicate %}dp-duplicate{% endif %}" data-description="{{ e.description|e }}" data-role="{{ e.role|e }}" data-roles='{{ e.roles|tojson }}' data-calling-aet="{{ e.callingAET|e }}" data-called-aet="{{ e.calledAET|e }}" data-dup="{{ 'ja' if e.isDuplicate else 'nein' }}" {% if e.isDuplicate %}style="--dp-dup-bg: {{ store_dup_palette[(e.duplicateGroup or 0) % (store_dup_palette|length)] }};"{% endif %}>
+            <td>{{ e.description }}</td><td>{{ e.role }}</td><td>{{ e.host }}</td><td>{{ e.port }}</td>
+            <td>{{ e.callingAET }}</td><td>{{ e.calledAET }}</td><td>{{ e.secure }}</td><td>{{ e.use_cmove }}</td><td>{{ e.close_on_each }}</td><td>{{ e.disableDirectImport }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-scripts">
+      <h2>Scripts ({{ result.scripts|length }})</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th><th>Show in LTA</th><th>Code</th><th>Code anzeigen</th><th>Icon</th><th>SVG Vorschau</th><th>Download</th></tr>
+          {% for s in result.scripts %}
+          <tr>
+            <td>{{ s.name }}</td>
+            <td>{{ s.showInLTA }}</td>
+            <td>{{ "ja" if s.hasCode else "nein" }}</td>
+            <td>
+              {% if s.hasCode %}
+                <button type="button" class="code-btn script-code-open" data-script-name="{{ s.name|e }}" data-script-code='{{ s.fullCode|tojson }}'>Code öffnen</button>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ s.icon }}</td>
+            <td>
+              {% if s.svgPreviewDataUri %}
+                <img src="{{ s.svgPreviewDataUri }}" alt="{{ s.icon or s.name }}" style="width:24px;height:24px;object-fit:contain;display:block;" />
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              {% if s.svgPreviewDataUri %}
+                <a href="{{ s.svgPreviewDataUri }}" download="{{ s.svgDownloadName|e }}" class="code-btn">SVG Download</a>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+
+    <div class="card" id="sec-worklist">
+      <h2>Arbeitsliste Standard (<span id="worklist-visible-count">{{ result.worklist_bundles|length }}</span>)</h2>
+      <div class="table-wrap">
+        <table id="worklist-table">
+          <tr><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Modality</th><th>Zeitraum</th><th>Filter-Name</th><th>SearchType</th></tr>
+          <tr>
+            <th></th><th></th><th id="worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
+          </tr>
+          {% for b in result.worklist_bundles %}
+          <tr class="worklist-row" data-roles="{{ b.roles|e }}">
+            <td>{{ b.title }}</td>
+            <td>{{ b.type }}</td>
+            <td>{{ b.roles }}</td>
+            <td>{{ b.queryNodes }}</td>
+            <td>{{ b.modality }}</td>
+            <td>{{ b.timeframe }}</td>
+            <td>{{ b.filterName }}</td>
+            <td>{{ b.searchType }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-worklist-scheduled">
+      <h2>Arbeitsliste Geplant (<span id="scheduled-worklist-visible-count">{{ result.scheduled_worklist_bundles|length }}</span>)</h2>
+      <div class="table-wrap">
+        <table id="scheduled-worklist-table">
+          <tr><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Geplante Tage</th><th>Owner</th><th>SearchType</th><th>Advanced Filter (Kurz)</th></tr>
+          <tr>
+            <th></th><th></th><th id="scheduled-worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
+          </tr>
+          {% for b in result.scheduled_worklist_bundles %}
+          <tr class="scheduled-worklist-row" data-roles="{{ b.roles|e }}">
+            <td>{{ b.title }}</td>
+            <td>{{ b.type }}</td>
+            <td>{{ b.roles }}</td>
+            <td>{{ b.queryNodes }}</td>
+            <td>{{ b.scheduledDays }}</td>
+            <td>{{ b.ownerName }}</td>
+            <td>{{ b.searchType }}</td>
+            <td>{{ b.advancedFilterSummary }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-import-workflows">
+      <h2>Import Workflows (<span id="iw-visible-count">{{ result.import_workflows|length }}</span>)</h2>
+      <div class="table-wrap">
+        <table id="import-workflows-table">
+          <tr>
+            <th>Name</th><th>Type</th><th>Rollen</th><th>Enabled</th><th>includeInContextMenu</th>
+            {% for col in result.import_workflow_columns %}<th title="{{ col }}">{{ result.import_workflow_column_labels.get(col, col) }}</th>{% endfor %}
+          </tr>
+          <tr>
+            <th id="iw-name-filter-host"></th><th id="iw-type-filter-host"></th><th id="iw-role-filter-host"></th><th id="iw-enabled-filter-host"></th><th></th>
+            {% for col in result.import_workflow_columns %}<th></th>{% endfor %}
+          </tr>
+          {% for w in result.import_workflows %}
+          <tr class="iw-row" data-roles="{{ w.roles|e }}">
+            <td>{{ w.name }}</td><td>{{ w.type }}</td><td>{{ w.roles }}</td><td>{{ w.enabled }}</td><td>{{ w.includeInContextMenu }}</td>
+            {% for col in result.import_workflow_columns %}<td>{{ w.props.get(col, '') }}</td>{% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-export-workflows">
+      <h2>Export Workflows (<span id="ew-visible-count">{{ result.export_workflows|length }}</span>)</h2>
+      <div class="table-wrap">
+        <table id="export-workflows-table">
+          <tr>
+            <th>Name</th><th>Type</th><th>Rollen</th><th>Enabled</th><th>includeInContextMenu</th>
+            {% for col in result.export_workflow_columns %}<th title="{{ col }}">{{ result.export_workflow_column_labels.get(col, col) }}</th>{% endfor %}
+          </tr>
+          <tr>
+            <th id="ew-name-filter-host"></th><th id="ew-type-filter-host"></th><th id="ew-role-filter-host"></th><th id="ew-enabled-filter-host"></th><th></th>
+            {% for col in result.export_workflow_columns %}<th></th>{% endfor %}
+          </tr>
+          {% for w in result.export_workflows %}
+          <tr class="ew-row" data-roles="{{ w.roles|e }}">
+            <td>{{ w.name }}</td><td>{{ w.type }}</td><td>{{ w.roles }}</td><td>{{ w.enabled }}</td><td>{{ w.includeInContextMenu }}</td>
+            {% for col in result.export_workflow_columns %}<td>{{ w.props.get(col, '') }}</td>{% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-mcs">
+      <h2>Media Creation Server ({{ result.media_creation_servers|length }})</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Name</th><th>Host</th><th>Port</th><th>Called AET</th><th>use_cmove</th><th>notSendImages</th><th>medium</th></tr>
+          {% for s in result.media_creation_servers %}
+          <tr>
+            <td>{{ s.name }}</td><td>{{ s.host }}</td><td>{{ s.port }}</td><td>{{ s.calledAET }}</td><td>{{ s.use_cmove }}</td><td>{{ s.notSendImages }}</td><td>{{ s.medium }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-dicom-printers-mcs">
+      <h2>DICOM Printer ({{ result.dicom_printers_by_mcs|length }}) <span class="dup-hint">Duplikate = gleicher Hintergrund</span></h2>
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Media Creation Server</th><th>Host</th><th>Port</th><th>Called AET</th><th>Calling AET</th>
+            <th>destination</th><th>resolution</th><th>media</th><th>format</th>
+            <th>color</th><th>annotation</th><th>presentation_lut</th><th>overlay</th>
+          </tr>
+          {% set dp_dup_palette = ['#BFDBFE', '#FCA5A5', '#C4B5FD', '#86EFAC', '#F9A8D4', '#A7F3D0', '#FBCFE8', '#99F6E4'] %}
+          {% for p in result.dicom_printers_by_mcs %}
+          <tr class="{% if p.isDuplicate %}dp-duplicate{% endif %}" {% if p.isDuplicate %}style="--dp-dup-bg: {{ dp_dup_palette[(p.duplicateGroup or 0) % (dp_dup_palette|length)] }};"{% endif %}>
+            <td>{{ p.media_creation_server }}</td><td>{{ p.host }}</td><td>{{ p.port }}</td><td>{{ p.calledAET }}</td><td>{{ p.callingAET }}</td>
+            <td>{{ p.destination }}</td><td>{{ p.resolution }}</td><td>{{ p.media }}</td><td>{{ p.format }}</td>
+            <td>{{ p.color }}</td><td>{{ p.annotation }}</td><td>{{ p.presentation_lut }}</td><td>{{ p.overlay }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-roles">
+      <h2>Rollen unter Enterprise</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Pfad</th><th>Tiefe</th><th>Items</th></tr>
+          {% for r in result.enterprise_roles %}
+          <tr><td>{{ r.path }}</td><td>{{ r.depth }}</td><td>{{ r.items }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-permissions">
+      <h2>Berechtigungen (Baumansicht) ({{ result.enterprise_permission_rows|length }})</h2>
+      <div class="toolbar">
+        <select id="perm-role-filter" class="select-filter">
+          {% for rp in result.enterprise_permission_roles %}
+            <option value="{{ rp }}">{{ rp }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" id="perm-export-excel" class="code-btn">Export</button>
+        <input type="text" id="perm-search" class="search-input" placeholder="Filtern (deutsche Berechtigung, Key...)" />
+      </div>
+      <div class="table-wrap">
+        <div id="perm-tree-wrap" class="perm-tree-wrap"></div>
+      </div>
+    </div>
+
+    <div class="card" id="sec-hanging-condition-sets">
+      <h2>Bedingungssets ({{ result.hanging_condition_sets|length }}) <span class="dup-hint">Duplikate = gleicher Hintergrund</span></h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Descriptor-ID</th><th>Name</th><th>Bedingung</th><th>DICOM-Tag</th><th>Beschreibung</th><th>Wert</th><th>Download</th></tr>
+          {% set bset_dup_palette = ['#BFDBFE', '#FCA5A5', '#C4B5FD', '#86EFAC', '#F9A8D4', '#A7F3D0', '#FBCFE8', '#99F6E4'] %}
+          {% for r in result.hanging_condition_sets %}
+          <tr class="{% if r.isDuplicateName %}dp-duplicate{% endif %}" {% if r.isDuplicateName %}style="--dp-dup-bg: {{ bset_dup_palette[(r.duplicateNameGroup or 0) % (bset_dup_palette|length)] }};"{% endif %}>
+            <td>{{ r.descriptorId }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.condition }}</td>
+            <td>{{ r.dicomTagNumber }}</td>
+            <td>{{ r.dicomTagDescription }}</td>
+            <td>{{ r.value }}</td>
+            <td>{% if r.agdDataUri %}<a href="{{ r.agdDataUri }}" download="{{ r.agdDownloadName|e }}" class="code-btn">AGD</a>{% else %}-{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-hanging">
+      <h2>Hanging-Protokolle (<span id="hp-visible-count">{{ result.hanging_protocols|length }}</span>, deaktiviert: {{ result.hanging_stats.inactive_count }})</h2>
+      <div class="toolbar">
+        <button type="button" id="hp-toggle-inactive" class="toggle-btn">Deaktivierte ausblenden</button>
+        <input type="text" id="hp-search" class="search-input" placeholder="Hanging-Protokoll suchen (Name, erstellt/geändert von ...)" />
+      </div>
+      <div class="table-wrap">
+        <table id="hp-table">
+          <tr><th>Name</th><th>Aktiv</th><th>Priors</th><th>Priorität</th><th>Use Priors</th><th>Erstellt von</th><th>Geändert von</th><th>Display-Deskriptoren</th><th>Download</th></tr>
+          {% for h in result.hanging_protocols %}
+          <tr class="hp-row {% if (h.active or '')|lower != 'true' %}hp-inactive{% endif %}">
+            <td><a href="#" data-hanging-link="{{ h.id|urlencode }}" target="_blank" rel="noopener" class="code-btn">{{ h.name }}</a></td>
+            <td>{{ h.active }}</td>
+            <td>{{ h.numberOfPriors }}</td>
+            <td>{{ h.priority }}</td>
+            <td>{{ h.usePriors }}</td>
+            <td>{{ h.createdBy }}</td>
+            <td>{{ h.lastModifiedBy }}</td>
+            <td>{{ h.displayDescriptorNames }}</td>
+            <td>
+              {% if h.aghDataUri %}
+                <a href="{{ h.aghDataUri }}" download="{{ h.aghDownloadName|e }}" class="code-btn">AGH</a>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-user-bundles">
+      <h2>Profile (<span id="user-bundle-visible-count">{{ result.user_worklist_profiles|length }}</span>/{{ result.user_worklist_profiles|length }}, Bundles: {{ result.user_worklist_stats.valid_bundles_total }})</h2>
+      <div class="toolbar">
+        <input type="text" id="user-bundle-search" class="search-input" placeholder="Profile suchen (Owner, Titel, Rolle, Query Node ...)">
+      </div>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">
+        <strong>Anzahl Bundles</strong> = Anzahl der gefundenen <code>listtext.lta.worklist.library.user.bundles#...</code>-Gruppen pro Owner.
+        Das ist also nicht die Anzahl unterschiedlicher Benutzer, sondern wie viele gespeicherte USER-Worklist-Bundles diesem Owner zugeordnet sind.
+        {% if result.user_worklist_stats.ignored_bundles_total %}
+          Ignoriert: {{ result.user_worklist_stats.ignored_bundles_total }} unvollständiges Fragment ohne Owner/Titel.
+        {% endif %}
+      </p>
+      <div class="table-wrap">
+        <table id="user-bundles-table">
+          <tr><th>Owner-ID</th><th>Owner-Name</th><th>Anzahl Bundles</th><th>Suchtypen</th><th>Query Nodes</th><th>Modalitäten</th><th>Zeiträume</th><th>Rollen</th><th>Titel (Auszug)</th></tr>
+          {% for u in result.user_worklist_profiles %}
+          <tr class="user-bundle-row" data-search="{{ u.searchText|e }}">
+            <td>{{ u.ownerId }}</td>
+            <td>{{ u.ownerName }}</td>
+            <td>{{ u.bundleCount }}</td>
+            <td>{{ u.searchTypes }}</td>
+            <td>{{ u.queryNodes }}</td>
+            <td>{{ u.modality }}</td>
+            <td>{{ u.timeframe }}</td>
+            <td>{{ u.roles }}</td>
+            <td title="{{ u.allTitles|e }}">{{ u.titleExcerpt }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-workstations-license">
+      <h2>Workstations Lizenzen (<span id="ws-license-visible-count">{{ result.workstation_license_rows|length }}</span> / Roh: {{ result.workstation_stats.raw_devices_total }})</h2>
+      <div class="toolbar">
+        <button type="button" id="ws-license-dup-toggle" class="toggle-btn">Nur Duplikate anzeigen</button>
+      </div>
+      <div class="table-wrap">
+        <table id="ws-license-table">
+          <tr><th>Computer</th><th>AET</th><th>MAC</th>{% for lic in result.workstation_license_columns %}<th>{{ lic }}</th>{% endfor %}</tr>
+          <tr>
+            <th id="ws-license-filter-computer"></th>
+            <th id="ws-license-filter-aet"></th>
+            <th id="ws-license-filter-mac"></th>
+            {% for lic in result.workstation_license_columns %}
+            <th>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;">
+                <input type="checkbox" class="ws-license-col-check" data-lic-index="{{ loop.index0 }}">
+                ja
+              </label>
+            </th>
+            {% endfor %}
+          </tr>
+          {% for d in result.workstation_license_rows %}
+          <tr class="ws-license-row" data-dup="{{ 'ja' if d.hasDuplicate else 'nein' }}" data-raw-count="{{ d.rawCount }}"{% for lic in result.workstation_license_columns %} data-lic-{{ loop.index0 }}="{{ d.licenseFlags.get(lic, 'nein')|e }}"{% endfor %}>
+            <td>{{ d.computerName }}</td>
+            <td>{{ d.configuredAET }}</td>
+            <td class="mac-cell">{{ d.mac }}</td>
+            {% for lic in result.workstation_license_columns %}
+            {% set val = d.licenseFlags.get(lic, 'nein') %}
+            <td class="{{ 'cap-yes' if val != 'nein' else 'cap-no' }}">{{ val }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-workstations">
+      <div class="h2-row">
+        <h2>Workstations Hardware (<span id="ws-visible-count">{{ result.workstation_stats.devices_total }}</span> / Roh: {{ result.workstation_stats.raw_devices_total }})</h2>
+        <span class="old-ws-hint">alte Workstation = Last Updated &gt; 3 Monate von heute</span>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="toggle-old-workstations" class="toggle-btn">Alte Workstations ausblenden</button>
+        <button type="button" id="only-old-workstations" class="toggle-btn">Nur Alte Workstations</button>
+        <button type="button" id="ws-dup-toggle" class="toggle-btn">Nur Duplikate anzeigen</button>
+        <input type="text" id="workstation-search" class="search-input" placeholder="Workstation suchen (Name, IP, MAC, AET, OS ...)" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Computer</th><th>AET</th><th>IP</th><th>MAC</th><th>Betriebssystem</th><th>CPU</th><th>Graphics Adapter</th><th>Monitor</th><th>RAM</th><th>Serial Number</th><th>Software Version</th><th>Last Updated</th><th>Erweiterte Einstellungen</th><th>logging.level</th><th>Install.Container</th><th>Starter.ApplicationType</th><th>Teleradiology</th></tr>
+          <tr>
+            <th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th>
+            <th id="ws-filter-software-version"></th>
+            <th id="ws-filter-last-updated"></th>
+            <th></th>
+            <th id="ws-filter-logging"></th>
+            <th id="ws-filter-install"></th>
+            <th id="ws-filter-app"></th>
+            <th id="ws-filter-teleradiology"></th>
+          </tr>
+          {% for d in result.workstation_devices %}
+          <tr class="ws-row {% if d.isStale %}stale stale-row{% endif %}" data-dup="{{ 'ja' if d.hasDuplicate else 'nein' }}" data-raw-count="{{ d.rawCount }}"
+              data-software-version="{{ d.softwareVersion|e }}"
+              data-last-updated-keys="{{ d.lastUpdatedDateKeys|e }}"
+              data-logging="{{ d.loggingLevel|e }}"
+              data-install="{{ d.installContainer|e }}"
+              data-app="{{ d.applicationType|e }}"
+              data-teleradiology="{{ d.teleradiology|e }}">
+            <td title="{{ d.path|e }}">{{ d.computerName }}</td><td class="aet-tooltip-cell" data-tooltip="{{ d.hardwareXmlTooltip|e }}">{{ d.configuredAET }}</td><td>{{ d.ip }}</td>
+            <td class="mac-cell">{{ d.mac }}</td><td>{{ d.os }}</td><td>{{ d.cpu }}</td><td>{{ d.graphicsAdapter }}</td><td>{{ d.monitor }}</td><td>{{ d.ramSize }}</td><td>{{ d.serialNumber }}</td>
+            <td>{{ d.softwareVersion }}</td><td>{{ d.lastUpdated }}</td><td>{{ d.otherSettings }}</td><td>{{ d.loggingLevel }}</td><td>{{ d.installContainer }}</td><td>{{ d.applicationType }}</td><td>{{ d.teleradiology }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    {% endif %}
+    {% endif %}
+  </div>
+  <div id="script-code-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Script-Code">
+      <div class="modal-head">
+        <span id="script-code-title">Script-Code</span>
+        <div class="modal-actions">
+          <button type="button" id="script-code-copy" class="code-btn">In Zwischenablage</button>
+          <button type="button" id="script-code-close" class="code-btn">Schließen</button>
+        </div>
+      </div>
+      <textarea id="script-code-text" class="modal-code" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="table-preview-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Tabelleninhalt">
+      <div class="modal-head">
+        <span id="table-preview-title">Tabelleninhalt</span>
+        <div class="modal-actions">
+          <button type="button" id="table-preview-copy" class="code-btn">In Zwischenablage</button>
+          <button type="button" id="table-preview-close" class="code-btn">Schließen</button>
+        </div>
+      </div>
+      <textarea id="table-preview-text" class="modal-code" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="pdf-export-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="PDF Export">
+      <div class="modal-head">
+        <span>Export – Tabellen auswählen</span>
+        <div class="modal-actions">
+          <button type="button" id="pdf-select-all" class="code-btn">Alle</button>
+          <button type="button" id="pdf-select-none" class="code-btn">Keine</button>
+          <button type="button" id="pdf-export-run" class="code-btn">PDF erstellen</button>
+          <button type="button" id="excel-export-run" class="code-btn">Excel erstellen</button>
+          <button type="button" id="pdf-export-close" class="code-btn">Schließen</button>
+        </div>
+      </div>
+      <div id="pdf-select-list" class="pdf-select-list"></div>
+    </div>
+  </div>
+
+  <div id="script-access-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="ScriptAccess Code" style="max-width:520px; width:92%; padding:12px;">
+      <div class="modal-head">
+        <strong>ScriptAccess Code</strong>
+        <div class="modal-actions">
+          <button type="button" id="script-access-copy" class="code-btn">In Zwischenablage</button>
+          <button type="button" id="script-access-close" class="code-btn">Schließen</button>
+        </div>
+      </div>
+      <div id="script-access-time" class="muted" style="margin-bottom:8px;"></div>
+      <textarea id="script-access-code" class="modal-code" readonly style="font-size:22px; font-weight:700; letter-spacing:1px; min-height:48px; max-height:64px;"></textarea>
+    </div>
+  </div>
+
+  <div id="xml-tooltip" class="xml-tooltip" aria-hidden="true"></div>
+  <div id="copy-toast" class="copy-toast" aria-hidden="true">Inhalt kopiert</div>
+
+  <script>
+    (function () {
+      function getCookie(name) {
+        const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]+)'));
+        return m ? decodeURIComponent(m[1]) : '';
+      }
+
+      function setCookie(name, value, days) {
+        const d = new Date();
+        d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
+      }
+
+      function appBaseHref() {
+        const p = (window.location.pathname || '/').replace(/\/+$/, '');
+        const basePath = p ? (p + '/') : '/';
+        return window.location.origin + basePath;
+      }
+
+      function appUrl(path) {
+        return new URL(String(path || '').replace(/^\/+/, ''), appBaseHref()).toString();
+      }
+
+      const EXPORT_EXCEL_URL = appUrl('export_excel');
+      const HANGING_CONDITIONS_AGD_URI = {{ (result.hanging_condition_sets_agd_data_uri|default('', true))|tojson if result else '""' }};
+      const HANGING_CONDITIONS_AGD_NAME = {{ (result.hanging_condition_sets_agd_download_name|default('conditions-export.AGD', true))|tojson if result else '"conditions-export.AGD"' }};
+      const EXPORT_SCRIPTS_BUNDLE_URL = appUrl('export_scripts_bundle');
+      const SCRIPT_ACCESS_JSON_URL = appUrl('script_access_code_json');
+
+      Array.from(document.querySelectorAll('[data-app-link]')).forEach(function (a) {
+        const targetPath = a.getAttribute('data-app-link') || '';
+        a.setAttribute('href', appUrl(targetPath));
+      });
+
+      Array.from(document.querySelectorAll('[data-hanging-link]')).forEach(function (a) {
+        const pid = a.getAttribute('data-hanging-link') || '';
+        a.setAttribute('href', appUrl('hanging/' + pid));
+      });
+
+      const scriptAccessBtn = document.getElementById('script-access-open');
+      const scriptAccessModal = document.getElementById('script-access-modal');
+      const scriptAccessCode = document.getElementById('script-access-code');
+      const scriptAccessTime = document.getElementById('script-access-time');
+      const scriptAccessCodes = null;
+      const scriptAccessClose = document.getElementById('script-access-close');
+      const scriptAccessCopy = document.getElementById('script-access-copy');
+      function openScriptAccessModal() {
+        scriptAccessCode.value = 'Lade...';
+        scriptAccessTime.textContent = '';
+        
+        scriptAccessModal.classList.add('show');
+        scriptAccessModal.setAttribute('aria-hidden', 'false');
+        fetch(SCRIPT_ACCESS_JSON_URL)
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            scriptAccessCode.value = data.code || '';
+            scriptAccessTime.textContent = 'Generiert am: ' + (data.generated_at || '');
+            
+            scriptAccessModal.classList.add('show');
+            scriptAccessModal.setAttribute('aria-hidden', 'false');
+          })
+          .catch(function () {
+            scriptAccessCode.value = 'Fehler beim Erzeugen des Codes';
+            scriptAccessTime.textContent = '';
+            
+            scriptAccessModal.classList.add('show');
+            scriptAccessModal.setAttribute('aria-hidden', 'false');
+          });
+      }
+      window.__openScriptAccessModal = openScriptAccessModal;
+
+      document.addEventListener('click', function (e) {
+        const trg = e.target && e.target.closest ? e.target.closest('[data-script-access-trigger="1"]') : null;
+        if (!trg) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.__openScriptAccessModal) window.__openScriptAccessModal();
+      });
+
+      if (scriptAccessBtn && scriptAccessModal && scriptAccessCode && scriptAccessTime && scriptAccessClose && scriptAccessCopy) {
+        function closeScriptAccessModal() {
+          scriptAccessModal.classList.remove('show');
+          scriptAccessModal.setAttribute('aria-hidden', 'true');
+        }
+        scriptAccessBtn.addEventListener('click', openScriptAccessModal);
+        scriptAccessClose.addEventListener('click', closeScriptAccessModal);
+        scriptAccessCopy.addEventListener('click', async function () {
+          try {
+            await navigator.clipboard.writeText(scriptAccessCode.value || '');
+            scriptAccessCopy.textContent = 'Kopiert';
+            setTimeout(function () { scriptAccessCopy.textContent = 'In Zwischenablage'; }, 1200);
+          } catch (_e) {
+            scriptAccessCopy.textContent = 'Kopieren fehlgeschlagen';
+            setTimeout(function () { scriptAccessCopy.textContent = 'In Zwischenablage'; }, 1600);
+          }
+        });
+        scriptAccessModal.addEventListener('click', function (e) {
+          if (e.target === scriptAccessModal) closeScriptAccessModal();
+        });
+
+        // Öffnen läuft zusätzlich über globales Event-Delegation-Fallback oben.
+      }
+
+      const root = document.documentElement;
+      const themeToggle = document.getElementById('theme-toggle');
+
+      function applyTheme(theme) {
+        const normalized = theme === 'dark' ? 'dark' : 'light';
+        root.setAttribute('data-theme', normalized);
+        if (themeToggle) {
+          themeToggle.textContent = normalized === 'dark' ? '☀️ Hell' : '🌙 Dunkel';
+        }
+      }
+
+      applyTheme(getCookie('theme') || root.getAttribute('data-theme') || 'light');
+
+      if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+          const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+          const next = current === 'dark' ? 'light' : 'dark';
+          applyTheme(next);
+          setCookie('theme', next, 365);
+        });
+      }
+
+      const btn = document.getElementById('toggle-old-workstations');
+      const onlyOldBtn = document.getElementById('only-old-workstations');
+      const wsDupBtn = document.getElementById('ws-dup-toggle');
+      const countEl = document.getElementById('ws-visible-count');
+      const searchInput = document.getElementById('workstation-search');
+      const filterHosts = {
+        softwareVersion: document.getElementById('ws-filter-software-version'),
+        lastUpdated: document.getElementById('ws-filter-last-updated'),
+        logging: document.getElementById('ws-filter-logging'),
+        install: document.getElementById('ws-filter-install'),
+        app: document.getElementById('ws-filter-app'),
+        teleradiology: document.getElementById('ws-filter-teleradiology')
+      };
+      const rows = Array.from(document.querySelectorAll('.ws-row'));
+
+      if (btn && onlyOldBtn && wsDupBtn && countEl && searchInput && rows.length
+          && filterHosts.softwareVersion && filterHosts.lastUpdated
+          && filterHosts.logging && filterHosts.install && filterHosts.app && filterHosts.teleradiology) {
+        let hideOld = false;
+        let oldOnly = false;
+        let dupOnly = false;
+        let pendingFilterFrame = null;
+
+        function localDateKey(date) {
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          return y + '-' + m + '-' + d;
+        }
+
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const todayKey = localDateKey(today);
+        const yesterdayKey = localDateKey(yesterday);
+
+        const rowData = rows.map(function (row) {
+          return {
+            row: row,
+            isOld: row.classList.contains('stale-row'),
+            searchable: (row.innerText || '').toLowerCase(),
+            isDuplicate: (row.getAttribute('data-dup') || '').toLowerCase() === 'ja',
+            softwareVersion: norm(row.getAttribute('data-software-version')).toLowerCase(),
+            lastUpdatedKeys: (row.getAttribute('data-last-updated-keys') || '').split(/\s+/).filter(Boolean),
+            logging: norm(row.getAttribute('data-logging')),
+            install: norm(row.getAttribute('data-install')),
+            app: norm(row.getAttribute('data-app')),
+            teleradiology: norm(row.getAttribute('data-teleradiology')),
+          };
+        });
+
+        function norm(v) {
+          return (v || '').trim();
+        }
+
+        function buildSelect(label, dataKey, hostEl) {
+          const values = Array.from(new Set(rows.map(function (r) {
+            return norm(r.getAttribute(dataKey));
+          }))).sort(function (a, b) { return a.localeCompare(b, 'de'); });
+
+          const sel = document.createElement('select');
+          sel.className = 'search-input';
+          sel.style.minWidth = '140px';
+          sel.style.maxWidth = '220px';
+          sel.style.width = '100%';
+          sel.style.fontSize = '12px';
+
+          const optAll = document.createElement('option');
+          optAll.value = '';
+          optAll.textContent = label + ': alle';
+          sel.appendChild(optAll);
+
+          values.forEach(function (v) {
+            const o = document.createElement('option');
+            o.value = v;
+            o.textContent = label + ': ' + (v || '(leer)');
+            sel.appendChild(o);
+          });
+
+          hostEl.appendChild(sel);
+          return { key: dataKey, el: sel };
+        }
+
+        function buildSoftwareVersionInput(hostEl) {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'search-input';
+          input.placeholder = 'Version / !Version';
+          input.style.minWidth = '150px';
+          input.style.maxWidth = '220px';
+          input.style.width = '100%';
+          input.style.fontSize = '12px';
+          hostEl.appendChild(input);
+          return input;
+        }
+
+        function buildLastUpdatedSelect(hostEl) {
+          const sel = document.createElement('select');
+          sel.className = 'search-input';
+          sel.style.minWidth = '130px';
+          sel.style.maxWidth = '180px';
+          sel.style.width = '100%';
+          sel.style.fontSize = '12px';
+
+          [
+            ['', 'Last Updated: alle'],
+            ['today', 'Last Updated: heute'],
+            ['yesterday', 'Last Updated: gestern']
+          ].forEach(function (item) {
+            const opt = document.createElement('option');
+            opt.value = item[0];
+            opt.textContent = item[1];
+            sel.appendChild(opt);
+          });
+
+          hostEl.appendChild(sel);
+          return sel;
+        }
+
+        const softwareVersionInput = buildSoftwareVersionInput(filterHosts.softwareVersion);
+        const lastUpdatedFilter = buildLastUpdatedSelect(filterHosts.lastUpdated);
+
+        const valueFilters = [
+          buildSelect('logging.level', 'data-logging', filterHosts.logging),
+          buildSelect('Install.Container', 'data-install', filterHosts.install),
+          buildSelect('Starter.ApplicationType', 'data-app', filterHosts.app),
+          buildSelect('Teleradiology', 'data-teleradiology', filterHosts.teleradiology)
+        ];
+
+        function applyFilters() {
+          if (pendingFilterFrame) {
+            cancelAnimationFrame(pendingFilterFrame);
+          }
+
+          pendingFilterFrame = requestAnimationFrame(function () {
+            const q = searchInput.value.trim().toLowerCase();
+            const softwareVersionFilter = softwareVersionInput.value.trim().toLowerCase();
+            const softwareVersionExclude = softwareVersionFilter.startsWith('!');
+            const softwareVersionNeedle = softwareVersionExclude
+              ? softwareVersionFilter.slice(1).trim()
+              : softwareVersionFilter;
+            const selected = {
+              logging: norm(valueFilters[0].el.value),
+              install: norm(valueFilters[1].el.value),
+              app: norm(valueFilters[2].el.value),
+              teleradiology: norm(valueFilters[3].el.value),
+            };
+            const lastUpdatedMode = norm(lastUpdatedFilter.value);
+
+            let visible = 0;
+            rowData.forEach(function (d) {
+              const matchesSearch = !q || d.searchable.includes(q);
+              const matchesOldFilter = oldOnly ? d.isOld : !(hideOld && d.isOld);
+              const matchesSoftwareVersion = !softwareVersionNeedle
+                || (softwareVersionExclude
+                  ? !d.softwareVersion.includes(softwareVersionNeedle)
+                  : d.softwareVersion.includes(softwareVersionNeedle));
+              const matchesLastUpdated = !lastUpdatedMode
+                || (lastUpdatedMode === 'today' && d.lastUpdatedKeys.includes(todayKey))
+                || (lastUpdatedMode === 'yesterday' && d.lastUpdatedKeys.includes(yesterdayKey));
+              const matchesValueFilters =
+                (!selected.logging || d.logging === selected.logging) &&
+                (!selected.install || d.install === selected.install) &&
+                (!selected.app || d.app === selected.app) &&
+                (!selected.teleradiology || d.teleradiology === selected.teleradiology);
+              const matchesDup = !dupOnly || d.isDuplicate;
+
+              const show = (matchesSearch && matchesOldFilter && matchesSoftwareVersion && matchesLastUpdated && matchesValueFilters && matchesDup);
+              d.row.style.display = show ? '' : 'none';
+              if (show) visible += 1;
+            });
+
+            countEl.textContent = String(visible);
+            pendingFilterFrame = null;
+          });
+        }
+
+        btn.addEventListener('click', function () {
+          hideOld = !hideOld;
+          if (hideOld) {
+            oldOnly = false;
+            onlyOldBtn.textContent = 'Nur Alte Workstations';
+          }
+          btn.textContent = hideOld ? 'Alte Workstations einblenden' : 'Alte Workstations ausblenden';
+          applyFilters();
+        });
+
+        onlyOldBtn.addEventListener('click', function () {
+          oldOnly = !oldOnly;
+          if (oldOnly) {
+            hideOld = false;
+            btn.textContent = 'Alte Workstations ausblenden';
+          }
+          onlyOldBtn.textContent = oldOnly ? 'Alle Workstations anzeigen' : 'Nur Alte Workstations';
+          applyFilters();
+        });
+
+        wsDupBtn.addEventListener('click', function () {
+          dupOnly = !dupOnly;
+          wsDupBtn.textContent = dupOnly ? 'Alle anzeigen' : 'Nur Duplikate anzeigen';
+          applyFilters();
+        });
+
+        let searchDebounce = null;
+        searchInput.addEventListener('input', function () {
+          if (searchDebounce) clearTimeout(searchDebounce);
+          searchDebounce = setTimeout(applyFilters, 120);
+        });
+        softwareVersionInput.addEventListener('input', function () {
+          if (searchDebounce) clearTimeout(searchDebounce);
+          searchDebounce = setTimeout(applyFilters, 120);
+        });
+        valueFilters.forEach(function (vf) {
+          vf.el.addEventListener('change', applyFilters);
+        });
+        lastUpdatedFilter.addEventListener('change', applyFilters);
+        applyFilters();
+      }
+
+      const modal = document.getElementById('script-code-modal');
+      const modalTitle = document.getElementById('script-code-title');
+      const modalText = document.getElementById('script-code-text');
+      const modalClose = document.getElementById('script-code-close');
+      const modalCopy = document.getElementById('script-code-copy');
+      const openButtons = Array.from(document.querySelectorAll('.script-code-open'));
+
+      function closeModal() {
+        if (!modal) return;
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      if (modal && modalTitle && modalText && modalClose && modalCopy && openButtons.length) {
+        openButtons.forEach(function (btnEl) {
+          btnEl.addEventListener('click', function () {
+            const name = btnEl.getAttribute('data-script-name') || 'Unbekanntes Script';
+            const raw = btnEl.getAttribute('data-script-code') || '""';
+            let code = '';
+            try {
+              code = JSON.parse(raw);
+            } catch (e) {
+              code = '';
+            }
+            modalTitle.textContent = 'Script-Code: ' + name;
+            modalText.value = code;
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+          });
+        });
+
+        modalClose.addEventListener('click', closeModal);
+
+        modalCopy.addEventListener('click', async function () {
+          try {
+            await navigator.clipboard.writeText(modalText.value || '');
+            modalCopy.textContent = 'Kopiert';
+            setTimeout(function () { modalCopy.textContent = 'In Zwischenablage'; }, 1200);
+          } catch (e) {
+            modalCopy.textContent = 'Kopieren fehlgeschlagen';
+            setTimeout(function () { modalCopy.textContent = 'In Zwischenablage'; }, 1600);
+          }
+        });
+
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) closeModal();
+        });
+      }
+
+      const tableModal = document.getElementById('table-preview-modal');
+      const tableModalTitle = document.getElementById('table-preview-title');
+      const tableModalText = document.getElementById('table-preview-text');
+      const tableModalClose = document.getElementById('table-preview-close');
+      const tableModalCopy = document.getElementById('table-preview-copy');
+      let currentPreviewTable = null;
+
+      function closeTableModal() {
+        if (!tableModal) return;
+        tableModal.classList.remove('show');
+        tableModal.setAttribute('aria-hidden', 'true');
+      }
+
+      function isVisibleRow(row) {
+        return row.style.display !== 'none';
+      }
+
+      function tableToEmailText(tableEl) {
+        const trList = Array.from(tableEl.querySelectorAll('tr')).filter(isVisibleRow);
+        const headerRow = trList.find(function (row) {
+          return row.querySelectorAll('th').length > 0 && !row.querySelector('select, input, button');
+        });
+
+        const bodyRows = trList.filter(function (row) {
+          return row.querySelectorAll('td').length > 0;
+        });
+
+        const rows = [];
+        if (headerRow) {
+          rows.push(Array.from(headerRow.querySelectorAll('th,td')).map(function (c) {
+            return (c.innerText || '').replace(/\s+/g, ' ').trim();
+          }));
+        }
+
+        bodyRows.forEach(function (row) {
+          rows.push(Array.from(row.querySelectorAll('th,td')).map(function (c) {
+            return (c.innerText || '').replace(/\s+/g, ' ').trim();
+          }));
+        });
+
+        const cleanRows = rows.filter(function (r) { return r.length > 0; });
+
+        if (cleanRows.length < 2) {
+          return cleanRows.map(function (r, idx) {
+            return (idx + 1) + ') ' + r.join(' – ');
+          }).join('\n\n');
+        }
+
+        const headers = cleanRows[0];
+        const body = cleanRows.slice(1);
+
+        return body.map(function (r, idx) {
+          const lines = headers.map(function (h, i) {
+            return '• ' + h + ': ' + (r[i] || '');
+          }).join('\n');
+          return (idx + 1) + ')\n' + lines;
+        }).join('\n\n');
+      }
+
+      function tableToEmailHtml(tableEl, titleText) {
+        const clone = tableEl.cloneNode(true);
+        clone.querySelectorAll('tr').forEach(function (row) {
+          const hasFilterControls = !!row.querySelector('select, input, button');
+          const hidden = row.style && row.style.display === 'none';
+          if (hasFilterControls || hidden) {
+            row.remove();
+          }
+        });
+        clone.style.borderCollapse = 'collapse';
+        clone.style.width = '100%';
+        clone.style.fontFamily = 'Arial, sans-serif';
+        clone.style.fontSize = '12px';
+
+        clone.querySelectorAll('th,td').forEach(function (cell) {
+          cell.style.border = '1px solid #cfd4d9';
+          cell.style.padding = '6px 8px';
+          cell.style.verticalAlign = 'top';
+          if (cell.tagName === 'TH') {
+            cell.style.background = '#f3f5f7';
+            cell.style.fontWeight = '700';
+          }
+        });
+
+        return '<div style="font-family:Arial,sans-serif;font-size:12px">'
+          + '<div style="font-weight:700;margin:0 0 8px 0">' + titleText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+          + clone.outerHTML
+          + '</div>';
+      }
+
+      async function exportVisibleTableToExcel(tableEl, titleText, btnEl) {
+        const old = btnEl ? btnEl.textContent : '';
+        if (btnEl) btnEl.textContent = 'Erstelle...';
+        try {
+          const rows = [];
+          tableEl.querySelectorAll('tr').forEach(function (tr) {
+            if (tr.style && tr.style.display === 'none') return;
+            if (tr.querySelector('select, input, button')) return;
+            const cells = Array.from(tr.querySelectorAll('th,td'));
+            if (!cells.length) return;
+            rows.push(cells.map(function (c) { return (c.innerText || '').trim(); }));
+          });
+
+          if (!rows.length) throw new Error('Keine sichtbaren Zeilen');
+
+          const payload = {
+            filename: (titleText || 'export').replace(/[^A-Za-z0-9._-]+/g, '_') + '.xlsx',
+            sheets: [{
+              title: titleText || 'Export',
+              headers: rows[0],
+              rows: rows.slice(1),
+            }]
+          };
+
+          const res = await fetch(EXPORT_EXCEL_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) throw new Error('Export fehlgeschlagen');
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = payload.filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+          if (btnEl) btnEl.textContent = 'Fertig';
+        } catch (e) {
+          if (btnEl) btnEl.textContent = 'Fehler';
+        } finally {
+          if (btnEl) setTimeout(function () { btnEl.textContent = old || 'Excel Export'; }, 1300);
+        }
+      }
+
+      const tableWraps = Array.from(document.querySelectorAll('.table-wrap'));
+      tableWraps.forEach(function (wrap) {
+        const table = wrap.querySelector('table');
+        if (!table) return;
+
+        const top = document.createElement('div');
+        top.className = 'table-wrap-top-scroll';
+        const inner = document.createElement('div');
+        inner.className = 'table-wrap-top-scroll-inner';
+        top.appendChild(inner);
+        wrap.parentNode.insertBefore(top, wrap);
+
+        let syncingFromTop = false;
+        let syncingFromBottom = false;
+
+        function syncWidth() {
+          inner.style.width = (table.scrollWidth || wrap.scrollWidth) + 'px';
+        }
+
+        top.addEventListener('scroll', function () {
+          if (syncingFromBottom) return;
+          syncingFromTop = true;
+          wrap.scrollLeft = top.scrollLeft;
+          syncingFromTop = false;
+        });
+
+        wrap.addEventListener('scroll', function () {
+          if (syncingFromTop) return;
+          syncingFromBottom = true;
+          top.scrollLeft = wrap.scrollLeft;
+          syncingFromBottom = false;
+        });
+
+        syncWidth();
+        window.addEventListener('resize', syncWidth);
+      });
+
+      const cards = Array.from(document.querySelectorAll('.card'));
+      cards.forEach(function (card) {
+        const table = card.querySelector('.table-wrap table');
+        const heading = card.querySelector('h2');
+        if (!table || !heading) return;
+
+        const headingText = (heading.childNodes[0] && heading.childNodes[0].textContent ? heading.childNodes[0].textContent : heading.innerText).trim();
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'code-btn';
+        btn.style.marginLeft = '8px';
+        btn.textContent = 'Excel Export';
+
+        btn.addEventListener('click', function () {
+          exportVisibleTableToExcel(table, headingText, btn);
+        });
+
+        if (card.id === 'sec-archives') {
+          const archiveDupFilter = document.createElement('button');
+          archiveDupFilter.type = 'button';
+          archiveDupFilter.id = 'archive-duplicates-only';
+          archiveDupFilter.className = 'toggle-btn';
+          archiveDupFilter.style.marginLeft = '8px';
+          archiveDupFilter.textContent = 'Nur Duplikate anzeigen';
+          heading.appendChild(archiveDupFilter);
+        }
+
+        if (card.id === 'sec-store') {
+          const storeDupFilter = document.createElement('button');
+          storeDupFilter.type = 'button';
+          storeDupFilter.id = 'store-duplicates-only';
+          storeDupFilter.className = 'toggle-btn';
+          storeDupFilter.style.marginLeft = '8px';
+          storeDupFilter.textContent = 'Nur Duplikate anzeigen';
+          heading.appendChild(storeDupFilter);
+        }
+
+        heading.appendChild(btn);
+
+        if (card.id === 'sec-hanging-condition-sets' && HANGING_CONDITIONS_AGD_URI) {
+          const allAgdLink = document.createElement('a');
+          allAgdLink.href = HANGING_CONDITIONS_AGD_URI;
+          allAgdLink.download = HANGING_CONDITIONS_AGD_NAME;
+          allAgdLink.className = 'code-btn';
+          allAgdLink.style.marginLeft = '8px';
+          allAgdLink.textContent = 'AGD Export';
+          heading.appendChild(allAgdLink);
+        }
+
+        if (card.id === 'sec-scripts') {
+          const scriptsBundleBtn = document.createElement('button');
+          scriptsBundleBtn.type = 'button';
+          scriptsBundleBtn.className = 'code-btn';
+          scriptsBundleBtn.style.marginLeft = '8px';
+          scriptsBundleBtn.textContent = 'Scripts ZIP';
+
+          scriptsBundleBtn.addEventListener('click', async function () {
+            const old = scriptsBundleBtn.textContent;
+            scriptsBundleBtn.textContent = 'Erstelle...';
+            try {
+              const scriptsPayload = {{ (result.scripts|default([], true))|tojson if result else '[]' }};
+              const rows = [];
+              table.querySelectorAll('tr').forEach(function (tr) {
+                if (tr.style && tr.style.display === 'none') return;
+                if (tr.querySelector('select, input, button')) return;
+                const cells = Array.from(tr.querySelectorAll('th,td'));
+                if (!cells.length) return;
+                rows.push(cells.map(function (c) { return (c.innerText || '').trim(); }));
+              });
+
+              if (!rows.length) throw new Error('Keine Daten');
+
+              const payload = {
+                scripts: scriptsPayload,
+                excel: {
+                  sheets: [{
+                    title: headingText || 'Scripts',
+                    headers: rows[0],
+                    rows: rows.slice(1),
+                  }]
+                }
+              };
+
+              const res = await fetch(EXPORT_SCRIPTS_BUNDLE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              if (!res.ok) throw new Error('ZIP-Export fehlgeschlagen');
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'scripts-svg-excel.zip';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+              scriptsBundleBtn.textContent = 'Fertig';
+            } catch (e) {
+              scriptsBundleBtn.textContent = 'Fehler';
+            } finally {
+              setTimeout(function () { scriptsBundleBtn.textContent = old || 'Scripts ZIP'; }, 1300);
+            }
+          });
+
+          heading.appendChild(scriptsBundleBtn);
+        }
+      });
+
+      if (tableModal && tableModalClose && tableModalCopy && tableModalText) {
+        tableModalClose.addEventListener('click', closeTableModal);
+
+        tableModalCopy.addEventListener('click', async function () {
+          try {
+            const plain = tableModalText.value || '';
+            const title = tableModalTitle ? tableModalTitle.textContent : 'Tabelle';
+
+            if (currentPreviewTable && window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+              const html = tableToEmailHtml(currentPreviewTable, title || 'Tabelle');
+              const item = new ClipboardItem({
+                'text/plain': new Blob([plain], { type: 'text/plain' }),
+                'text/html': new Blob([html], { type: 'text/html' })
+              });
+              await navigator.clipboard.write([item]);
+            } else {
+              await navigator.clipboard.writeText(plain);
+            }
+
+            tableModalCopy.textContent = 'Kopiert';
+            setTimeout(function () { tableModalCopy.textContent = 'In Zwischenablage'; }, 1200);
+          } catch (e) {
+            tableModalCopy.textContent = 'Kopieren fehlgeschlagen';
+            setTimeout(function () { tableModalCopy.textContent = 'In Zwischenablage'; }, 1600);
+          }
+        });
+
+        tableModal.addEventListener('click', function (e) {
+          if (e.target === tableModal) closeTableModal();
+        });
+      }
+
+      const archiveNameSearch = document.getElementById('archive-name-search');
+      const archiveRoleSearch = document.getElementById('archive-role-search');
+      const archiveCallingAetSearch = document.getElementById('archive-calling-aet-search');
+      const archiveCalledAetSearch = document.getElementById('archive-called-aet-search');
+      const archiveDuplicatesOnly = document.getElementById('archive-duplicates-only');
+      const archiveVisibleCount = document.getElementById('archive-visible-count');
+      const archiveRows = Array.from(document.querySelectorAll('.archive-row'));
+      const archiveSortHeaders = Array.from(document.querySelectorAll('[data-archive-sort]'));
+      if (archiveNameSearch && archiveRoleSearch && archiveCallingAetSearch && archiveCalledAetSearch && archiveDuplicatesOnly && archiveVisibleCount && archiveRows.length) {
+        let archiveDuplicatesOnlyActive = false;
+        function normArchiveText(v) {
+          return (v || '').trim().toLocaleLowerCase('de-DE');
+        }
+
+        function getArchiveRowRoles(row) {
+          const rawJson = row.getAttribute('data-roles') || '';
+          try {
+            const parsed = JSON.parse(rawJson);
+            if (Array.isArray(parsed)) {
+              return parsed.map(function (v) { return (v || '').trim(); }).filter(Boolean);
+            }
+          } catch (e) {
+            // Fall back to the rendered role string below.
+          }
+          return (row.getAttribute('data-role') || '')
+            .split('|')
+            .map(function (v) { return (v || '').trim(); })
+            .filter(Boolean);
+        }
+
+        const archiveRoleValues = Array.from(new Set(archiveRows.flatMap(getArchiveRowRoles)))
+          .sort(function (a, b) { return a.localeCompare(b, 'de'); });
+
+        archiveRoleValues.forEach(function (role) {
+          const opt = document.createElement('option');
+          opt.value = role;
+          opt.textContent = role || '(leer)';
+          archiveRoleSearch.appendChild(opt);
+        });
+
+        archiveRows.forEach(function (row, idx) {
+          row.setAttribute('data-archive-original-index', String(idx));
+        });
+
+        let archiveSortKey = '';
+        let archiveSortDirection = 1;
+
+        function isArchiveDuplicate(row) {
+          return (row.getAttribute('data-dup') || '').toLocaleLowerCase('de-DE') === 'ja';
+        }
+
+        function getArchiveSortValue(row, key) {
+          if (key === 'name') return normArchiveText(row.getAttribute('data-name'));
+          if (key === 'role') return normArchiveText(row.getAttribute('data-role'));
+          if (key === 'callingAET') return normArchiveText(row.getAttribute('data-calling-aet'));
+          if (key === 'calledAET') return normArchiveText(row.getAttribute('data-called-aet'));
+          return '';
+        }
+
+        function updateArchiveSortIndicators() {
+          archiveSortHeaders.forEach(function (th) {
+            const indicator = th.querySelector('.sort-indicator');
+            if (!indicator) return;
+            indicator.textContent = (th.getAttribute('data-archive-sort') === archiveSortKey)
+              ? (archiveSortDirection === 1 ? '▲' : '▼')
+              : '';
+          });
+        }
+
+        function sortArchiveRows(key) {
+          if (!key) return;
+          if (archiveSortKey === key) {
+            archiveSortDirection = archiveSortDirection * -1;
+          } else {
+            archiveSortKey = key;
+            archiveSortDirection = 1;
+          }
+          const table = archiveRows[0] ? archiveRows[0].closest('table') : null;
+          archiveRows.sort(function (a, b) {
+            const av = getArchiveSortValue(a, key);
+            const bv = getArchiveSortValue(b, key);
+            const cmp = av.localeCompare(bv, 'de', { sensitivity: 'base', numeric: true });
+            if (cmp !== 0) return cmp * archiveSortDirection;
+            const ai = parseInt(a.getAttribute('data-archive-original-index') || '0', 10);
+            const bi = parseInt(b.getAttribute('data-archive-original-index') || '0', 10);
+            return ai - bi;
+          });
+          if (table) {
+            archiveRows.forEach(function (row) { table.appendChild(row); });
+          }
+          updateArchiveSortIndicators();
+          applyArchiveFilter();
+        }
+
+        function applyArchiveFilter() {
+          const qName = normArchiveText(archiveNameSearch.value);
+          const selectedRole = normArchiveText(archiveRoleSearch.value);
+          const qCallingAet = normArchiveText(archiveCallingAetSearch.value);
+          const qCalledAet = normArchiveText(archiveCalledAetSearch.value);
+          const duplicatesOnly = archiveDuplicatesOnlyActive;
+          let visible = 0;
+          archiveRows.forEach(function (row) {
+            const nameText = normArchiveText(row.getAttribute('data-name'));
+            const roleValuesForRow = getArchiveRowRoles(row).map(normArchiveText);
+            const callingAetText = normArchiveText(row.getAttribute('data-calling-aet'));
+            const calledAetText = normArchiveText(row.getAttribute('data-called-aet'));
+            const show = (!qName || nameText.includes(qName))
+              && (!selectedRole || roleValuesForRow.includes(selectedRole))
+              && (!qCallingAet || callingAetText.includes(qCallingAet))
+              && (!qCalledAet || calledAetText.includes(qCalledAet))
+              && (!duplicatesOnly || isArchiveDuplicate(row));
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          archiveVisibleCount.textContent = String(visible);
+        }
+        archiveNameSearch.addEventListener('input', applyArchiveFilter);
+        archiveRoleSearch.addEventListener('change', applyArchiveFilter);
+        archiveCallingAetSearch.addEventListener('input', applyArchiveFilter);
+        archiveCalledAetSearch.addEventListener('input', applyArchiveFilter);
+        archiveDuplicatesOnly.addEventListener('click', function () {
+          archiveDuplicatesOnlyActive = !archiveDuplicatesOnlyActive;
+          archiveDuplicatesOnly.textContent = archiveDuplicatesOnlyActive ? 'Alle anzeigen' : 'Nur Duplikate anzeigen';
+          applyArchiveFilter();
+        });
+        archiveSortHeaders.forEach(function (th) {
+          th.addEventListener('click', function () {
+            sortArchiveRows(th.getAttribute('data-archive-sort'));
+          });
+        });
+        updateArchiveSortIndicators();
+        applyArchiveFilter();
+      }
+
+      const storeDescriptionSearch = document.getElementById('store-description-search');
+      const storeRoleSearch = document.getElementById('store-role-search');
+      const storeCallingAetSearch = document.getElementById('store-calling-aet-search');
+      const storeCalledAetSearch = document.getElementById('store-called-aet-search');
+      const storeDuplicatesOnly = document.getElementById('store-duplicates-only');
+      const storeVisibleCount = document.getElementById('store-visible-count');
+      const storeRows = Array.from(document.querySelectorAll('.store-row'));
+      const storeSortHeaders = Array.from(document.querySelectorAll('[data-store-sort]'));
+      if (storeDescriptionSearch && storeRoleSearch && storeCallingAetSearch && storeCalledAetSearch && storeDuplicatesOnly && storeVisibleCount && storeRows.length) {
+        let storeDuplicatesOnlyActive = false;
+        function normStoreText(v) {
+          return (v || '').trim().toLocaleLowerCase('de-DE');
+        }
+
+        function getStoreRowRoles(row) {
+          const rawJson = row.getAttribute('data-roles') || '';
+          try {
+            const parsed = JSON.parse(rawJson);
+            if (Array.isArray(parsed)) {
+              return parsed.map(function (v) { return (v || '').trim(); }).filter(Boolean);
+            }
+          } catch (e) {
+            // Fall back to the rendered role string below.
+          }
+          return (row.getAttribute('data-role') || '')
+            .split('|')
+            .map(function (v) { return (v || '').trim(); })
+            .filter(Boolean);
+        }
+
+        const roleValues = Array.from(new Set(storeRows.flatMap(getStoreRowRoles)))
+          .sort(function (a, b) { return a.localeCompare(b, 'de'); });
+
+        roleValues.forEach(function (role) {
+          const opt = document.createElement('option');
+          opt.value = role;
+          opt.textContent = role || '(leer)';
+          storeRoleSearch.appendChild(opt);
+        });
+
+        storeRows.forEach(function (row, idx) {
+          row.setAttribute('data-store-original-index', String(idx));
+        });
+
+        let storeSortKey = '';
+        let storeSortDirection = 1;
+
+        function isStoreDuplicate(row) {
+          return (row.getAttribute('data-dup') || '').toLocaleLowerCase('de-DE') === 'ja';
+        }
+
+        function getStoreSortValue(row, key) {
+          if (key === 'description') return normStoreText(row.getAttribute('data-description'));
+          if (key === 'role') return normStoreText(row.getAttribute('data-role'));
+          if (key === 'callingAET') return normStoreText(row.getAttribute('data-calling-aet'));
+          if (key === 'calledAET') return normStoreText(row.getAttribute('data-called-aet'));
+          return '';
+        }
+
+        function updateStoreSortIndicators() {
+          storeSortHeaders.forEach(function (th) {
+            const indicator = th.querySelector('.sort-indicator');
+            if (!indicator) return;
+            indicator.textContent = (th.getAttribute('data-store-sort') === storeSortKey)
+              ? (storeSortDirection === 1 ? '▲' : '▼')
+              : '';
+          });
+        }
+
+        function sortStoreRows(key) {
+          if (!key) return;
+          if (storeSortKey === key) {
+            storeSortDirection = storeSortDirection * -1;
+          } else {
+            storeSortKey = key;
+            storeSortDirection = 1;
+          }
+          const table = storeRows[0] ? storeRows[0].closest('table') : null;
+          storeRows.sort(function (a, b) {
+            const av = getStoreSortValue(a, key);
+            const bv = getStoreSortValue(b, key);
+            const cmp = av.localeCompare(bv, 'de', { sensitivity: 'base', numeric: true });
+            if (cmp !== 0) return cmp * storeSortDirection;
+            const ai = parseInt(a.getAttribute('data-store-original-index') || '0', 10);
+            const bi = parseInt(b.getAttribute('data-store-original-index') || '0', 10);
+            return ai - bi;
+          });
+          if (table) {
+            storeRows.forEach(function (row) { table.appendChild(row); });
+          }
+          updateStoreSortIndicators();
+          applyStoreFilter();
+        }
+
+        function applyStoreFilter() {
+          const qDescription = normStoreText(storeDescriptionSearch.value);
+          const selectedRole = normStoreText(storeRoleSearch.value);
+          const qCallingAet = normStoreText(storeCallingAetSearch.value);
+          const qCalledAet = normStoreText(storeCalledAetSearch.value);
+          const duplicatesOnly = storeDuplicatesOnlyActive;
+          let visible = 0;
+          storeRows.forEach(function (row) {
+            const descriptionText = normStoreText(row.getAttribute('data-description'));
+            const roleValuesForRow = getStoreRowRoles(row).map(normStoreText);
+            const callingAetText = normStoreText(row.getAttribute('data-calling-aet'));
+            const calledAetText = normStoreText(row.getAttribute('data-called-aet'));
+            const show = (!qDescription || descriptionText.includes(qDescription))
+              && (!selectedRole || roleValuesForRow.includes(selectedRole))
+              && (!qCallingAet || callingAetText.includes(qCallingAet))
+              && (!qCalledAet || calledAetText.includes(qCalledAet))
+              && (!duplicatesOnly || isStoreDuplicate(row));
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          storeVisibleCount.textContent = String(visible);
+        }
+        storeDescriptionSearch.addEventListener('input', applyStoreFilter);
+        storeRoleSearch.addEventListener('change', applyStoreFilter);
+        storeCallingAetSearch.addEventListener('input', applyStoreFilter);
+        storeCalledAetSearch.addEventListener('input', applyStoreFilter);
+        storeDuplicatesOnly.addEventListener('click', function () {
+          storeDuplicatesOnlyActive = !storeDuplicatesOnlyActive;
+          storeDuplicatesOnly.textContent = storeDuplicatesOnlyActive ? 'Alle anzeigen' : 'Nur Duplikate anzeigen';
+          applyStoreFilter();
+        });
+        storeSortHeaders.forEach(function (th) {
+          th.addEventListener('click', function () {
+            sortStoreRows(th.getAttribute('data-store-sort'));
+          });
+        });
+        updateStoreSortIndicators();
+        applyStoreFilter();
+      }
+
+      const worklistRoleFilterHost = document.getElementById('worklist-role-filter-host');
+      const worklistVisibleCount = document.getElementById('worklist-visible-count');
+      const worklistRows = Array.from(document.querySelectorAll('.worklist-row'));
+      if (worklistRoleFilterHost && worklistVisibleCount && worklistRows.length) {
+        const roleValues = Array.from(new Set(worklistRows.flatMap(function (row) {
+          return (row.getAttribute('data-roles') || '')
+            .split(',')
+            .map(function (v) { return v.trim(); })
+            .filter(Boolean);
+        }))).sort(function (a, b) { return a.localeCompare(b, 'de'); });
+
+        const roleSelect = document.createElement('select');
+        roleSelect.className = 'search-input';
+        roleSelect.style.minWidth = '180px';
+        roleSelect.style.maxWidth = '320px';
+        roleSelect.style.width = '100%';
+        roleSelect.style.fontSize = '12px';
+
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'alle';
+        roleSelect.appendChild(allOpt);
+
+        roleValues.forEach(function (val) {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val || '(leer)';
+          roleSelect.appendChild(opt);
+        });
+
+        worklistRoleFilterHost.appendChild(roleSelect);
+
+        function applyWorklistRoleFilter() {
+          const selected = (roleSelect.value || '').trim();
+          let visible = 0;
+          worklistRows.forEach(function (row) {
+            const rowRoles = (row.getAttribute('data-roles') || '')
+              .split(',')
+              .map(function (v) { return v.trim(); })
+              .filter(Boolean);
+            const show = (!selected || rowRoles.includes(selected));
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          worklistVisibleCount.textContent = String(visible);
+        }
+
+        roleSelect.addEventListener('change', applyWorklistRoleFilter);
+        applyWorklistRoleFilter();
+      }
+
+      const scheduledWorklistRoleFilterHost = document.getElementById('scheduled-worklist-role-filter-host');
+      const scheduledWorklistVisibleCount = document.getElementById('scheduled-worklist-visible-count');
+      const scheduledWorklistRows = Array.from(document.querySelectorAll('.scheduled-worklist-row'));
+      if (scheduledWorklistRoleFilterHost && scheduledWorklistVisibleCount && scheduledWorklistRows.length) {
+        const roleValues = Array.from(new Set(scheduledWorklistRows.flatMap(function (row) {
+          return (row.getAttribute('data-roles') || '')
+            .split(',')
+            .map(function (v) { return v.trim(); })
+            .filter(Boolean);
+        }))).sort(function (a, b) { return a.localeCompare(b, 'de'); });
+
+        const roleSelect = document.createElement('select');
+        roleSelect.className = 'search-input';
+        roleSelect.style.minWidth = '180px';
+        roleSelect.style.maxWidth = '320px';
+        roleSelect.style.width = '100%';
+        roleSelect.style.fontSize = '12px';
+
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'alle';
+        roleSelect.appendChild(allOpt);
+
+        roleValues.forEach(function (val) {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val || '(leer)';
+          roleSelect.appendChild(opt);
+        });
+
+        scheduledWorklistRoleFilterHost.appendChild(roleSelect);
+
+        function applyScheduledWorklistRoleFilter() {
+          const selected = (roleSelect.value || '').trim();
+          let visible = 0;
+          scheduledWorklistRows.forEach(function (row) {
+            const rowRoles = (row.getAttribute('data-roles') || '')
+              .split(',')
+              .map(function (v) { return v.trim(); })
+              .filter(Boolean);
+            const show = (!selected || rowRoles.includes(selected));
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          scheduledWorklistVisibleCount.textContent = String(visible);
+        }
+
+        roleSelect.addEventListener('change', applyScheduledWorklistRoleFilter);
+        applyScheduledWorklistRoleFilter();
+      }
+
+      const hpSearchInput = document.getElementById('hp-search');
+      const hpVisibleCount = document.getElementById('hp-visible-count');
+      const hpToggleInactiveBtn = document.getElementById('hp-toggle-inactive');
+      const hpRows = Array.from(document.querySelectorAll('.hp-row'));
+      if (hpSearchInput && hpVisibleCount && hpToggleInactiveBtn && hpRows.length) {
+        let hpSearchDebounce = null;
+        let hideInactive = false;
+
+        function applyHpFilter() {
+          const q = hpSearchInput.value.trim().toLowerCase();
+          let visible = 0;
+          hpRows.forEach(function (row) {
+            const text = (row.innerText || '').toLowerCase();
+            const isInactive = row.classList.contains('hp-inactive');
+            const matchesSearch = !q || text.includes(q);
+            const matchesInactive = !(hideInactive && isInactive);
+            const show = matchesSearch && matchesInactive;
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          hpVisibleCount.textContent = String(visible);
+        }
+
+        hpToggleInactiveBtn.addEventListener('click', function () {
+          hideInactive = !hideInactive;
+          hpToggleInactiveBtn.textContent = hideInactive ? 'Deaktivierte einblenden' : 'Deaktivierte ausblenden';
+          applyHpFilter();
+        });
+
+        hpSearchInput.addEventListener('input', function () {
+          if (hpSearchDebounce) clearTimeout(hpSearchDebounce);
+          hpSearchDebounce = setTimeout(applyHpFilter, 120);
+        });
+
+        applyHpFilter();
+      }
+
+      const permSearch = document.getElementById('perm-search');
+      const permRoleFilter = document.getElementById('perm-role-filter');
+      const permTreeWrap = document.getElementById('perm-tree-wrap');
+      const permExportExcelBtn = document.getElementById('perm-export-excel');
+      const permData = {{ (result.enterprise_permission_rows|default([], true) if result is defined else [])|tojson }};
+      if (permSearch && permRoleFilter && permTreeWrap && permExportExcelBtn && permData.length) {
+        let permDebounce = null;
+
+        function escHtml(s) {
+          return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
+
+        function toTree(rows) {
+          const root = { children: new Map(), entries: [] };
+          rows.forEach(function (r) {
+            const path = (r.displayPath || '').trim();
+            const parts = path ? path.split(' / ') : ['(ohne Schlüssel)'];
+            let node = root;
+            parts.forEach(function (part) {
+              if (!node.children.has(part)) node.children.set(part, { children: new Map(), entries: [] });
+              node = node.children.get(part);
+            });
+            node.entries.push(r);
+          });
+          return root;
+        }
+
+        const permOrder = {
+          '': ['Client'],
+          'Client': [
+            'Arbeitslisten', 'Anzeigebereich', 'XDSI', 'Konfiguration', 'Import', 'Drucken',
+            'DICOM-Objekte vom Server löschen', 'Teleradiologie', 'DeepUnity Discovery',
+            'Zusätzliche DICOM-Information im Listenbereich', 'ScriptWizard', 'Hintergrundaufgaben',
+            'Suche', 'Export'
+          ],
+          'Client / Arbeitslisten': ['Geplante', 'Demo', 'Standard', 'Suche', 'Benutzer'],
+          'Client / Arbeitslisten / Geplante': ['Arbeitsliste bearbeiten', 'Erstellen', 'Löschen', 'Gesperrte Arbeitslisten bearbeiten'],
+          'Client / Arbeitslisten / Geplante / Arbeitsliste bearbeiten': ['Eintrag hinzufügen', 'Terminplanung bearbeiten', 'Eintrag löschen', 'Eintrag bearbeiten'],
+          'Client / Arbeitslisten / Demo': ['Einträge sehen', 'Gesperrte Arbeitslisten bearbeiten', 'Durchführen, Einträge verschieben', 'Arbeitsliste bearbeiten', 'Datenfilter bearbeiten'],
+          'Client / Arbeitslisten / Standard': ['Arbeitsliste bearbeiten', 'Erstellen', 'Löschen'],
+          'Client / Arbeitslisten / Standard / Arbeitsliste bearbeiten': ['Eintrag bearbeiten'],
+          'Client / Arbeitslisten / Suche': ['Arbeitsliste bearbeiten', 'Eintrag bearbeiten'],
+          'Client / Arbeitslisten / Benutzer': ['Erstellen', 'Arbeitsliste bearbeiten', 'Löschen', 'Exportieren', 'Änderung von Spalten und Sortierung', 'Arbeitslisten auswählen'],
+          'Client / Arbeitslisten / Benutzer / Arbeitsliste bearbeiten': ['Eintrag löschen', 'Eintrag hinzufügen', 'Eintrag bearbeiten'],
+          'Client / Arbeitslisten / Benutzer / Löschen': ['Löschen der persönlichen Arbeitslisten anderer Benutzer'],
+
+          'Client / Anzeigebereich': ['KI'],
+          'Client / Anzeigebereich / KI': [
+            'Prüfen von KI-Ergebnissen', 'Bestätigte KI-Ergebnisse sichtbar', 'Alle KI-Ergebnisse sichtbar',
+            'Bearbeiten von Shortcuts', 'Bearbeiten der Standardfensterwerte', 'Speichern von Presentation States',
+            'Manuelles Aufteilen und Sortieren', 'Erstellen, Ändern und Speichern von Aufhängungen', 'Live View',
+            'Konfigurationsschlüssel in Beschreibungen', 'Werkzeuge konfigurieren',
+            'Smart Hanging Protocol trainieren/zurücksetzen/freigeben', 'Erstellen und Speichern von Sessions'
+          ],
+
+          'Client / XDSI': ['Benutzer kann Sortierung der Liste anpassen'],
+
+          'Client / Konfiguration': ['Anzeigebereich', 'Anzeige von Berechtigungen', 'Druckerkonfiguration', 'Generelle Einstellungen', 'Lokale Konfiguration', 'Profiles', 'Textbereich-Layout bearbeiten', 'Rollen/Gruppen Konfiguration'],
+          'Client / Konfiguration / Anzeigebereich': ['Bildbeschriftungen', 'Standardfensterwerte', 'Aufhängungen', 'Markups', 'Anzeigefenster', 'Monitore', 'Serienpalette', 'Dialoge', 'Allgemeine Einstellungen', 'Session-Namen'],
+          'Client / Konfiguration / Anzeigebereich / Aufhängungen': ['Bedingungssets', 'Sortierreihenfolgen', 'Felder C-Find', 'Aufhängungen', 'Aufteilen und Sortieren', 'Standard-Aufhängung'],
+          'Client / Konfiguration / Anzeige von Berechtigungen': ['Berechtigungen bearbeiten', 'Als Rolle/Admin anmelden', 'Rollen ändern'],
+          'Client / Konfiguration / Generelle Einstellungen': ['Anzeige/Ändern der verw. DICOM-Authentifizierung', 'Listenbereich-Einstellungen', 'Einstellungen für Plugins', 'Textbereich-Einstellungen', 'Export Einstellungen'],
+          'Client / Konfiguration / Lokale Konfiguration': ['Arbeitsstationsgruppen bearbeiten', 'Anmelde-Konfiguration'],
+
+          'Client / Import': ['Textbereich-Datenimportmappe – Import', 'Textbereich-Datenimportmappe – Re-Export'],
+          'Client / Drucken': ['Drucken der Arbeitslisten', 'Drucken der Befunde'],
+          'Client / DICOM-Objekte vom Server löschen': ['Key Images vom Server löschen', 'Segmentierungen löschen', 'Presentation States vom Server löschen', 'Sessions vom Server löschen'],
+          'Client / DICOM-Objekte vom Server löschen / Presentation States vom Server löschen': ['Eigene Presentation States vom Server löschen'],
+          'Client / DeepUnity Discovery': ['Befundungsaufgabe stornieren'],
+          'Client / ScriptWizard': ['Skripte editieren'],
+          'Client / Hintergrundaufgaben': ['Alle Hintergrundaufgaben anzeigen', 'Abbrechen von Hintergrundaufgaben', 'Status einer Studie ändern', 'Auditing & Logging'],
+          'Client / Suche': ['Barcode', 'Advanced', 'QBE', 'IntelliSearch'],
+          'Client / Export': ['Forschungsserien exportieren', 'Studienfreigabe für das Internet', 'Unvalidierte Befunde ansehen', 'Benutzer kann Vorstudien ein-/ausschalten', 'Senden von Fehlermeldungen via E-Mail', 'Schlagwörter bearbeiten', 'Notfallzugang', 'Regel für Vorstudien', 'Speichern von Benutzereinstellungen', 'Unbefundete Studien ansehen']
+        };
+
+        function sortChildren(entries, parentPath) {
+          const order = permOrder[parentPath] || [];
+          const rank = new Map(order.map(function (x, i) { return [x, i]; }));
+          return entries.sort(function (a, b) {
+            const ra = rank.has(a[0]) ? rank.get(a[0]) : 9999;
+            const rb = rank.has(b[0]) ? rank.get(b[0]) : 9999;
+            if (ra !== rb) return ra - rb;
+            return a[0].localeCompare(b[0], 'de');
+          });
+        }
+
+        function renderNode(name, node, parentPath) {
+          const currentPath = parentPath ? (parentPath + ' / ' + name) : name;
+          const childHtml = sortChildren(Array.from(node.children.entries()), currentPath)
+            .map(function (entry) { return renderNode(entry[0], entry[1], currentPath); })
+            .join('');
+
+          const leafHtml = node.entries.map(function (r) {
+            const src = (r.sourceType === 'inherited') ? ('vererbt von ' + r.sourceRole) : 'direkt';
+            const effectiveState = String(r.value || '').toLowerCase() === 'true' ? 'erlaubt' : 'verboten';
+            return '<li><div class="perm-node">'
+              + '<span class="perm-badge ' + escHtml(r.state) + '">' + escHtml(r.state) + '</span>'
+              + '<strong class="perm-label-' + escHtml(effectiveState) + '">' + escHtml(r.label) + '</strong>'
+              + '<span class="perm-meta">Wert: ' + escHtml(r.value) + ' · ' + escHtml(src) + '</span>'
+              + '</div></li>';
+          }).join('');
+
+          return '<li>'
+            + '<details open>'
+            + '<summary>' + escHtml(name) + '</summary>'
+            + '<ul>' + childHtml + leafHtml + '</ul>'
+            + '</details>'
+            + '</li>';
+        }
+
+        function renderPermTree(rows) {
+          if (!rows.length) {
+            permTreeWrap.innerHTML = '<div class="perm-meta">Keine Treffer.</div>';
+            return;
+          }
+          const tree = toTree(rows);
+          const html = sortChildren(Array.from(tree.children.entries()), '')
+            .map(function (entry) { return renderNode(entry[0], entry[1], ''); })
+            .join('');
+          permTreeWrap.innerHTML = '<ul class="perm-tree">' + html + '</ul>';
+        }
+
+        function applyPermFilter() {
+          const q = permSearch.value.trim().toLowerCase();
+          const role = permRoleFilter.value;
+          const filtered = permData.filter(function (r) {
+            const matchesRole = !role || r.role === role;
+            if (!matchesRole) return false;
+            if (!q) return true;
+            const text = [r.displayPath, r.label, r.key, r.state, r.value, r.sourceRole].join(' ').toLowerCase();
+            return text.includes(q);
+          });
+          renderPermTree(filtered);
+        }
+
+        function collectTreeRows(node, pathParts, outRows) {
+          const entries = sortChildren(Array.from(node.children.entries()), pathParts.join(' / '));
+          entries.forEach(function (entry) {
+            const name = entry[0];
+            const child = entry[1];
+            const nextPath = pathParts.concat([name]);
+            collectTreeRows(child, nextPath, outRows);
+          });
+
+          (node.entries || []).forEach(function (r) {
+            const src = (r.sourceType === 'inherited') ? ('vererbt von ' + r.sourceRole) : 'direkt';
+            outRows.push(pathParts.concat([
+              r.label || '',
+              r.state || '',
+              r.value || '',
+              src,
+              r.key || ''
+            ]));
+          });
+        }
+
+        async function exportPermissionsExcelAllRoles() {
+          const roles = Array.from(new Set(permData.map(function (x) { return x.role; }))).sort(function (a, b) {
+            return a.localeCompare(b, 'de');
+          });
+
+          const sheets = roles.map(function (role) {
+            const rowsForRole = permData.filter(function (r) { return r.role === role; });
+            const tree = toTree(rowsForRole);
+            const outRows = [];
+            collectTreeRows(tree, [], outRows);
+            const maxDepth = outRows.reduce(function (m, r) { return Math.max(m, r.length - 5); }, 1);
+            const levelHeaders = Array.from({ length: maxDepth }, function (_, i) { return 'Ebene ' + (i + 1); });
+            const headers = levelHeaders.concat(['Berechtigung', 'Status', 'Wert', 'Quelle', 'Key']);
+
+            const normalized = outRows.map(function (r) {
+              const depthCells = r.slice(0, r.length - 5);
+              while (depthCells.length < maxDepth) depthCells.push('');
+              return depthCells.concat(r.slice(r.length - 5));
+            });
+
+            return {
+              title: role,
+              headers: headers,
+              rows: normalized,
+            };
+          });
+
+          const res = await fetch(EXPORT_EXCEL_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: 'berechtigungen-baumsicht.xlsx', sheets: sheets }),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'berechtigungen-baumsicht.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }
+        permSearch.addEventListener('input', function () {
+          if (permDebounce) clearTimeout(permDebounce);
+          permDebounce = setTimeout(applyPermFilter, 120);
+        });
+        permRoleFilter.addEventListener('change', applyPermFilter);
+        permExportExcelBtn.addEventListener('click', async function () {
+          const old = permExportExcelBtn.textContent;
+          permExportExcelBtn.textContent = 'Erstelle...';
+          try {
+            await exportPermissionsExcelAllRoles();
+            permExportExcelBtn.textContent = 'Fertig';
+          } catch (e) {
+            permExportExcelBtn.textContent = 'Fehler';
+          } finally {
+            setTimeout(function () { permExportExcelBtn.textContent = old; }, 1300);
+          }
+        });
+        applyPermFilter();
+      }
+
+      const licenseMatrixRows = Array.from(document.querySelectorAll('.license-matrix-row'));
+      const licenseMatrixVisibleCount = document.getElementById('license-matrix-visible-count');
+      const licenseFilterMacHost = document.getElementById('license-filter-mac');
+      const licenseFilterDescriptionHost = document.getElementById('license-filter-description');
+      const licenseFilterLicenseTextHost = document.getElementById('license-filter-license-text');
+      const licenseFilterDeprecatedTypeHost = document.getElementById('license-filter-deprecated-type');
+      const licenseMatrixDupBtn = document.getElementById('license-matrix-dup-toggle');
+
+      if (licenseMatrixRows.length && licenseMatrixVisibleCount
+          && licenseFilterMacHost && licenseFilterDescriptionHost
+          && licenseFilterLicenseTextHost && licenseFilterDeprecatedTypeHost
+          && licenseMatrixDupBtn) {
+        let matrixDebounce = null;
+        let licenseMatrixDupOnly = false;
+
+        const macInput = document.createElement('input');
+        macInput.type = 'text';
+        macInput.className = 'search-input';
+        macInput.placeholder = 'MAC suchen';
+        macInput.style.minWidth = '150px';
+        macInput.style.maxWidth = '260px';
+        macInput.style.width = '100%';
+        macInput.style.fontSize = '12px';
+        licenseFilterMacHost.appendChild(macInput);
+
+        const descriptionInput = document.createElement('input');
+        descriptionInput.type = 'text';
+        descriptionInput.className = 'search-input';
+        descriptionInput.placeholder = 'Description suchen';
+        descriptionInput.style.minWidth = '150px';
+        descriptionInput.style.maxWidth = '260px';
+        descriptionInput.style.width = '100%';
+        descriptionInput.style.fontSize = '12px';
+        licenseFilterDescriptionHost.appendChild(descriptionInput);
+
+        const licenseTextSelect = document.createElement('select');
+        licenseTextSelect.className = 'search-input';
+        licenseTextSelect.style.minWidth = '140px';
+        licenseTextSelect.style.maxWidth = '240px';
+        licenseTextSelect.style.width = '100%';
+        licenseTextSelect.style.fontSize = '12px';
+
+        const licenseTextValues = Array.from(new Set(
+          licenseMatrixRows.map(function (row) {
+            return (row.getAttribute('data-license-text') || '').trim();
+          }).filter(Boolean)
+        )).sort(function (a, b) { return a.localeCompare(b, 'de'); });
+
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'alle';
+        licenseTextSelect.appendChild(allOpt);
+        licenseTextValues.forEach(function (v) {
+          const o = document.createElement('option');
+          o.value = v;
+          o.textContent = v;
+          licenseTextSelect.appendChild(o);
+        });
+        licenseFilterLicenseTextHost.appendChild(licenseTextSelect);
+
+        const deprecatedTypeSelect = document.createElement('select');
+        deprecatedTypeSelect.className = 'search-input';
+        deprecatedTypeSelect.style.minWidth = '140px';
+        deprecatedTypeSelect.style.maxWidth = '220px';
+        deprecatedTypeSelect.style.width = '100%';
+        deprecatedTypeSelect.style.fontSize = '12px';
+        const deprecatedTypeValues = Array.from(new Set(
+          licenseMatrixRows.map(function (row) {
+            return (row.getAttribute('data-deprecated-type') || '').trim();
+          }).filter(function (v) { return v && v !== '-'; })
+        )).sort(function (a, b) { return a.localeCompare(b, 'de'); });
+        const dtAll = document.createElement('option');
+        dtAll.value = '';
+        dtAll.textContent = 'alle';
+        deprecatedTypeSelect.appendChild(dtAll);
+        deprecatedTypeValues.forEach(function (v) {
+          const o = document.createElement('option');
+          o.value = v;
+          o.textContent = v;
+          deprecatedTypeSelect.appendChild(o);
+        });
+        licenseFilterDeprecatedTypeHost.appendChild(deprecatedTypeSelect);
+
+        function applyLicenseMatrixFilter() {
+          const qMac = (macInput.value || '').trim().toLowerCase();
+          const qDescription = (descriptionInput.value || '').trim().toLowerCase();
+          const qLicenseText = (licenseTextSelect.value || '').trim().toLowerCase();
+          const qDeprecatedType = (deprecatedTypeSelect.value || '').trim().toLowerCase();
+          let visible = 0;
+          licenseMatrixRows.forEach(function (row) {
+            const desc = ((row.children[1] && row.children[1].innerText) || '').toLowerCase();
+            const mac = ((row.children[2] && row.children[2].innerText) || '').toLowerCase();
+            const licenseText = (row.getAttribute('data-license-text') || '').trim().toLowerCase();
+            const deprecatedType = (row.getAttribute('data-deprecated-type') || '').trim().toLowerCase();
+            const isDuplicate = (row.getAttribute('data-dup') || '').toLowerCase() === 'ja';
+
+            const matchesMac = !qMac || mac.includes(qMac);
+            const matchesDescription = !qDescription || desc.includes(qDescription);
+            const matchesLicenseText = !qLicenseText || licenseText === qLicenseText;
+            const matchesDeprecatedType = !qDeprecatedType || deprecatedType === qDeprecatedType;
+            const matchesDup = !licenseMatrixDupOnly || isDuplicate;
+
+            const show = matchesMac && matchesDescription && matchesLicenseText && matchesDeprecatedType && matchesDup;
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          licenseMatrixVisibleCount.textContent = String(visible);
+        }
+
+        [macInput, descriptionInput].forEach(function (input) {
+          input.addEventListener('input', function () {
+            if (matrixDebounce) clearTimeout(matrixDebounce);
+            matrixDebounce = setTimeout(applyLicenseMatrixFilter, 120);
+          });
+        });
+
+        licenseTextSelect.addEventListener('change', applyLicenseMatrixFilter);
+        deprecatedTypeSelect.addEventListener('change', applyLicenseMatrixFilter);
+        licenseMatrixDupBtn.addEventListener('click', function () {
+          licenseMatrixDupOnly = !licenseMatrixDupOnly;
+          licenseMatrixDupBtn.textContent = licenseMatrixDupOnly ? 'Alle anzeigen' : 'Nur Duplikate anzeigen';
+          applyLicenseMatrixFilter();
+        });
+
+        applyLicenseMatrixFilter();
+      }
+
+      const wsLicenseRows = Array.from(document.querySelectorAll('.ws-license-row'));
+      const wsLicenseVisibleCount = document.getElementById('ws-license-visible-count');
+      const wsLicenseDupBtn = document.getElementById('ws-license-dup-toggle');
+      const wsLicenseFilterComputerHost = document.getElementById('ws-license-filter-computer');
+      const wsLicenseFilterAetHost = document.getElementById('ws-license-filter-aet');
+      const wsLicenseFilterMacHost = document.getElementById('ws-license-filter-mac');
+      (function () {
+        const input = document.getElementById('user-bundle-search');
+        const rows = Array.from(document.querySelectorAll('.user-bundle-row'));
+        const countEl = document.getElementById('user-bundle-visible-count');
+        if (!input || !rows.length) return;
+        function norm(v) { return (v || '').toString().toLowerCase(); }
+        function applyUserBundleFilter() {
+          const q = norm(input.value).trim();
+          let visible = 0;
+          rows.forEach(function (row) {
+            const ok = !q || norm(row.getAttribute('data-search')).includes(q);
+            row.style.display = ok ? '' : 'none';
+            if (ok) visible += 1;
+          });
+          if (countEl) countEl.textContent = String(visible);
+        }
+        input.addEventListener('input', applyUserBundleFilter);
+        applyUserBundleFilter();
+      })();
+
+      (function () {
+        const rows = Array.from(document.querySelectorAll('.performance-row'));
+        const countEl = document.getElementById('performance-visible-count');
+        const searchInput = document.getElementById('performance-search');
+        const modalitySelect = document.getElementById('performance-modality-filter');
+        const hangupSelect = document.getElementById('performance-hangup-filter');
+        const userSelect = document.getElementById('performance-user-filter');
+        const slowBtn = document.getElementById('performance-slow-toggle');
+        if (!rows.length || !countEl) return;
+        let slowOnly = false;
+        function norm(v) { return (v || '').toString().toLowerCase(); }
+        function applyPerformanceFilter() {
+          const q = norm(searchInput && searchInput.value).trim();
+          const modality = (modalitySelect && modalitySelect.value) || '';
+          const hangup = (hangupSelect && hangupSelect.value) || '';
+          const user = (userSelect && userSelect.value) || '';
+          let visible = 0;
+          rows.forEach(function (row) {
+            const searchOk = !q || norm(row.getAttribute('data-search')).includes(q);
+            const modalityOk = !modality || (row.getAttribute('data-modality') || '') === modality;
+            const hangupOk = !hangup || (row.getAttribute('data-hangup') || '') === hangup;
+            const userOk = !user || (row.getAttribute('data-user') || '') === user;
+            const slowOk = !slowOnly || (row.getAttribute('data-slow') || '') === 'ja';
+            const ok = searchOk && modalityOk && hangupOk && userOk && slowOk;
+            row.style.display = ok ? '' : 'none';
+            if (ok) visible += 1;
+          });
+          countEl.textContent = String(visible);
+          if (slowBtn) slowBtn.textContent = slowOnly ? 'Alle anzeigen' : 'Nur langsame anzeigen';
+        }
+        if (searchInput) searchInput.addEventListener('input', applyPerformanceFilter);
+        if (modalitySelect) modalitySelect.addEventListener('change', applyPerformanceFilter);
+        if (hangupSelect) hangupSelect.addEventListener('change', applyPerformanceFilter);
+        if (userSelect) userSelect.addEventListener('change', applyPerformanceFilter);
+        if (slowBtn) slowBtn.addEventListener('click', function () { slowOnly = !slowOnly; applyPerformanceFilter(); });
+        applyPerformanceFilter();
+      })();
+
+      const wsLicenseColumns = {{ (result.workstation_license_columns|default([], true) if result is defined else [])|tojson }};
+      if (wsLicenseRows.length && wsLicenseVisibleCount && wsLicenseDupBtn
+          && wsLicenseFilterComputerHost && wsLicenseFilterAetHost && wsLicenseFilterMacHost) {
+        let wsLicenseDebounce = null;
+        let wsLicenseRaf = null;
+        let wsLicenseDupOnly = false;
+
+        function mkInput(ph) {
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.className = 'search-input';
+          inp.placeholder = ph;
+          inp.style.minWidth = '130px';
+          inp.style.maxWidth = '220px';
+          inp.style.width = '100%';
+          inp.style.fontSize = '12px';
+          return inp;
+        }
+
+        const computerInput = mkInput('Computer suchen');
+        const aetInput = mkInput('AET suchen');
+        const macInput = mkInput('MAC suchen');
+        wsLicenseFilterComputerHost.appendChild(computerInput);
+        wsLicenseFilterAetHost.appendChild(aetInput);
+        wsLicenseFilterMacHost.appendChild(macInput);
+
+        const wsLicenseCard = document.getElementById('sec-workstations-license');
+        let licenseNameInput = null;
+        if (wsLicenseCard && wsLicenseColumns.length) {
+          const heading = wsLicenseCard.querySelector('h2');
+          if (heading) {
+            const excelBtn = heading.querySelector('.code-btn');
+            licenseNameInput = document.createElement('input');
+            licenseNameInput.type = 'text';
+            licenseNameInput.className = 'search-input';
+            licenseNameInput.placeholder = 'Lizenz suchen';
+            licenseNameInput.setAttribute('list', 'ws-license-datalist');
+            licenseNameInput.style.minWidth = '170px';
+            licenseNameInput.style.maxWidth = '260px';
+            licenseNameInput.style.marginLeft = '8px';
+            licenseNameInput.style.verticalAlign = 'middle';
+            licenseNameInput.style.fontSize = '12px';
+
+            const dl = document.createElement('datalist');
+            dl.id = 'ws-license-datalist';
+            wsLicenseColumns.forEach(function (lic) {
+              const opt = document.createElement('option');
+              opt.value = lic;
+              dl.appendChild(opt);
+            });
+            document.body.appendChild(dl);
+
+            if (excelBtn && excelBtn.parentNode === heading) {
+              heading.insertBefore(licenseNameInput, excelBtn.nextSibling);
+            } else {
+              heading.appendChild(licenseNameInput);
+            }
+          }
+        }
+
+        const licenseChecks = Array.from(document.querySelectorAll('.ws-license-col-check'));
+        const wsColumnLower = wsLicenseColumns.map(function (x) { return String(x || '').toLowerCase(); });
+
+        const wsLicenseTable = document.getElementById('ws-license-table');
+        const wsHeaderRows = wsLicenseTable ? Array.from(wsLicenseTable.querySelectorAll('tr')).slice(0, 2) : [];
+
+        const wsRowData = wsLicenseRows.map(function (row) {
+          const yesSet = new Set();
+          for (let i = 0; i < wsLicenseColumns.length; i += 1) {
+            if ((row.getAttribute('data-lic-' + i) || '').toLowerCase() !== 'nein') yesSet.add(i);
+          }
+          return {
+            row: row,
+            computer: ((row.children[0] && row.children[0].innerText) || '').toLowerCase(),
+            aet: ((row.children[1] && row.children[1].innerText) || '').toLowerCase(),
+            mac: ((row.children[2] && row.children[2].innerText) || '').toLowerCase(),
+            yesSet: yesSet,
+            isDuplicate: (row.getAttribute('data-dup') || '').toLowerCase() === 'ja',
+            visible: true,
+          };
+        });
+
+        function applyWsLicenseFilter() {
+          const qComputer = (computerInput.value || '').trim().toLowerCase();
+          const qAet = (aetInput.value || '').trim().toLowerCase();
+          const qMac = (macInput.value || '').trim().toLowerCase();
+          const qLicName = ((licenseNameInput && licenseNameInput.value) || '').trim().toLowerCase();
+          const selectedLicenseIdx = licenseChecks
+            .filter(function (cb) { return cb.checked; })
+            .map(function (cb) { return Number(cb.getAttribute('data-lic-index')); })
+            .filter(function (x) { return Number.isFinite(x); });
+
+          const nameMatchedIdx = qLicName
+            ? wsColumnLower
+              .map(function (name, idx) { return name.includes(qLicName) ? idx : -1; })
+              .filter(function (idx) { return idx >= 0; })
+            : null;
+
+          const visibleLicenseIdx = qLicName
+            ? new Set(nameMatchedIdx)
+            : null;
+
+          if (wsHeaderRows.length) {
+            for (let i = 0; i < wsLicenseColumns.length; i += 1) {
+              const showCol = !visibleLicenseIdx || visibleLicenseIdx.has(i);
+              wsHeaderRows.forEach(function (hr) {
+                const c = hr.children[3 + i];
+                if (c) c.style.display = showCol ? '' : 'none';
+              });
+              wsRowData.forEach(function (d) {
+                const c = d.row.children[3 + i];
+                if (c) c.style.display = showCol ? '' : 'none';
+              });
+            }
+          }
+
+          let visible = 0;
+          wsRowData.forEach(function (d) {
+            const matchesBase = (!qComputer || d.computer.includes(qComputer))
+              && (!qAet || d.aet.includes(qAet))
+              && (!qMac || d.mac.includes(qMac));
+
+            const matchesLicenses = selectedLicenseIdx.every(function (idx) {
+              return d.yesSet.has(idx);
+            });
+
+            const matchesLicenseName = !qLicName || (nameMatchedIdx.length && nameMatchedIdx.some(function (idx) {
+              return d.yesSet.has(idx);
+            }));
+
+            const matchesDup = !wsLicenseDupOnly || d.isDuplicate;
+            const show = !!(matchesBase && matchesLicenses && matchesLicenseName && matchesDup);
+            if (show !== d.visible) {
+              d.row.style.display = show ? '' : 'none';
+              d.visible = show;
+            }
+            if (show) visible += 1;
+          });
+
+          wsLicenseVisibleCount.textContent = String(visible);
+        }
+
+        function scheduleWsLicenseFilter() {
+          if (wsLicenseDebounce) clearTimeout(wsLicenseDebounce);
+          wsLicenseDebounce = setTimeout(function () {
+            if (wsLicenseRaf) cancelAnimationFrame(wsLicenseRaf);
+            wsLicenseRaf = requestAnimationFrame(function () {
+              applyWsLicenseFilter();
+              wsLicenseRaf = null;
+            });
+          }, 140);
+        }
+
+        wsLicenseDupBtn.addEventListener('click', function () {
+          wsLicenseDupOnly = !wsLicenseDupOnly;
+          wsLicenseDupBtn.textContent = wsLicenseDupOnly ? 'Alle anzeigen' : 'Nur Duplikate anzeigen';
+          scheduleWsLicenseFilter();
+        });
+
+        [computerInput, aetInput, macInput].forEach(function (inp) {
+          inp.addEventListener('input', scheduleWsLicenseFilter);
+        });
+        if (licenseNameInput) {
+          licenseNameInput.addEventListener('input', scheduleWsLicenseFilter);
+        }
+        licenseChecks.forEach(function (cb) {
+          cb.addEventListener('change', scheduleWsLicenseFilter);
+        });
+
+        applyWsLicenseFilter();
+      }
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          closeModal();
+          closeTableModal();
+          closePdfExportModal();
+        }
+      });
+
+      const pdfExportOpen = document.getElementById('pdf-export-open');
+      const pdfExportModal = document.getElementById('pdf-export-modal');
+      const pdfExportClose = document.getElementById('pdf-export-close');
+      const pdfSelectList = document.getElementById('pdf-select-list');
+      const pdfSelectAll = document.getElementById('pdf-select-all');
+      const pdfSelectNone = document.getElementById('pdf-select-none');
+      const pdfExportRun = document.getElementById('pdf-export-run');
+      const excelExportRun = document.getElementById('excel-export-run');
+      const tableCards = Array.from(document.querySelectorAll('.card')).map(function (card) {
+        const table = card.querySelector('.table-wrap table');
+        const heading = card.querySelector('h2');
+        if (!table || !heading) return null;
+        const rawTitle = (heading.childNodes[0] && heading.childNodes[0].textContent ? heading.childNodes[0].textContent : heading.innerText).trim();
+        const title = rawTitle
+          .replace(/\s*\([^)]*\)\s*/g, ' ')
+          .replace(/\s*\(\s*$/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return { card: card, table: table, title: title };
+      }).filter(Boolean);
+
+      function closePdfExportModal() {
+        if (!pdfExportModal) return;
+        pdfExportModal.classList.remove('show');
+        pdfExportModal.setAttribute('aria-hidden', 'true');
+      }
+
+      function tableToPdfHtml(tableEl) {
+        const clone = tableEl.cloneNode(true);
+        clone.querySelectorAll('tr').forEach(function (row) {
+          const hasFilterControls = !!row.querySelector('select, input, button');
+          const hidden = row.style && row.style.display === 'none';
+          if (hasFilterControls || hidden) {
+            row.remove();
+          }
+        });
+
+        const rows = Array.from(clone.querySelectorAll('tr'));
+        const headerRow = rows.find(function (row) { return row.querySelectorAll('th').length > 0; });
+        if (headerRow) {
+          const headerCells = Array.from(headerRow.querySelectorAll('th'));
+          const removeIdx = headerCells
+            .map(function (th, idx) { return { idx: idx, text: (th.innerText || '').trim().toLowerCase() }; })
+            .filter(function (x) { return x.text === 'download'; })
+            .map(function (x) { return x.idx; })
+            .sort(function (a, b) { return b - a; });
+
+          if (removeIdx.length) {
+            Array.from(clone.querySelectorAll('tr')).forEach(function (row) {
+              const cells = Array.from(row.children);
+              removeIdx.forEach(function (idx) {
+                if (cells[idx]) cells[idx].remove();
+              });
+            });
+          }
+        }
+
+        clone.querySelectorAll('a').forEach(function (a) { a.remove(); });
+
+        clone.style.borderCollapse = 'collapse';
+        clone.style.width = '100%';
+        clone.style.fontFamily = 'Arial, sans-serif';
+        clone.style.fontSize = '11px';
+        clone.querySelectorAll('th,td').forEach(function (cell) {
+          cell.style.border = '1px solid #cfd4d9';
+          cell.style.padding = '4px 6px';
+          cell.style.verticalAlign = 'top';
+          if (cell.tagName === 'TH') {
+            cell.style.background = '#f3f5f7';
+            cell.style.fontWeight = '700';
+          }
+        });
+        return clone.outerHTML;
+      }
+
+      function renderPdfSelection() {
+        if (!pdfSelectList) return;
+        pdfSelectList.innerHTML = '';
+        tableCards.forEach(function (entry, idx) {
+          const label = document.createElement('label');
+          label.className = 'pdf-select-item';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = true;
+          cb.dataset.index = String(idx);
+          const text = document.createElement('span');
+          text.textContent = entry.title;
+          label.appendChild(cb);
+          label.appendChild(text);
+          pdfSelectList.appendChild(label);
+        });
+      }
+
+      function getSelectedExportTables() {
+        return Array.from(pdfSelectList.querySelectorAll('input[type="checkbox"]:checked')).map(function (cb) {
+          return tableCards[Number(cb.dataset.index)];
+        }).filter(Boolean);
+      }
+
+      function extractTableData(tableEl) {
+        const clone = tableEl.cloneNode(true);
+        clone.querySelectorAll('tr').forEach(function (row) {
+          const hasFilterControls = !!row.querySelector('select, input, button');
+          const hidden = row.style && row.style.display === 'none';
+          if (hasFilterControls || hidden) row.remove();
+        });
+
+        const rows = Array.from(clone.querySelectorAll('tr'));
+        const headerRow = rows.find(function (row) { return row.querySelectorAll('th').length > 0; });
+        if (!headerRow) return { headers: [], rows: [] };
+
+        const headers = Array.from(headerRow.querySelectorAll('th')).map(function (th) {
+          return (th.innerText || '').replace(/\s+/g, ' ').trim();
+        });
+
+        const removeIdx = headers
+          .map(function (h, idx) { return { idx: idx, text: h.toLowerCase() }; })
+          .filter(function (x) { return x.text === 'download'; })
+          .map(function (x) { return x.idx; })
+          .sort(function (a, b) { return b - a; });
+
+        const cleanedHeaders = headers.filter(function (_, idx) { return !removeIdx.includes(idx); });
+        const bodyRows = rows.filter(function (row) { return row.querySelectorAll('td').length > 0; });
+
+        const cleanedRows = bodyRows.map(function (row) {
+          const cells = Array.from(row.querySelectorAll('td')).map(function (td) {
+            return (td.innerText || '').replace(/\s+/g, ' ').trim();
+          });
+          return cells.filter(function (_, idx) { return !removeIdx.includes(idx); });
+        });
+
+        return { headers: cleanedHeaders, rows: cleanedRows };
+      }
+
+      if (pdfExportOpen && pdfExportModal && pdfExportClose && pdfSelectList && pdfSelectAll && pdfSelectNone && pdfExportRun && excelExportRun) {
+        pdfExportOpen.addEventListener('click', function () {
+          renderPdfSelection();
+          pdfExportModal.classList.add('show');
+          pdfExportModal.setAttribute('aria-hidden', 'false');
+        });
+
+        pdfExportClose.addEventListener('click', closePdfExportModal);
+
+        pdfExportModal.addEventListener('click', function (e) {
+          if (e.target === pdfExportModal) closePdfExportModal();
+        });
+
+        pdfSelectAll.addEventListener('click', function () {
+          pdfSelectList.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+        });
+
+        pdfSelectNone.addEventListener('click', function () {
+          pdfSelectList.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+        });
+
+        pdfExportRun.addEventListener('click', function () {
+          const selected = getSelectedExportTables();
+
+          if (!selected.length) {
+            pdfExportRun.textContent = 'Bitte Auswahl treffen';
+            setTimeout(function () { pdfExportRun.textContent = 'PDF erstellen'; }, 1300);
+            return;
+          }
+
+          const html = '<!doctype html><html><head><meta charset="utf-8"><title>export-xml PDF</title>'
+            + '<style>@page { size: A4 landscape; margin: 10mm; } body{font-family:Arial,sans-serif;color:#111;} h2{margin:14px 0 6px;font-size:15px;} .block{page-break-inside:avoid;margin-bottom:14px;} .meta{font-size:11px;color:#555;margin-bottom:8px;} table{page-break-inside:auto;} tr{page-break-inside:avoid;page-break-after:auto;}</style>'
+            + '</head><body>'
+            + '<div class="meta">Erstellt: ' + new Date().toLocaleString('de-DE') + '</div>'
+            + selected.map(function (entry) {
+              return '<div class="block"><h2>' + entry.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</h2>' + tableToPdfHtml(entry.table) + '</div>';
+            }).join('')
+            + '</body></html>';
+
+          const w = window.open('', '_blank');
+          if (!w) return;
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          setTimeout(function () { w.print(); }, 150);
+          closePdfExportModal();
+        });
+
+        excelExportRun.addEventListener('click', async function () {
+          const selected = getSelectedExportTables();
+          if (!selected.length) {
+            excelExportRun.textContent = 'Bitte Auswahl treffen';
+            setTimeout(function () { excelExportRun.textContent = 'Excel erstellen'; }, 1300);
+            return;
+          }
+
+          const payload = {
+            filename: 'export-xml.xlsx',
+            sheets: selected.map(function (entry, idx) {
+              const data = extractTableData(entry.table);
+              return {
+                title: entry.title || ('Tabelle ' + (idx + 1)),
+                headers: data.headers,
+                rows: data.rows,
+              };
+            })
+          };
+
+          try {
+            const res = await fetch(EXPORT_EXCEL_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'export-xml.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            closePdfExportModal();
+          } catch (e) {
+            excelExportRun.textContent = 'Export fehlgeschlagen';
+            setTimeout(function () { excelExportRun.textContent = 'Excel erstellen'; }, 1600);
+          }
+        });
+      }
+
+      const xmlTooltip = document.getElementById('xml-tooltip');
+      const copyToast = document.getElementById('copy-toast');
+      const aetCells = Array.from(document.querySelectorAll('.aet-tooltip-cell'));
+      const iwRows = Array.from(document.querySelectorAll('.iw-row'));
+      const iwNameFilterHost = document.getElementById('iw-name-filter-host');
+      const iwTypeFilterHost = document.getElementById('iw-type-filter-host');
+      const iwRoleFilterHost = document.getElementById('iw-role-filter-host');
+      const iwEnabledFilterHost = document.getElementById('iw-enabled-filter-host');
+      const iwVisibleCount = document.getElementById('iw-visible-count');
+      if (iwRows.length && iwNameFilterHost && iwTypeFilterHost && iwRoleFilterHost && iwEnabledFilterHost && iwVisibleCount) {
+        const roleValues = new Set();
+        const typeValues = new Set();
+        const nameValues = new Set();
+        iwRows.forEach(function (row) {
+          const nameText = ((row.children[0] && row.children[0].innerText) || '').trim();
+          const typeText = ((row.children[1] && row.children[1].innerText) || '').trim();
+          if (nameText) nameValues.add(nameText);
+          if (typeText) typeValues.add(typeText);
+          (row.getAttribute('data-roles') || '')
+            .split(',')
+            .map(function (x) { return x.trim(); })
+            .filter(Boolean)
+            .forEach(function (r) { roleValues.add(r); });
+        });
+
+        const nameListId = 'iw-name-filter-list';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'search-input';
+        nameInput.placeholder = 'Name suchen';
+        nameInput.setAttribute('list', nameListId);
+        nameInput.style.minWidth = '180px';
+        nameInput.style.maxWidth = '280px';
+        nameInput.style.width = '100%';
+        nameInput.style.fontSize = '12px';
+        const nameDl = document.createElement('datalist');
+        nameDl.id = nameListId;
+        Array.from(nameValues).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (n) {
+          const o = document.createElement('option');
+          o.value = n;
+          nameDl.appendChild(o);
+        });
+        document.body.appendChild(nameDl);
+        iwNameFilterHost.appendChild(nameInput);
+
+        const typeSel = document.createElement('select');
+        typeSel.className = 'search-input';
+        typeSel.style.minWidth = '150px';
+        typeSel.style.maxWidth = '240px';
+        typeSel.style.width = '100%';
+        typeSel.style.fontSize = '12px';
+        const typeAllOpt = document.createElement('option');
+        typeAllOpt.value = '';
+        typeAllOpt.textContent = 'Type: alle';
+        typeSel.appendChild(typeAllOpt);
+        Array.from(typeValues).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (t) {
+          const o = document.createElement('option');
+          o.value = t;
+          o.textContent = 'Type: ' + t;
+          typeSel.appendChild(o);
+        });
+        iwTypeFilterHost.appendChild(typeSel);
+
+        const sel = document.createElement('select');
+        sel.className = 'search-input';
+        sel.style.minWidth = '180px';
+        sel.style.maxWidth = '280px';
+        sel.style.width = '100%';
+        sel.style.fontSize = '12px';
+
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'Rollen: alle';
+        sel.appendChild(allOpt);
+
+        Array.from(roleValues).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (r) {
+          const o = document.createElement('option');
+          o.value = r;
+          o.textContent = 'Rolle: ' + r;
+          sel.appendChild(o);
+        });
+
+        iwRoleFilterHost.appendChild(sel);
+
+        const iwEnabledCbWrap = document.createElement('label');
+        iwEnabledCbWrap.style.display = 'inline-flex';
+        iwEnabledCbWrap.style.alignItems = 'center';
+        iwEnabledCbWrap.style.gap = '4px';
+        iwEnabledCbWrap.style.fontSize = '12px';
+        const iwEnabledCb = document.createElement('input');
+        iwEnabledCb.type = 'checkbox';
+        const iwEnabledText = document.createElement('span');
+        iwEnabledText.textContent = 'ja';
+        iwEnabledCbWrap.appendChild(iwEnabledCb);
+        iwEnabledCbWrap.appendChild(iwEnabledText);
+        iwEnabledFilterHost.appendChild(iwEnabledCbWrap);
+
+        function applyIwRoleFilter() {
+          const nq = (nameInput.value || '').trim().toLowerCase();
+          const tq = (typeSel.value || '').trim();
+          const q = (sel.value || '').trim();
+          const enabledOnly = !!iwEnabledCb.checked;
+          let visible = 0;
+          iwRows.forEach(function (row) {
+            const nameText = ((row.children[0] && row.children[0].innerText) || '').trim().toLowerCase();
+            const typeText = ((row.children[1] && row.children[1].innerText) || '').trim();
+            const roles = (row.getAttribute('data-roles') || '');
+            const enabledText = ((row.children[3] && row.children[3].innerText) || '').trim().toLowerCase();
+            const nameMatch = !nq || nameText.includes(nq);
+            const typeMatch = !tq || typeText === tq;
+            const roleMatch = !q || roles.split(',').map(function (x) { return x.trim(); }).includes(q);
+            const enabledMatch = !enabledOnly || enabledText === 'true' || enabledText === 'ja';
+            const show = nameMatch && typeMatch && roleMatch && enabledMatch;
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          iwVisibleCount.textContent = String(visible);
+        }
+
+        nameInput.addEventListener('input', applyIwRoleFilter);
+        typeSel.addEventListener('change', applyIwRoleFilter);
+        sel.addEventListener('change', applyIwRoleFilter);
+        iwEnabledCb.addEventListener('change', applyIwRoleFilter);
+        applyIwRoleFilter();
+      }
+
+      const ewRows = Array.from(document.querySelectorAll('.ew-row'));
+      const ewNameFilterHost = document.getElementById('ew-name-filter-host');
+      const ewTypeFilterHost = document.getElementById('ew-type-filter-host');
+      const ewRoleFilterHost = document.getElementById('ew-role-filter-host');
+      const ewEnabledFilterHost = document.getElementById('ew-enabled-filter-host');
+      const ewVisibleCount = document.getElementById('ew-visible-count');
+      if (ewRows.length && ewNameFilterHost && ewTypeFilterHost && ewRoleFilterHost && ewEnabledFilterHost && ewVisibleCount) {
+        const roleValues = new Set();
+        const typeValues = new Set();
+        const nameValues = new Set();
+        ewRows.forEach(function (row) {
+          const nameText = ((row.children[0] && row.children[0].innerText) || '').trim();
+          const typeText = ((row.children[1] && row.children[1].innerText) || '').trim();
+          if (nameText) nameValues.add(nameText);
+          if (typeText) typeValues.add(typeText);
+          (row.getAttribute('data-roles') || '')
+            .split(',')
+            .map(function (x) { return x.trim(); })
+            .filter(Boolean)
+            .forEach(function (r) { roleValues.add(r); });
+        });
+
+        const nameListId = 'ew-name-filter-list';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'search-input';
+        nameInput.placeholder = 'Name suchen';
+        nameInput.setAttribute('list', nameListId);
+        nameInput.style.minWidth = '180px';
+        nameInput.style.maxWidth = '280px';
+        nameInput.style.width = '100%';
+        nameInput.style.fontSize = '12px';
+        const nameDl = document.createElement('datalist');
+        nameDl.id = nameListId;
+        Array.from(nameValues).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (n) {
+          const o = document.createElement('option');
+          o.value = n;
+          nameDl.appendChild(o);
+        });
+        document.body.appendChild(nameDl);
+        ewNameFilterHost.appendChild(nameInput);
+
+        const typeSel = document.createElement('select');
+        typeSel.className = 'search-input';
+        typeSel.style.minWidth = '150px';
+        typeSel.style.maxWidth = '240px';
+        typeSel.style.width = '100%';
+        typeSel.style.fontSize = '12px';
+        const typeAllOpt = document.createElement('option');
+        typeAllOpt.value = '';
+        typeAllOpt.textContent = 'Type: alle';
+        typeSel.appendChild(typeAllOpt);
+        Array.from(typeValues).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (t) {
+          const o = document.createElement('option');
+          o.value = t;
+          o.textContent = 'Type: ' + t;
+          typeSel.appendChild(o);
+        });
+        ewTypeFilterHost.appendChild(typeSel);
+
+        const sel = document.createElement('select');
+        sel.className = 'search-input';
+        sel.style.minWidth = '180px';
+        sel.style.maxWidth = '280px';
+        sel.style.width = '100%';
+        sel.style.fontSize = '12px';
+
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'Rollen: alle';
+        sel.appendChild(allOpt);
+
+        Array.from(roleValues).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (r) {
+          const o = document.createElement('option');
+          o.value = r;
+          o.textContent = 'Rolle: ' + r;
+          sel.appendChild(o);
+        });
+
+        ewRoleFilterHost.appendChild(sel);
+
+        const ewEnabledCbWrap = document.createElement('label');
+        ewEnabledCbWrap.style.display = 'inline-flex';
+        ewEnabledCbWrap.style.alignItems = 'center';
+        ewEnabledCbWrap.style.gap = '4px';
+        ewEnabledCbWrap.style.fontSize = '12px';
+        const ewEnabledCb = document.createElement('input');
+        ewEnabledCb.type = 'checkbox';
+        const ewEnabledText = document.createElement('span');
+        ewEnabledText.textContent = 'ja';
+        ewEnabledCbWrap.appendChild(ewEnabledCb);
+        ewEnabledCbWrap.appendChild(ewEnabledText);
+        ewEnabledFilterHost.appendChild(ewEnabledCbWrap);
+
+        function applyEwRoleFilter() {
+          const nq = (nameInput.value || '').trim().toLowerCase();
+          const tq = (typeSel.value || '').trim();
+          const q = (sel.value || '').trim();
+          const enabledOnly = !!ewEnabledCb.checked;
+          let visible = 0;
+          ewRows.forEach(function (row) {
+            const nameText = ((row.children[0] && row.children[0].innerText) || '').trim().toLowerCase();
+            const typeText = ((row.children[1] && row.children[1].innerText) || '').trim();
+            const roles = (row.getAttribute('data-roles') || '');
+            const enabledText = ((row.children[3] && row.children[3].innerText) || '').trim().toLowerCase();
+            const nameMatch = !nq || nameText.includes(nq);
+            const typeMatch = !tq || typeText === tq;
+            const roleMatch = !q || roles.split(',').map(function (x) { return x.trim(); }).includes(q);
+            const enabledMatch = !enabledOnly || enabledText === 'true' || enabledText === 'ja';
+            const show = nameMatch && typeMatch && roleMatch && enabledMatch;
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          ewVisibleCount.textContent = String(visible);
+        }
+
+        nameInput.addEventListener('input', applyEwRoleFilter);
+        typeSel.addEventListener('change', applyEwRoleFilter);
+        sel.addEventListener('change', applyEwRoleFilter);
+        ewEnabledCb.addEventListener('change', applyEwRoleFilter);
+        applyEwRoleFilter();
+      }
+
+      const analyzeForm = document.getElementById('analyze-form');
+      const buildOverlay = document.getElementById('build-overlay');
+      if (analyzeForm && buildOverlay) {
+        const autoShowAfterRender = buildOverlay.getAttribute('data-auto-show') === '1';
+        if (autoShowAfterRender) {
+          buildOverlay.classList.add('show');
+          buildOverlay.setAttribute('aria-hidden', 'false');
+          const hideOverlay = function () {
+            window.setTimeout(function () {
+              window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(function () {
+                  buildOverlay.classList.remove('show');
+                  buildOverlay.setAttribute('aria-hidden', 'true');
+                });
+              });
+            }, 450);
+          };
+          if (document.readyState === 'complete') hideOverlay();
+          else window.addEventListener('load', hideOverlay, { once: true });
+        }
+
+        analyzeForm.addEventListener('submit', function (ev) {
+          if (analyzeForm.dataset.submitting === '1') return;
+          ev.preventDefault();
+          analyzeForm.dataset.submitting = '1';
+          buildOverlay.classList.add('show');
+          buildOverlay.setAttribute('aria-hidden', 'false');
+          window.setTimeout(function () { analyzeForm.submit(); }, 0);
+        });
+      }
+
+      if (xmlTooltip && aetCells.length) {
+        let toastTimer = null;
+
+        function showCopyToast(message) {
+          if (!copyToast) return;
+          copyToast.textContent = message;
+          copyToast.classList.add('show');
+          copyToast.setAttribute('aria-hidden', 'false');
+          if (toastTimer) clearTimeout(toastTimer);
+          toastTimer = setTimeout(function () {
+            copyToast.classList.remove('show');
+            copyToast.setAttribute('aria-hidden', 'true');
+          }, 1200);
+        }
+
+        function positionTooltip(ev) {
+          const pad = 14;
+          const tw = xmlTooltip.offsetWidth || 420;
+          const th = xmlTooltip.offsetHeight || 220;
+          let x = ev.clientX + 16;
+          let y = ev.clientY + 16;
+
+          if (x + tw + pad > window.innerWidth) x = Math.max(pad, ev.clientX - tw - 16);
+          if (y + th + pad > window.innerHeight) y = Math.max(pad, ev.clientY - th - 16);
+
+          xmlTooltip.style.left = x + 'px';
+          xmlTooltip.style.top = y + 'px';
+        }
+
+        aetCells.forEach(function (cell) {
+          cell.addEventListener('mouseenter', function (ev) {
+            const text = cell.getAttribute('data-tooltip') || '';
+            if (!text.trim()) return;
+            xmlTooltip.textContent = text;
+            xmlTooltip.style.display = 'block';
+            xmlTooltip.setAttribute('aria-hidden', 'false');
+            positionTooltip(ev);
+          });
+
+          cell.addEventListener('click', async function () {
+            const text = cell.getAttribute('data-tooltip') || '';
+            if (!text.trim()) return;
+            try {
+              await navigator.clipboard.writeText(text);
+              cell.classList.add('copied');
+              showCopyToast('Tooltip-Inhalt kopiert');
+              setTimeout(function () {
+                cell.classList.remove('copied');
+              }, 900);
+            } catch (e) {
+              showCopyToast('Kopieren fehlgeschlagen');
+            }
+          });
+
+          cell.addEventListener('mousemove', positionTooltip);
+
+          cell.addEventListener('mouseleave', function () {
+            xmlTooltip.style.display = 'none';
+            xmlTooltip.setAttribute('aria-hidden', 'true');
+            xmlTooltip.textContent = '';
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+<script>
+  // harter Fallback: funktioniert auch dann, wenn der große Haupt-Scriptblock später aussteigt
+  window.__scriptAccessInlineClick = function () {
+    try {
+      if (window.__openScriptAccessModal) {
+        window.__openScriptAccessModal();
+        return false;
+      }
+      fetch((window.location.origin + window.location.pathname.replace(/\/+$/, '') + '/script_access_code_json').replace('//script_access_code_json', '/script_access_code_json'))
+        .then(function (r) { return r.json(); })
+        .then(function (d) { alert('ScriptAccess Code: ' + (d.code || 'n/a')); })
+        .catch(function () { alert('ScriptAccess konnte nicht geöffnet werden.'); });
+      return false;
+    } catch (_e) {
+      return false;
+    }
+  };
+</script>
+</html>

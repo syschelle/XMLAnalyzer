@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hangingprotokoll – {{ hp.name }}</title>
+  <style>
+    :root {
+      --bg: #f3f6f5;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #4b6b63;
+    }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #5b786f, #4b6b63 60%, #6c8c83);
+      color: #fff;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .kv {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .kv .k { font-size: 12px; color: var(--muted); }
+    .kv .v { font-weight: 600; margin-top: 2px; }
+
+    .snapshot-block {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+      background: #f9fbfb;
+    }
+
+    .snapshot-title {
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+
+    .snapshot-hint {
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .screens-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .screen-card {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      padding: 10px;
+      background: #fff;
+      min-width: 360px;
+      flex: 1 1 420px;
+    }
+
+    .screen-name {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .layout-grid-wrap { margin-top: 6px; }
+
+
+    .layout-grid {
+      border-collapse: collapse;
+    }
+
+    .layout-grid td {
+      min-width: 320px;
+      height: 88px;
+      border: 1px solid #9ca3af;
+      background: #f9fafb;
+      font-size: 12px;
+      color: #334155;
+      text-align: left;
+      vertical-align: top;
+      padding: 8px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1 style="margin:0 0 6px; font-size:22px;">{{ hp.name }}</h1>
+      <div class="muted" style="color:rgba(255,255,255,0.9)">Platzhalterseite für die zukünftige schematische Darstellung dieses Hangingprotokolls.</div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 10px; font-size:18px;">Details</h2>
+      <div class="grid">
+        <div class="kv"><div class="k">Aktiv</div><div class="v">{{ hp.active }}</div></div>
+        <div class="kv"><div class="k">Priors</div><div class="v">{{ hp.numberOfPriors }}</div></div>
+        <div class="kv"><div class="k">Priorität</div><div class="v">{{ hp.priority }}</div></div>
+        <div class="kv"><div class="k">Use Priors</div><div class="v">{{ hp.usePriors }}</div></div>
+        <div class="kv"><div class="k">Erstellt von</div><div class="v">{{ hp.createdBy }}</div></div>
+        <div class="kv"><div class="k">Geändert von</div><div class="v">{{ hp.lastModifiedBy }}</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <h2 style="margin:0 0 10px; font-size:18px;">Snapshots (schematisch)</h2>
+      {% if hp.snapshotViews %}
+        {% for s in hp.snapshotViews %}
+          <div class="snapshot-block">
+            <p class="snapshot-title">
+              Snapshot: {{ s.name }}
+              {% if s.hasConditionalHanging or s.hasOrderHanging %}
+                {% if s.hasConditionalHanging %}<span class="snapshot-hint">bedingte Aufhängung</span>{% endif %}
+                {% if s.hasConditionalHanging and s.hasOrderHanging %}<span class="muted">, </span>{% endif %}
+                {% if s.hasOrderHanging %}<span class="snapshot-hint">Aufhängung nach Reihenfolge</span>{% endif %}
+              {% endif %}
+            </p>
+            {% if s.screens %}
+              <div class="screens-row">
+                {% for sc in s.screens %}
+                  <div class="screen-card">
+                    <div class="screen-name">
+                      {{ sc.name }}{% if sc.layouts %} – {{ sc.layouts|join(', ') }}{% endif %}
+                    </div>
+                    {% if sc.layoutTables %}
+                      {% for l in sc.layoutTables %}
+                        {% if l.cols and l.rows %}
+                          <div class="layout-grid-wrap">
+                            <table class="layout-grid">
+                              {% for _r in range(l.rows) %}
+                                <tr>
+                                  {% for _c in range(l.cols) %}
+                                    <td>
+                                      {% if l.conditionRules %}
+                                        <div class="muted" style="font-size:12px; line-height:1.25; white-space:nowrap;">
+                                          {% for rule in l.conditionRules %}
+                                            <div style="margin-bottom:4px;">
+                                              <strong>{{ rule.label }}</strong>
+                                              {% if rule.conditionNames %}
+                                                {% for cname in rule.conditionNames %}
+                                                  <div style="display:inline; margin-left:8px;">{{ cname }}</div>
+                                                {% endfor %}
+                                              {% endif %}
+                                              {% if rule.operators %}
+                                                <div style="display:inline; margin-left:8px;">
+                                                  {% for op in rule.operators %}
+                                                    <span>{{ op }}</span>{% if not loop.last %}<span>, </span>{% endif %}
+                                                  {% endfor %}
+                                                </div>
+                                              {% else %}
+                                                <span style="margin-left:8px;">kein Operator</span>
+                                              {% endif %}
+                                            </div>
+                                          {% endfor %}
+                                        </div>
+                                      {% endif %}
+                                    </td>
+                                  {% endfor %}
+                                </tr>
+                              {% endfor %}
+                            </table>
+                          </div>
+                        {% else %}
+                          <div class="layout-grid-wrap"><span class="muted">{{ l.label }}</span></div>
+                        {% endif %}
+                      {% endfor %}
+                    {% else %}
+                      <span class="muted">keine Layout-Information</span>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="muted">keine Screen-Information</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="muted">Keine Snapshot-Daten vorhanden.</div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
