@@ -20,8 +20,47 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.149"
+APP_VERSION = "v0.153"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
+
+
+def _parse_bool(value, default=None):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in ("1", "true", "yes", "y", "on", "enabled", "enable"):
+        return True
+    if normalized in ("0", "false", "no", "n", "off", "disabled", "disable"):
+        return False
+    return default
+
+
+SCRIPT_ACCESS_CODE_DEFAULT_ENABLED = _parse_bool(os.getenv("SCRIPT_ACCESS_CODE_ENABLED"), True)
+SCRIPT_ACCESS_CODE_ENABLED = SCRIPT_ACCESS_CODE_DEFAULT_ENABLED
+SCRIPT_ACCESS_CODE_API_DEFAULT_ENABLED = _parse_bool(os.getenv("SCRIPT_ACCESS_CODE_API_ENABLED"), True)
+SCRIPT_ACCESS_CODE_API_ENABLED = SCRIPT_ACCESS_CODE_API_DEFAULT_ENABLED
+
+
+def _is_script_access_code_enabled():
+    return bool(SCRIPT_ACCESS_CODE_ENABLED)
+
+
+def _is_script_access_code_api_enabled():
+    return bool(SCRIPT_ACCESS_CODE_API_ENABLED)
+
+
+def _set_script_access_code_enabled(enabled):
+    global SCRIPT_ACCESS_CODE_ENABLED
+    SCRIPT_ACCESS_CODE_ENABLED = bool(enabled)
+    return SCRIPT_ACCESS_CODE_ENABLED
+
+
+@app.context_processor
+def _inject_feature_flags():
+    return {"SCRIPT_ACCESS_CODE_ENABLED": _is_script_access_code_enabled()}
+
 
 # Zentraler Perzentilwert für die Performance-Auswertung.
 # UI-Texte und Tabellenköpfe werden daraus dynamisch erzeugt.
@@ -2850,6 +2889,63 @@ def _require_api_key():
     return None
 
 
+def _require_script_access_code_api_enabled():
+    if not _is_script_access_code_api_enabled():
+        abort(404)
+
+
+def _script_access_status_payload():
+    return {
+        "feature": "script_access_code",
+        "enabled": _is_script_access_code_enabled(),
+        "default_enabled_from_env": bool(SCRIPT_ACCESS_CODE_DEFAULT_ENABLED),
+        "env_var": "SCRIPT_ACCESS_CODE_ENABLED",
+        "api_enabled": _is_script_access_code_api_enabled(),
+        "api_default_enabled_from_env": bool(SCRIPT_ACCESS_CODE_API_DEFAULT_ENABLED),
+        "api_env_var": "SCRIPT_ACCESS_CODE_API_ENABLED",
+        "note": "Runtime changes through this API are reset to SCRIPT_ACCESS_CODE_ENABLED after container restart. Set SCRIPT_ACCESS_CODE_API_ENABLED=false in Docker Compose to disable this API.",
+    }
+
+
+@app.get("/api/v1/script-access-code/status")
+def api_script_access_code_status():
+    _require_script_access_code_api_enabled()
+    auth_err = _require_api_key()
+    if auth_err is not None:
+        return auth_err
+    return jsonify(_script_access_status_payload())
+
+
+@app.post("/api/v1/script-access-code/status")
+def api_set_script_access_code_status():
+    _require_script_access_code_api_enabled()
+    auth_err = _require_api_key()
+    if auth_err is not None:
+        return auth_err
+
+    payload = request.get_json(silent=True) or {}
+    if "enabled" not in payload:
+        return jsonify({"error": "Missing JSON field: enabled"}), 400
+
+    enabled = _parse_bool(payload.get("enabled"), None)
+    if enabled is None:
+        return jsonify({"error": "enabled must be boolean or one of true/false/on/off/1/0"}), 400
+
+    _set_script_access_code_enabled(enabled)
+    return jsonify(_script_access_status_payload())
+
+
+# Short aliases for convenience.
+@app.get("/api/v1/script-access/status")
+def api_script_access_status_alias():
+    return api_script_access_code_status()
+
+
+@app.post("/api/v1/script-access/status")
+def api_set_script_access_status_alias():
+    return api_set_script_access_code_status()
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
@@ -2901,6 +2997,8 @@ def anleitung():
 
 @app.get("/script_access_code")
 def script_access_code():
+    if not _is_script_access_code_enabled():
+        abort(404)
     now = datetime.now()
     code = _generate_script_access_code()
     return render_template(
@@ -2912,6 +3010,8 @@ def script_access_code():
 
 @app.get("/script_access_code_json")
 def script_access_code_json():
+    if not _is_script_access_code_enabled():
+        return jsonify({"enabled": False, "error": "ScriptAccess Code is disabled"}), 404
     now = datetime.now()
     now_ts = int(now.timestamp() * 1000)
     c_now = _generate_script_access_code(now_ts)
@@ -2920,6 +3020,7 @@ def script_access_code_json():
     m_40 = now.replace(minute=0, second=0, microsecond=0) - timedelta(minutes=40)
     c_m40 = _generate_script_access_code(int(m_40.timestamp() * 1000))
     return jsonify({
+        "enabled": True,
         "code": c_now,
         "codes": [c_now, c_m20, c_m40],
         "generated_at": now.strftime("%d.%m.%Y %H:%M:%S"),
@@ -3016,20 +3117,28 @@ def download_bundle():
     image: export-xml-web:latest
     container_name: export-xml-web
     ports:
-      - \"18080:8080\"
+      - "18080:8080"
     environment:
-      API_KEY: \"CHANGE_ME_TO_A_LONG_RANDOM_SECRET\"
+      API_KEY: "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
+      # Set to "false" to hide and disable ScriptAccess Code.
+      SCRIPT_ACCESS_CODE_ENABLED: "true"
+      # Set to "false" to disable the runtime API for changing ScriptAccess Code status.
+      SCRIPT_ACCESS_CODE_API_ENABLED: "true"
     restart: unless-stopped
 """
 
     compose_image_content = """services:
   export-xml-web:
-    image: ghcr.io/${IMAGE_OWNER:-syschelle}/export-xml-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/syschelle/export-xml-web:latest
     container_name: export-xml-web
     ports:
       - "18080:8080"
     environment:
-      API_KEY: "${API_KEY:-CHANGE_ME_TO_A_LONG_RANDOM_SECRET}"
+      API_KEY: "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
+      # Set to "false" to hide and disable ScriptAccess Code.
+      SCRIPT_ACCESS_CODE_ENABLED: "true"
+      # Set to "false" to disable the runtime API for changing ScriptAccess Code status.
+      SCRIPT_ACCESS_CODE_API_ENABLED: "true"
     restart: unless-stopped
 """
 
@@ -3051,7 +3160,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.149
+  APP_VERSION: v0.153
 
 jobs:
   build-export-xml-web:
@@ -3102,7 +3211,7 @@ jobs:
           tags: ${{ steps.image.outputs.tags }}
           labels: |
             org.opencontainers.image.title=export-xml-web
-            org.opencontainers.image.description=export.xml, Lizenzfile und Performance Analyzer
+            org.opencontainers.image.description=ConfigScope
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ env.APP_VERSION }}
@@ -3114,12 +3223,12 @@ jobs:
         run: |
           echo "Image gebaut: ${{ steps.image.outputs.image }}:${APP_VERSION}"
           echo "docker-compose.image.yml starten mit:"
-          echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,} IMAGE_TAG=latest docker compose -f docker-compose.image.yml up -d"
+          echo "docker compose -f docker-compose.image.yml up -d"
 """
 
     install_en_content = """# Installation Guide (Docker)
 
-This guide explains how to run the export.xml, Licensefile and Performance Analyzer on an external system.
+This guide explains how to run ConfigScope on an external system.
 
 ## Requirements
 - Docker Engine / Docker Desktop
@@ -3127,9 +3236,42 @@ This guide explains how to run the export.xml, Licensefile and Performance Analy
 - For the GitHub workflow: GitHub Actions with package write permissions enabled
 
 ## API key (recommended)
-Set `API_KEY` in `docker-compose.yml` or pass it as an environment variable when using `docker-compose.image.yml`.
+Set `API_KEY` directly in `docker-compose.yml` or `docker-compose.image.yml`.
 Use the same value in request header `X-API-Key`.
 If `API_KEY` is empty or missing, API access is open.
+
+No `.env` file is required.
+
+## ScriptAccess Code feature flags
+Set the ScriptAccess options directly in the Compose file.
+
+```yaml
+SCRIPT_ACCESS_CODE_ENABLED: "true"       # show and enable ScriptAccess Code
+SCRIPT_ACCESS_CODE_ENABLED: "false"      # hide and disable ScriptAccess Code
+SCRIPT_ACCESS_CODE_API_ENABLED: "true"   # allow the runtime API toggle
+SCRIPT_ACCESS_CODE_API_ENABLED: "false"  # disable the runtime API toggle
+```
+
+`SCRIPT_ACCESS_CODE_ENABLED` controls the UI/button and `/script_access_code` endpoints.
+`SCRIPT_ACCESS_CODE_API_ENABLED` controls the API endpoints used to read or change the ScriptAccess Code status at runtime.
+
+After changing the Compose file, recreate the container:
+
+```bash
+docker compose -f docker-compose.image.yml up -d --force-recreate
+```
+
+Runtime API toggle, protected by `X-API-Key` when `API_KEY` is configured and only available when `SCRIPT_ACCESS_CODE_API_ENABLED` is `"true"`:
+
+```bash
+curl -H "X-API-Key: <your-key>" http://localhost:18080/api/v1/script-access-code/status
+curl -X POST http://localhost:18080/api/v1/script-access-code/status \
+  -H "X-API-Key: <your-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": false}'
+```
+
+Runtime API changes are reset to the Docker Compose `SCRIPT_ACCESS_CODE_ENABLED` value after container restart. If `SCRIPT_ACCESS_CODE_API_ENABLED` is `"false"`, the runtime API endpoints return `404`.
 
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
@@ -3142,10 +3284,10 @@ docker compose up -d --build
 Use this variant when the image was built by GitHub Actions and pushed to GitHub Container Registry.
 
 ```bash
-IMAGE_OWNER=syschelle IMAGE_TAG=latest API_KEY=<your-api-key> docker compose -f docker-compose.image.yml up -d
+docker compose -f docker-compose.image.yml up -d
 ```
 
-Example image names used by `docker-compose.image.yml`:
+Image used by `docker-compose.image.yml`:
 
 ```text
 ghcr.io/syschelle/export-xml-web:latest
@@ -3166,14 +3308,12 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.149`
+- `v0.153`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
 
-`docker-compose.image.yml` uses `latest` by default. Set `IMAGE_TAG=v0.149` if you want to pin a fixed version.
-
-The default image owner is `syschelle`, matching the current GitHub repository owner. Override `IMAGE_OWNER` only when publishing the image under a different GitHub user or organization.
+`docker-compose.image.yml` uses `ghcr.io/syschelle/export-xml-web:latest` by default. Edit the `image:` line if you want to pin a fixed version tag.
 
 ## Open
 - http://localhost:18080
@@ -3181,7 +3321,9 @@ The default image owner is `syschelle`, matching the current GitHub repository o
 
 ## API example
 ```bash
-curl -X POST "http://localhost:18080/api/v1/export-xml/analyze"   -H "X-API-Key: <your-key>"   -F "file=@/path/to/export.xml;type=application/xml"
+curl -X POST "http://localhost:18080/api/v1/export-xml/analyze" \
+  -H "X-API-Key: <your-key>" \
+  -F "file=@/path/to/export.xml;type=application/xml"
 ```
 
 ## Stop

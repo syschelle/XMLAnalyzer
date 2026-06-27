@@ -16,7 +16,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.149
+  APP_VERSION: v0.153
 
 jobs:
   build-export-xml-web:
@@ -67,7 +67,7 @@ jobs:
           tags: ${{ steps.image.outputs.tags }}
           labels: |
             org.opencontainers.image.title=export-xml-web
-            org.opencontainers.image.description=export.xml, Lizenzfile und Performance Analyzer
+            org.opencontainers.image.description=ConfigScope
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ env.APP_VERSION }}
@@ -79,4 +79,4 @@ jobs:
         run: |
           echo "Image gebaut: ${{ steps.image.outputs.image }}:${APP_VERSION}"
           echo "docker-compose.image.yml starten mit:"
-          echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,} IMAGE_TAG=latest docker compose -f docker-compose.image.yml up -d"
+          echo "docker compose -f docker-compose.image.yml up -d"

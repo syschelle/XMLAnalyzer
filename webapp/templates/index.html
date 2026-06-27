@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>export.xml, Lizenzfile und Performance Analyzer</title>
+  <title>ConfigScope</title>
   <script>
     (function () {
       const m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
@@ -920,12 +920,14 @@
   <div class="wrap">
     <div class="hero">
       <div>
-        <h1>export.xml, Lize<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit;">n</button>zfile und Performance Analyzer</h1>
+        <h1>ConfigScope</h1>
         <p>Upload und Analyse von export.xml, Lizenzfile und performance.csv.</p>
       </div>
       <div class="hero-actions">
         <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener" class="pdf-btn">Anleitung</a>
-        <button type="button" id="script-access-open" class="pdf-btn" style="display:none;">ScriptAccess Code</button>
+        {% if SCRIPT_ACCESS_CODE_ENABLED %}
+        <button type="button" id="script-access-open" class="pdf-btn">ScriptAccess Code</button>
+        {% endif %}
         <a href="#" data-app-link="download_bundle" class="pdf-btn">Deploy Download</a>
         <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback" class="pdf-btn">Feedback</a>
         {% if not (result and result.xml_kind == 'licensefile') %}
@@ -950,7 +952,7 @@
 
     {% if result %}
     {% if result.xml_kind == 'licensefile' %}
-    <button type="button" id="script-access-license-trigger" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;" aria-hidden="true" tabindex="-1">scriptaccess</button>
+    {% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" id="script-access-license-trigger" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;" aria-hidden="true" tabindex="-1">scriptaccess</button>{% endif %}
     <div class="card">
       <h2>Übersicht Lizenzfile:{% if result.issuer and (result.issuer.name or result.issuer.location or result.issuer.country) %} {{ result.issuer.name }}{% if result.issuer.location %}, {{ result.issuer.location }}{% endif %}{% if result.issuer.country %} ({{ result.issuer.country }}){% endif %}{% endif %}</h2>
       <div class="stats">
@@ -1597,6 +1599,7 @@
     </div>
   </div>
 
+  {% if SCRIPT_ACCESS_CODE_ENABLED %}
   <div id="script-access-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-label="ScriptAccess Code" style="max-width:520px; width:92%; padding:12px;">
       <div class="modal-head">
@@ -1610,6 +1613,8 @@
       <textarea id="script-access-code" class="modal-code" readonly style="font-size:22px; font-weight:700; letter-spacing:1px; min-height:48px; max-height:64px;"></textarea>
     </div>
   </div>
+
+  {% endif %}
 
   <div id="xml-tooltip" class="xml-tooltip" aria-hidden="true"></div>
   <div id="copy-toast" class="copy-toast" aria-hidden="true">Inhalt kopiert</div>
@@ -1661,13 +1666,14 @@
       const scriptAccessClose = document.getElementById('script-access-close');
       const scriptAccessCopy = document.getElementById('script-access-copy');
       function openScriptAccessModal() {
+        if (!scriptAccessModal || !scriptAccessCode || !scriptAccessTime) return;
         scriptAccessCode.value = 'Lade...';
         scriptAccessTime.textContent = '';
         
         scriptAccessModal.classList.add('show');
         scriptAccessModal.setAttribute('aria-hidden', 'false');
         fetch(SCRIPT_ACCESS_JSON_URL)
-          .then(function (r) { return r.json(); })
+          .then(function (r) { if (!r.ok) throw new Error('ScriptAccess disabled or unavailable'); return r.json(); })
           .then(function (data) {
             scriptAccessCode.value = data.code || '';
             scriptAccessTime.textContent = 'Generiert am: ' + (data.generated_at || '');
@@ -4226,6 +4232,7 @@
     })();
   </script>
 </body>
+{% if SCRIPT_ACCESS_CODE_ENABLED %}
 <script>
   // harter Fallback: funktioniert auch dann, wenn der große Haupt-Scriptblock später aussteigt
   window.__scriptAccessInlineClick = function () {
@@ -4244,4 +4251,5 @@
     }
   };
 </script>
+{% endif %}
 </html>
