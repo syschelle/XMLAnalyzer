@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.157`
+- `v0.159`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -133,6 +133,6 @@ When enabled, ScriptAccess Code is not shown as a standalone button. It is inten
 ## Performance CSV comparison
 
 The web upload supports selecting up to two files.
-A comparison view is available only when both selected files are Performance CSV files.
+A comparison view is available only when both selected files are Performance CSV files. The comparison includes tables and modality-based comparison charts with PDF export. ConfigScope derives comparison labels from the differing parts of the two filenames and uses those labels instead of generic A/B labels.
 `export.xml` and license XML files do not support two-file comparison and must be analyzed individually.
 

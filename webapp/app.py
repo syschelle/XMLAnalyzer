@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.157"
+APP_VERSION = "v0.159"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -927,6 +927,70 @@ def _fmt_delta_int(delta):
         return ""
 
 
+def _filename_stem(filename):
+    name = Path(filename or "").name.strip()
+    if not name:
+        return ""
+    lower = name.lower()
+    for suffix in (".csv", ".xml"):
+        if lower.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+def _common_prefix_len(a, b):
+    n = min(len(a), len(b))
+    i = 0
+    while i < n and a[i].lower() == b[i].lower():
+        i += 1
+    return i
+
+
+def _common_suffix_len(a, b, prefix_len=0):
+    max_len = min(len(a), len(b)) - prefix_len
+    i = 0
+    while i < max_len and a[len(a) - 1 - i].lower() == b[len(b) - 1 - i].lower():
+        i += 1
+    return i
+
+
+def _pretty_compare_label(text, fallback):
+    raw = (text or "").strip(" _-.()[]{}")
+    if not raw:
+        raw = fallback
+    raw = re.sub(r"[-_.]+", " ", raw).strip()
+    raw = re.sub(r"\s+", " ", raw)
+    if not raw:
+        raw = fallback
+    return raw[:60] + "…" if len(raw) > 60 else raw
+
+
+def _build_filename_compare_labels(filename_a, filename_b):
+    stem_a = _filename_stem(filename_a)
+    stem_b = _filename_stem(filename_b)
+    if not stem_a or not stem_b or stem_a.lower() == stem_b.lower():
+        return (_pretty_compare_label(stem_a or filename_a or "Datei 1", "Datei 1"),
+                _pretty_compare_label(stem_b or filename_b or "Datei 2", "Datei 2"))
+
+    prefix_len = _common_prefix_len(stem_a, stem_b)
+    suffix_len = _common_suffix_len(stem_a, stem_b, prefix_len)
+
+    # Avoid returning empty or meaningless fragments when the common parts overlap.
+    end_a = len(stem_a) - suffix_len if suffix_len else len(stem_a)
+    end_b = len(stem_b) - suffix_len if suffix_len else len(stem_b)
+    diff_a = stem_a[prefix_len:end_a]
+    diff_b = stem_b[prefix_len:end_b]
+
+    label_a = _pretty_compare_label(diff_a, stem_a)
+    label_b = _pretty_compare_label(diff_b, stem_b)
+
+    if label_a.lower() == label_b.lower():
+        label_a = _pretty_compare_label(stem_a, "Datei 1")
+        label_b = _pretty_compare_label(stem_b, "Datei 2")
+
+    return label_a, label_b
+
+
 def _performance_numeric_stats(group_rows):
     fvals = [r["firstDisplayMs"] for r in group_rows if r.get("firstDisplayMs") is not None]
     fulls = [r["fullStudyMs"] for r in group_rows if r.get("fullStudyMs") is not None]
@@ -951,6 +1015,7 @@ def _performance_numeric_stats(group_rows):
 def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
     rows_a = result_a.get("performance_rows") or []
     rows_b = result_b.get("performance_rows") or []
+    label_a, label_b = _build_filename_compare_labels(filename_a, filename_b)
 
     def group_by(rows, key, fallback="-"):
         out = {}
@@ -977,15 +1042,23 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
                 "objectAvgDelta": _fmt_delta_decimal(None if a["objectAvgValue"] is None or b["objectAvgValue"] is None else b["objectAvgValue"] - a["objectAvgValue"], 1),
                 "firstAvgA": a["firstAvg"] or "-",
                 "firstAvgB": b["firstAvg"] or "-",
+                "firstAvgMsA": a["firstAvgValue"],
+                "firstAvgMsB": b["firstAvgValue"],
                 "firstAvgDelta": _fmt_delta_seconds(None if a["firstAvgValue"] is None or b["firstAvgValue"] is None else b["firstAvgValue"] - a["firstAvgValue"]),
                 "firstP90A": a["firstP90"] or "-",
                 "firstP90B": b["firstP90"] or "-",
+                "firstP90MsA": a["firstP90Value"],
+                "firstP90MsB": b["firstP90Value"],
                 "firstP90Delta": _fmt_delta_seconds(None if a["firstP90Value"] is None or b["firstP90Value"] is None else b["firstP90Value"] - a["firstP90Value"]),
                 "fullAvgA": a["fullAvg"] or "-",
                 "fullAvgB": b["fullAvg"] or "-",
+                "fullAvgMsA": a["fullAvgValue"],
+                "fullAvgMsB": b["fullAvgValue"],
                 "fullAvgDelta": _fmt_delta_seconds(None if a["fullAvgValue"] is None or b["fullAvgValue"] is None else b["fullAvgValue"] - a["fullAvgValue"]),
                 "fullP90A": a["fullP90"] or "-",
                 "fullP90B": b["fullP90"] or "-",
+                "fullP90MsA": a["fullP90Value"],
+                "fullP90MsB": b["fullP90Value"],
                 "fullP90Delta": _fmt_delta_seconds(None if a["fullP90Value"] is None or b["fullP90Value"] is None else b["fullP90Value"] - a["fullP90Value"]),
                 "slowA": a["slowCount"],
                 "slowB": b["slowCount"],
@@ -1003,6 +1076,8 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
     summary = {
         "filename_a": filename_a,
         "filename_b": filename_b,
+        "label_a": label_a,
+        "label_b": label_b,
         "rows_a": len(rows_a),
         "rows_b": len(rows_b),
         "rows_delta": _fmt_delta_int(len(rows_b) - len(rows_a)),
@@ -1031,20 +1106,45 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
         "date_max_b": result_b.get("performance_summary", {}).get("date_max", ""),
     }
 
+    compare_modalities = compare_groups("modality", "-")
+    compare_hangings = compare_groups("hanging", "Ohne Hanging")
+    compare_users = compare_groups("user", "-")
+    compare_chart_data = [
+        {
+            "label": row["label"],
+            "countA": row["countA"],
+            "countB": row["countB"],
+            "firstAvgSecA": None if row.get("firstAvgMsA") is None else round(row["firstAvgMsA"] / 1000.0, 3),
+            "firstAvgSecB": None if row.get("firstAvgMsB") is None else round(row["firstAvgMsB"] / 1000.0, 3),
+            "fullAvgSecA": None if row.get("fullAvgMsA") is None else round(row["fullAvgMsA"] / 1000.0, 3),
+            "fullAvgSecB": None if row.get("fullAvgMsB") is None else round(row["fullAvgMsB"] / 1000.0, 3),
+            "firstP90SecA": None if row.get("firstP90MsA") is None else round(row["firstP90MsA"] / 1000.0, 3),
+            "firstP90SecB": None if row.get("firstP90MsB") is None else round(row["firstP90MsB"] / 1000.0, 3),
+            "fullP90SecA": None if row.get("fullP90MsA") is None else round(row["fullP90MsA"] / 1000.0, 3),
+            "fullP90SecB": None if row.get("fullP90MsB") is None else round(row["fullP90MsB"] / 1000.0, 3),
+            "slowA": row["slowA"],
+            "slowB": row["slowB"],
+        }
+        for row in compare_modalities
+    ]
+
     return {
         "xml_kind": "performancecsv_compare",
         "root": "performance.csv compare",
         "filename": f"{filename_a} ↔ {filename_b}",
         "filename_a": filename_a,
         "filename_b": filename_b,
+        "performance_compare_label_a": label_a,
+        "performance_compare_label_b": label_b,
         "missing_headers": sorted(set(result_a.get("missing_headers") or []) | set(result_b.get("missing_headers") or [])),
         "performance_percentile": PERFORMANCE_PERCENTILE,
         "performance_percentile_label": _performance_percentile_label(PERFORMANCE_PERCENTILE),
         "performance_percentile_hint": _performance_percentile_hint(PERFORMANCE_PERCENTILE),
         "performance_compare_summary": summary,
-        "performance_compare_modalities": compare_groups("modality", "-"),
-        "performance_compare_hangings": compare_groups("hanging", "Ohne Hanging"),
-        "performance_compare_users": compare_groups("user", "-"),
+        "performance_compare_modalities": compare_modalities,
+        "performance_compare_hangings": compare_hangings,
+        "performance_compare_users": compare_users,
+        "performance_compare_chart_data": compare_chart_data,
         "performance_a": result_a,
         "performance_b": result_b,
     }
@@ -3365,7 +3465,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.157
+  APP_VERSION: v0.159
 
 jobs:
   build-export-xml-web:
@@ -3524,7 +3624,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.157`
+- `v0.159`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
