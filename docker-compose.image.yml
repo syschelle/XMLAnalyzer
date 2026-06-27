@@ -10,4 +10,6 @@ services:
       SCRIPT_ACCESS_CODE_ENABLED: "true"
       # Set to "false" to disable the runtime API for changing ScriptAccess Code status.
       SCRIPT_ACCESS_CODE_API_ENABLED: "true"
+      # Set to "false" to hide and disable Deploy Download.
+      DEPLOY_DOWNLOAD_ENABLED: "true"
     restart: unless-stopped

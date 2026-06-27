@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.153"
+APP_VERSION = "v0.155"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -41,6 +41,7 @@ SCRIPT_ACCESS_CODE_DEFAULT_ENABLED = _parse_bool(os.getenv("SCRIPT_ACCESS_CODE_E
 SCRIPT_ACCESS_CODE_ENABLED = SCRIPT_ACCESS_CODE_DEFAULT_ENABLED
 SCRIPT_ACCESS_CODE_API_DEFAULT_ENABLED = _parse_bool(os.getenv("SCRIPT_ACCESS_CODE_API_ENABLED"), True)
 SCRIPT_ACCESS_CODE_API_ENABLED = SCRIPT_ACCESS_CODE_API_DEFAULT_ENABLED
+DEPLOY_DOWNLOAD_ENABLED = _parse_bool(os.getenv("DEPLOY_DOWNLOAD_ENABLED"), True)
 
 
 def _is_script_access_code_enabled():
@@ -51,6 +52,10 @@ def _is_script_access_code_api_enabled():
     return bool(SCRIPT_ACCESS_CODE_API_ENABLED)
 
 
+def _is_deploy_download_enabled():
+    return bool(DEPLOY_DOWNLOAD_ENABLED)
+
+
 def _set_script_access_code_enabled(enabled):
     global SCRIPT_ACCESS_CODE_ENABLED
     SCRIPT_ACCESS_CODE_ENABLED = bool(enabled)
@@ -59,7 +64,10 @@ def _set_script_access_code_enabled(enabled):
 
 @app.context_processor
 def _inject_feature_flags():
-    return {"SCRIPT_ACCESS_CODE_ENABLED": _is_script_access_code_enabled()}
+    return {
+        "SCRIPT_ACCESS_CODE_ENABLED": _is_script_access_code_enabled(),
+        "DEPLOY_DOWNLOAD_ENABLED": _is_deploy_download_enabled(),
+    }
 
 
 # Zentraler Perzentilwert für die Performance-Auswertung.
@@ -2399,8 +2407,18 @@ def analyze_xml(file_storage):
     hanging_condition_sets_agd_download_name = f"conditions-export-{APP_VERSION}.AGD"
 
     hanging_condition_set_rows.sort(key=lambda x: ((x.get("name", "") or "").lower(), (x.get("condition", "") or "").lower(), (x.get("dicomTagDescription", "") or "").lower(), (x.get("dicomTagNumber", "") or "").lower(), (x.get("value", "") or "").lower()))
-    global _LAST_HANGING_PROTOCOLS_BY_ID
-    _LAST_HANGING_PROTOCOLS_BY_ID = {h["id"]: h for h in hanging_protocols}
+    for h in hanging_protocols:
+        h["detailPayload"] = {
+            "name": h.get("name", ""),
+            "active": h.get("active", ""),
+            "numberOfPriors": h.get("numberOfPriors", ""),
+            "priority": h.get("priority", ""),
+            "usePriors": h.get("usePriors", ""),
+            "createdBy": h.get("createdBy", ""),
+            "lastModifiedBy": h.get("lastModifiedBy", ""),
+            "snapshotViews": h.get("snapshotViews", []),
+        }
+
     hanging_inactive_count = sum(
         1 for h in hanging_protocols if (h.get("active", "") or "").strip().lower() != "true"
     )
@@ -2984,10 +3002,9 @@ def index():
 
 @app.get("/hanging/<protocol_id>")
 def hanging_detail(protocol_id):
-    hp = _LAST_HANGING_PROTOCOLS_BY_ID.get(protocol_id)
-    if not hp:
-        abort(404)
-    return render_template("hanging_detail.html", hp=hp)
+    # Hanging details are intentionally no longer cached server-side.
+    # Detail pages are generated client-side from the currently displayed browser result.
+    abort(404)
 
 
 @app.get("/anleitung")
@@ -3108,6 +3125,9 @@ def api_analyze_performance_csv():
 
 @app.get("/download_bundle")
 def download_bundle():
+    if not _is_deploy_download_enabled():
+        abort(404)
+
     app_dir = Path(__file__).resolve().parent
 
     compose_content = """services:
@@ -3124,6 +3144,8 @@ def download_bundle():
       SCRIPT_ACCESS_CODE_ENABLED: "true"
       # Set to "false" to disable the runtime API for changing ScriptAccess Code status.
       SCRIPT_ACCESS_CODE_API_ENABLED: "true"
+      # Set to "false" to hide and disable Deploy Download.
+      DEPLOY_DOWNLOAD_ENABLED: "true"
     restart: unless-stopped
 """
 
@@ -3139,6 +3161,8 @@ def download_bundle():
       SCRIPT_ACCESS_CODE_ENABLED: "true"
       # Set to "false" to disable the runtime API for changing ScriptAccess Code status.
       SCRIPT_ACCESS_CODE_API_ENABLED: "true"
+      # Set to "false" to hide and disable Deploy Download.
+      DEPLOY_DOWNLOAD_ENABLED: "true"
     restart: unless-stopped
 """
 
@@ -3160,7 +3184,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.153
+  APP_VERSION: v0.155
 
 jobs:
   build-export-xml-web:
@@ -3273,6 +3297,17 @@ curl -X POST http://localhost:18080/api/v1/script-access-code/status \
 
 Runtime API changes are reset to the Docker Compose `SCRIPT_ACCESS_CODE_ENABLED` value after container restart. If `SCRIPT_ACCESS_CODE_API_ENABLED` is `"false"`, the runtime API endpoints return `404`.
 
+## Deploy Download feature flag
+Set the Deploy Download option directly in the Compose file.
+
+```yaml
+DEPLOY_DOWNLOAD_ENABLED: "true"   # show and enable Deploy Download
+DEPLOY_DOWNLOAD_ENABLED: "false"  # hide and disable Deploy Download
+```
+
+When disabled, the Deploy Download button is hidden and `/download_bundle` returns `404`.
+After changing the Compose file, recreate the container.
+
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
@@ -3308,7 +3343,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.153`
+- `v0.155`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -3325,6 +3360,14 @@ curl -X POST "http://localhost:18080/api/v1/export-xml/analyze" \
   -H "X-API-Key: <your-key>" \
   -F "file=@/path/to/export.xml;type=application/xml"
 ```
+
+
+## Data handling and demo disclaimer
+ConfigScope is intended only as a demonstration and analysis aid. Use is at the user's own risk.
+
+Uploaded XML, license and performance CSV files are processed in memory for the current request. The application does not intentionally write uploaded files, parsed analysis results or generated report data to disk, a database or persistent server-side storage. After the response has been rendered, the displayed analysis exists in the browser only.
+
+Exports such as Excel, PDF/print output, AGH/AGD files and the deploy bundle are generated on demand and are stored only where the user explicitly saves or downloads them. Standard infrastructure such as browser caches, reverse proxies, web server access logs or container/platform logging can still record technical metadata such as request paths, timestamps or client addresses depending on the deployment environment.
 
 ## Stop
 ```bash

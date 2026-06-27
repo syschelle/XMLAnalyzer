@@ -45,6 +45,17 @@ curl -X POST http://localhost:18080/api/v1/script-access-code/status \
 
 Runtime API changes are reset to the Docker Compose `SCRIPT_ACCESS_CODE_ENABLED` value after container restart. If `SCRIPT_ACCESS_CODE_API_ENABLED` is `"false"`, the runtime API endpoints return `404`.
 
+## Deploy Download feature flag
+Set the Deploy Download option directly in the Compose file.
+
+```yaml
+DEPLOY_DOWNLOAD_ENABLED: "true"   # show and enable Deploy Download
+DEPLOY_DOWNLOAD_ENABLED: "false"  # hide and disable Deploy Download
+```
+
+When disabled, the Deploy Download button is hidden and `/download_bundle` returns `404`.
+After changing the Compose file, recreate the container.
+
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
@@ -80,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.153`
+- `v0.155`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -97,6 +108,14 @@ curl -X POST "http://localhost:18080/api/v1/export-xml/analyze" \
   -H "X-API-Key: <your-key>" \
   -F "file=@/path/to/export.xml;type=application/xml"
 ```
+
+
+## Data handling and demo disclaimer
+ConfigScope is intended only as a demonstration and analysis aid. Use is at the user's own risk.
+
+Uploaded XML, license and performance CSV files are processed in memory for the current request. The application does not intentionally write uploaded files, parsed analysis results or generated report data to disk, a database or persistent server-side storage. After the response has been rendered, the displayed analysis exists in the browser only.
+
+Exports such as Excel, PDF/print output, AGH/AGD files and the deploy bundle are generated on demand and are stored only where the user explicitly saves or downloads them. Standard infrastructure such as browser caches, reverse proxies, web server access logs or container/platform logging can still record technical metadata such as request paths, timestamps or client addresses depending on the deployment environment.
 
 ## Stop
 ```bash

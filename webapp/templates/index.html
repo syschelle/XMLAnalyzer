@@ -928,7 +928,9 @@
         {% if SCRIPT_ACCESS_CODE_ENABLED %}
         <button type="button" id="script-access-open" class="pdf-btn">ScriptAccess Code</button>
         {% endif %}
+        {% if DEPLOY_DOWNLOAD_ENABLED %}
         <a href="#" data-app-link="download_bundle" class="pdf-btn">Deploy Download</a>
+        {% endif %}
         <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback" class="pdf-btn">Feedback</a>
         {% if not (result and result.xml_kind == 'licensefile') %}
         <button type="button" id="pdf-export-open" class="pdf-btn">Auswertung</button>
@@ -1424,7 +1426,7 @@
           <tr><th>Name</th><th>Aktiv</th><th>Priors</th><th>Priorität</th><th>Use Priors</th><th>Erstellt von</th><th>Geändert von</th><th>Display-Deskriptoren</th><th>Download</th></tr>
           {% for h in result.hanging_protocols %}
           <tr class="hp-row {% if (h.active or '')|lower != 'true' %}hp-inactive{% endif %}">
-            <td><a href="#" data-hanging-link="{{ h.id|urlencode }}" target="_blank" rel="noopener" class="code-btn">{{ h.name }}</a></td>
+            <td><a href="#" data-hanging-detail="{{ h.detailPayload|tojson|forceescape }}" target="_blank" rel="noopener" class="code-btn">{{ h.name }}</a></td>
             <td>{{ h.active }}</td>
             <td>{{ h.numberOfPriors }}</td>
             <td>{{ h.priority }}</td>
@@ -1632,6 +1634,15 @@
         document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
       }
 
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       function appBaseHref() {
         const p = (window.location.pathname || '/').replace(/\/+$/, '');
         const basePath = p ? (p + '/') : '/';
@@ -1653,9 +1664,59 @@
         a.setAttribute('href', appUrl(targetPath));
       });
 
-      Array.from(document.querySelectorAll('[data-hanging-link]')).forEach(function (a) {
-        const pid = a.getAttribute('data-hanging-link') || '';
-        a.setAttribute('href', appUrl('hanging/' + pid));
+      function renderHangingDetailHtml(hp) {
+        function esc(v) { return escapeHtml(v == null ? '' : String(v)); }
+        function kv(k, v) { return '<div class="kv"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div></div>'; }
+        const snapshots = Array.isArray(hp.snapshotViews) ? hp.snapshotViews : [];
+        const snapshotHtml = snapshots.length ? snapshots.map(function (s) {
+          const screens = Array.isArray(s.screens) ? s.screens : [];
+          const screenHtml = screens.length ? screens.map(function (sc) {
+            const layouts = Array.isArray(sc.layouts) ? sc.layouts.join(', ') : '';
+            const tables = Array.isArray(sc.layoutTables) ? sc.layoutTables : [];
+            const tableHtml = tables.length ? tables.map(function (l) {
+              if (l.cols && l.rows) {
+                let rowsHtml = '';
+                for (let r = 0; r < l.rows; r += 1) {
+                  let colsHtml = '';
+                  for (let c = 0; c < l.cols; c += 1) {
+                    const rules = Array.isArray(l.conditionRules) ? l.conditionRules : [];
+                    const rulesHtml = rules.map(function (rule) {
+                      const names = Array.isArray(rule.conditionNames) ? rule.conditionNames.join(', ') : '';
+                      const ops = Array.isArray(rule.operators) ? rule.operators.join(', ') : 'kein Operator';
+                      return '<div style="margin-bottom:4px;"><strong>' + esc(rule.label) + '</strong><span style="margin-left:8px;">' + esc(names) + '</span><span style="margin-left:8px;">' + esc(ops) + '</span></div>';
+                    }).join('');
+                    colsHtml += '<td>' + rulesHtml + '</td>';
+                  }
+                  rowsHtml += '<tr>' + colsHtml + '</tr>';
+                }
+                return '<div class="layout-grid-wrap"><table class="layout-grid">' + rowsHtml + '</table></div>';
+              }
+              return '<div class="layout-grid-wrap"><span class="muted">' + esc(l.label || '') + '</span></div>';
+            }).join('') : '<span class="muted">keine Layout-Information</span>';
+            return '<div class="screen-card"><div class="screen-name">' + esc(sc.name || 'Screen') + (layouts ? ' – ' + esc(layouts) : '') + '</div>' + tableHtml + '</div>';
+          }).join('') : '<div class="muted">keine Screen-Information</div>';
+          return '<div class="snapshot-block"><p class="snapshot-title">Snapshot: ' + esc(s.name || '') + '</p><div class="screens-row">' + screenHtml + '</div></div>';
+        }).join('') : '<div class="muted">Keine Snapshot-Daten vorhanden.</div>';
+        return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hangingprotokoll – ' + esc(hp.name || '') + '</title><style>'
+          + ':root{--bg:#f3f6f5;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;--accent:#4b6b63;}body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}.wrap{max-width:100%;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#5b786f,#4b6b63 60%,#6c8c83);color:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:10px}.kv{border:1px solid var(--line);border-radius:8px;padding:8px}.kv .k{font-size:12px;color:var(--muted)}.kv .v{font-weight:600;margin-top:2px}.snapshot-block{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px;background:#f9fbfb}.snapshot-title{font-weight:700;margin:0 0 8px}.screens-row{display:flex;gap:10px;flex-wrap:wrap}.screen-card{border:1px solid var(--line);padding:10px;background:#fff;min-width:360px;flex:1 1 420px}.screen-name{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}.layout-grid{border-collapse:collapse}.layout-grid td{min-width:320px;height:88px;border:1px solid #9ca3af;background:#f9fafb;font-size:12px;color:#334155;text-align:left;vertical-align:top;padding:8px;white-space:nowrap}'
+          + '</style></head><body><div class="wrap"><div class="hero"><h1 style="margin:0 0 6px;font-size:22px;">' + esc(hp.name || '') + '</h1><div style="color:rgba(255,255,255,0.9)">Detailansicht aus der aktuell im Browser angezeigten Auswertung.</div></div><div class="card"><h2 style="margin:0 0 10px;font-size:18px;">Details</h2><div class="grid">'
+          + kv('Aktiv', hp.active) + kv('Priors', hp.numberOfPriors) + kv('Priorität', hp.priority) + kv('Use Priors', hp.usePriors) + kv('Erstellt von', hp.createdBy) + kv('Geändert von', hp.lastModifiedBy)
+          + '</div></div><div class="card" style="margin-top:14px;"><h2 style="margin:0 0 10px;font-size:18px;">Snapshots (schematisch)</h2>' + snapshotHtml + '</div></div></body></html>';
+      }
+
+      Array.from(document.querySelectorAll('[data-hanging-detail]')).forEach(function (a) {
+        a.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          const raw = a.getAttribute('data-hanging-detail') || '{}';
+          let hp = {};
+          try { hp = JSON.parse(raw); } catch (e) { hp = {}; }
+          const w = window.open('', '_blank');
+          if (!w) return;
+          w.document.open();
+          w.document.write(renderHangingDetailHtml(hp));
+          w.document.close();
+          w.focus();
+        });
       });
 
       const scriptAccessBtn = document.getElementById('script-access-open');
