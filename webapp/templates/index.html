@@ -920,14 +920,11 @@
   <div class="wrap">
     <div class="hero">
       <div>
-        <h1>ConfigScope</h1>
+        <h1>Co{% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit; color:inherit;">n</button>{% else %}n{% endif %}figScope</h1>
         <p>Upload und Analyse von export.xml, Lizenzfile und performance.csv.</p>
       </div>
       <div class="hero-actions">
         <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener" class="pdf-btn">Anleitung</a>
-        {% if SCRIPT_ACCESS_CODE_ENABLED %}
-        <button type="button" id="script-access-open" class="pdf-btn">ScriptAccess Code</button>
-        {% endif %}
         {% if DEPLOY_DOWNLOAD_ENABLED %}
         <a href="#" data-app-link="download_bundle" class="pdf-btn">Deploy Download</a>
         {% endif %}
@@ -954,7 +951,6 @@
 
     {% if result %}
     {% if result.xml_kind == 'licensefile' %}
-    {% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" id="script-access-license-trigger" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;" aria-hidden="true" tabindex="-1">scriptaccess</button>{% endif %}
     <div class="card">
       <h2>Übersicht Lizenzfile:{% if result.issuer and (result.issuer.name or result.issuer.location or result.issuer.country) %} {{ result.issuer.name }}{% if result.issuer.location %}, {{ result.issuer.location }}{% endif %}{% if result.issuer.country %} ({{ result.issuer.country }}){% endif %}{% endif %}</h2>
       <div class="stats">
@@ -1719,7 +1715,6 @@
         });
       });
 
-      const scriptAccessBtn = document.getElementById('script-access-open');
       const scriptAccessModal = document.getElementById('script-access-modal');
       const scriptAccessCode = document.getElementById('script-access-code');
       const scriptAccessTime = document.getElementById('script-access-time');
@@ -1760,12 +1755,11 @@
         if (window.__openScriptAccessModal) window.__openScriptAccessModal();
       });
 
-      if (scriptAccessBtn && scriptAccessModal && scriptAccessCode && scriptAccessTime && scriptAccessClose && scriptAccessCopy) {
+      if (scriptAccessModal && scriptAccessCode && scriptAccessTime && scriptAccessClose && scriptAccessCopy) {
         function closeScriptAccessModal() {
           scriptAccessModal.classList.remove('show');
           scriptAccessModal.setAttribute('aria-hidden', 'true');
         }
-        scriptAccessBtn.addEventListener('click', openScriptAccessModal);
         scriptAccessClose.addEventListener('click', closeScriptAccessModal);
         scriptAccessCopy.addEventListener('click', async function () {
           try {
@@ -1781,7 +1775,7 @@
           if (e.target === scriptAccessModal) closeScriptAccessModal();
         });
 
-        // Öffnen läuft zusätzlich über globales Event-Delegation-Fallback oben.
+        // Öffnen läuft ausschließlich über den versteckten Trigger im Buchstaben n von ConfigScope.
       }
 
       const root = document.documentElement;

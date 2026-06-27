@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.155"
+APP_VERSION = "v0.156"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -3184,7 +3184,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.155
+  APP_VERSION: v0.156
 
 jobs:
   build-export-xml-web:
@@ -3343,7 +3343,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.155`
+- `v0.156`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

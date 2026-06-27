@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.155`
+- `v0.156`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -123,3 +123,8 @@ docker compose down
 # or, for the image based compose file:
 docker compose -f docker-compose.image.yml down
 ```
+
+
+## ScriptAccess UI
+
+When enabled, ScriptAccess Code is not shown as a standalone button. It is intentionally hidden behind the letter `n` in the `ConfigScope` title.
