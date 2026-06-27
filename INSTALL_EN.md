@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.156`
+- `v0.157`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -128,3 +128,11 @@ docker compose -f docker-compose.image.yml down
 ## ScriptAccess UI
 
 When enabled, ScriptAccess Code is not shown as a standalone button. It is intentionally hidden behind the letter `n` in the `ConfigScope` title.
+
+
+## Performance CSV comparison
+
+The web upload supports selecting up to two files.
+A comparison view is available only when both selected files are Performance CSV files.
+`export.xml` and license XML files do not support two-file comparison and must be analyzed individually.
+

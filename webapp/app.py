@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.156"
+APP_VERSION = "v0.157"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -892,6 +892,161 @@ def analyze_performance_csv(file_storage, filename="performance.csv"):
             {"hangupType": k, "count": v}
             for k, v in sorted(hangup_counts.items(), key=lambda x: (-x[1], x[0]))
         ],
+    }
+
+
+def _fmt_delta_seconds(delta_ms, digits=2):
+    if delta_ms is None:
+        return ""
+    try:
+        value = float(delta_ms) / 1000.0
+        sign = "+" if value > 0 else ""
+        return (f"{sign}{value:.{digits}f} s").replace(".", ",")
+    except Exception:
+        return ""
+
+
+def _fmt_delta_decimal(delta, digits=1):
+    if delta is None:
+        return ""
+    try:
+        value = float(delta)
+        sign = "+" if value > 0 else ""
+        return (f"{sign}{value:.{digits}f}").replace(".", ",")
+    except Exception:
+        return ""
+
+
+def _fmt_delta_int(delta):
+    if delta is None:
+        return ""
+    try:
+        value = int(delta)
+        return f"+{value}" if value > 0 else str(value)
+    except Exception:
+        return ""
+
+
+def _performance_numeric_stats(group_rows):
+    fvals = [r["firstDisplayMs"] for r in group_rows if r.get("firstDisplayMs") is not None]
+    fulls = [r["fullStudyMs"] for r in group_rows if r.get("fullStudyMs") is not None]
+    object_counts = [r["objectCount"] for r in group_rows if isinstance(r.get("objectCount"), int)]
+    return {
+        "count": len(group_rows),
+        "objectAvgValue": _avg(object_counts),
+        "objectAvg": _fmt_decimal(_avg(object_counts), 1),
+        "firstAvgValue": _avg(fvals),
+        "firstAvg": _fmt_ms_seconds(_avg(fvals)),
+        "firstP90Value": _percentile(fvals, PERFORMANCE_PERCENTILE),
+        "firstP90": _fmt_ms_seconds(_percentile(fvals, PERFORMANCE_PERCENTILE)),
+        "fullAvgValue": _avg(fulls),
+        "fullAvg": _fmt_ms_seconds(_avg(fulls)),
+        "fullP90Value": _percentile(fulls, PERFORMANCE_PERCENTILE),
+        "fullP90": _fmt_ms_seconds(_percentile(fulls, PERFORMANCE_PERCENTILE)),
+        "slowCount": sum(1 for r in group_rows if r.get("isSlow")),
+    }
+
+
+
+def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
+    rows_a = result_a.get("performance_rows") or []
+    rows_b = result_b.get("performance_rows") or []
+
+    def group_by(rows, key, fallback="-"):
+        out = {}
+        for r in rows:
+            label = r.get(key) or fallback
+            out.setdefault(label, []).append(r)
+        return out
+
+    def compare_groups(key, fallback):
+        grouped_a = group_by(rows_a, key, fallback)
+        grouped_b = group_by(rows_b, key, fallback)
+        labels = sorted(set(grouped_a.keys()) | set(grouped_b.keys()), key=lambda x: x.lower())
+        out = []
+        for label in labels:
+            a = _performance_numeric_stats(grouped_a.get(label, []))
+            b = _performance_numeric_stats(grouped_b.get(label, []))
+            out.append({
+                "label": label,
+                "countA": a["count"],
+                "countB": b["count"],
+                "countDelta": _fmt_delta_int(b["count"] - a["count"]),
+                "objectAvgA": a["objectAvg"] or "-",
+                "objectAvgB": b["objectAvg"] or "-",
+                "objectAvgDelta": _fmt_delta_decimal(None if a["objectAvgValue"] is None or b["objectAvgValue"] is None else b["objectAvgValue"] - a["objectAvgValue"], 1),
+                "firstAvgA": a["firstAvg"] or "-",
+                "firstAvgB": b["firstAvg"] or "-",
+                "firstAvgDelta": _fmt_delta_seconds(None if a["firstAvgValue"] is None or b["firstAvgValue"] is None else b["firstAvgValue"] - a["firstAvgValue"]),
+                "firstP90A": a["firstP90"] or "-",
+                "firstP90B": b["firstP90"] or "-",
+                "firstP90Delta": _fmt_delta_seconds(None if a["firstP90Value"] is None or b["firstP90Value"] is None else b["firstP90Value"] - a["firstP90Value"]),
+                "fullAvgA": a["fullAvg"] or "-",
+                "fullAvgB": b["fullAvg"] or "-",
+                "fullAvgDelta": _fmt_delta_seconds(None if a["fullAvgValue"] is None or b["fullAvgValue"] is None else b["fullAvgValue"] - a["fullAvgValue"]),
+                "fullP90A": a["fullP90"] or "-",
+                "fullP90B": b["fullP90"] or "-",
+                "fullP90Delta": _fmt_delta_seconds(None if a["fullP90Value"] is None or b["fullP90Value"] is None else b["fullP90Value"] - a["fullP90Value"]),
+                "slowA": a["slowCount"],
+                "slowB": b["slowCount"],
+                "slowDelta": _fmt_delta_int(b["slowCount"] - a["slowCount"]),
+            })
+        out.sort(key=lambda r: (-(r["countA"] + r["countB"]), r["label"].lower()))
+        return out
+
+    stats_a = _performance_numeric_stats(rows_a)
+    stats_b = _performance_numeric_stats(rows_b)
+
+    def delta_ms(a, b):
+        return _fmt_delta_seconds(None if a is None or b is None else b - a)
+
+    summary = {
+        "filename_a": filename_a,
+        "filename_b": filename_b,
+        "rows_a": len(rows_a),
+        "rows_b": len(rows_b),
+        "rows_delta": _fmt_delta_int(len(rows_b) - len(rows_a)),
+        "modalities_a": result_a.get("performance_summary", {}).get("modalities_total", 0),
+        "modalities_b": result_b.get("performance_summary", {}).get("modalities_total", 0),
+        "users_a": result_a.get("performance_summary", {}).get("users_total", 0),
+        "users_b": result_b.get("performance_summary", {}).get("users_total", 0),
+        "slow_a": stats_a["slowCount"],
+        "slow_b": stats_b["slowCount"],
+        "slow_delta": _fmt_delta_int(stats_b["slowCount"] - stats_a["slowCount"]),
+        "first_avg_a": stats_a["firstAvg"] or "-",
+        "first_avg_b": stats_b["firstAvg"] or "-",
+        "first_avg_delta": delta_ms(stats_a["firstAvgValue"], stats_b["firstAvgValue"]),
+        "first_p90_a": stats_a["firstP90"] or "-",
+        "first_p90_b": stats_b["firstP90"] or "-",
+        "first_p90_delta": delta_ms(stats_a["firstP90Value"], stats_b["firstP90Value"]),
+        "full_avg_a": stats_a["fullAvg"] or "-",
+        "full_avg_b": stats_b["fullAvg"] or "-",
+        "full_avg_delta": delta_ms(stats_a["fullAvgValue"], stats_b["fullAvgValue"]),
+        "full_p90_a": stats_a["fullP90"] or "-",
+        "full_p90_b": stats_b["fullP90"] or "-",
+        "full_p90_delta": delta_ms(stats_a["fullP90Value"], stats_b["fullP90Value"]),
+        "date_min_a": result_a.get("performance_summary", {}).get("date_min", ""),
+        "date_max_a": result_a.get("performance_summary", {}).get("date_max", ""),
+        "date_min_b": result_b.get("performance_summary", {}).get("date_min", ""),
+        "date_max_b": result_b.get("performance_summary", {}).get("date_max", ""),
+    }
+
+    return {
+        "xml_kind": "performancecsv_compare",
+        "root": "performance.csv compare",
+        "filename": f"{filename_a} ↔ {filename_b}",
+        "filename_a": filename_a,
+        "filename_b": filename_b,
+        "missing_headers": sorted(set(result_a.get("missing_headers") or []) | set(result_b.get("missing_headers") or [])),
+        "performance_percentile": PERFORMANCE_PERCENTILE,
+        "performance_percentile_label": _performance_percentile_label(PERFORMANCE_PERCENTILE),
+        "performance_percentile_hint": _performance_percentile_hint(PERFORMANCE_PERCENTILE),
+        "performance_compare_summary": summary,
+        "performance_compare_modalities": compare_groups("modality", "-"),
+        "performance_compare_hangings": compare_groups("hanging", "Ohne Hanging"),
+        "performance_compare_users": compare_groups("user", "-"),
+        "performance_a": result_a,
+        "performance_b": result_b,
     }
 
 
@@ -2969,11 +3124,37 @@ def index():
     if request.method == "GET":
         return render_template("index.html")
 
-    f = request.files.get("xml_file")
-    filename = (f.filename or "") if f else ""
-    lower_filename = filename.lower()
-    if not f or not (lower_filename.endswith(".xml") or lower_filename.endswith(".csv")):
+    files = [f for f in request.files.getlist("xml_file") if f and (f.filename or "").strip()]
+    if not files:
         return render_template("index.html", error="Bitte eine XML-Datei, ein Lizenzfile oder performance.csv auswählen.")
+    if len(files) > 2:
+        return render_template("index.html", error="Bitte maximal zwei Dateien auswählen. Der Vergleich ist nur für zwei performance.csv-Dateien vorgesehen.")
+
+    filenames = [(f.filename or "") for f in files]
+    lower_filenames = [name.lower() for name in filenames]
+    if not all(name.endswith(".xml") or name.endswith(".csv") for name in lower_filenames):
+        return render_template("index.html", error="Bitte nur XML- oder CSV-Dateien auswählen.")
+
+    if len(files) == 2:
+        if not all(name.endswith(".csv") for name in lower_filenames):
+            return render_template("index.html", error="Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml und Lizenzfile bitte einzeln analysieren.")
+        try:
+            parsed = []
+            for f, filename in zip(files, filenames):
+                raw = f.read()
+                if not raw:
+                    return render_template("index.html", error=f"Datei ist leer oder konnte nicht gelesen werden: {filename}")
+                parsed.append(analyze_performance_csv(BytesIO(raw), filename=filename))
+            result = _build_performance_comparison(parsed[0], parsed[1], filenames[0], filenames[1])
+        except Exception:
+            return render_template("index.html", error="Fehler beim Parsen der performance.csv-Dateien. Bitte CSV-Struktur prüfen.")
+        detected_type = "Performance CSV Vergleich"
+        filename = f"{filenames[0]} ↔ {filenames[1]}"
+        return render_template("index.html", result=result, filename=filename, detected_type=detected_type)
+
+    f = files[0]
+    filename = filenames[0]
+    lower_filename = lower_filenames[0]
 
     raw = f.read()
     if not raw:
@@ -3184,7 +3365,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.156
+  APP_VERSION: v0.157
 
 jobs:
   build-export-xml-web:
@@ -3343,7 +3524,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.156`
+- `v0.157`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

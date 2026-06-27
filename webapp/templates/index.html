@@ -899,6 +899,19 @@
       box-shadow: var(--shadow);
     }
 
+
+    .compare-delta {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .compare-file-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0 0 10px;
+    }
+
     @media (max-width: 1200px) {
       .wrap { padding: 12px; }
       .card { padding: 12px; }
@@ -939,14 +952,36 @@
 
     <div class="card">
       <form id="analyze-form" method="post" enctype="multipart/form-data">
-        <input type="file" name="xml_file" accept=".xml,.csv" required>
+        <input type="file" name="xml_file" accept=".xml,.csv" multiple required>
         <button type="submit">Analysieren</button>
-        <span style="margin-left:10px; color: var(--muted); font-size: 12px;"><strong>Upload-Limit:</strong> 200 MB · unterstützt: export.xml, Lizenzfile, performance.csv</span>
+        <span style="margin-left:10px; color: var(--muted); font-size: 12px;"><strong>Upload-Limit:</strong> 200 MB · unterstützt: export.xml, Lizenzfile, performance.csv · für Performance-Vergleich max. 2 CSV-Dateien auswählen</span>
         {% if detected_type %}
         <span style="margin-left:10px;"><strong>Dateityp-Erkennung:</strong> {{ detected_type }}</span>
         {% endif %}
       </form>
       {% if error %}<p class="error">{{ error }}</p>{% endif %}
+      <script id="performance-csv-compare-upload-guard">
+        (function () {
+          const form = document.getElementById('analyze-form');
+          const fileInput = form ? form.querySelector('input[type="file"][name="xml_file"]') : null;
+          if (!form || !fileInput) return;
+          form.addEventListener('submit', function (e) {
+            const files = Array.from(fileInput.files || []);
+            if (files.length > 2) {
+              e.preventDefault();
+              alert('Bitte maximal zwei Dateien auswählen. Der Vergleich ist nur für zwei performance.csv-Dateien vorgesehen.');
+              return;
+            }
+            if (files.length === 2) {
+              const allCsv = files.every(function (f) { return (f.name || '').toLowerCase().endsWith('.csv'); });
+              if (!allCsv) {
+                e.preventDefault();
+                alert('Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml und Lizenzfile bitte einzeln analysieren.');
+              }
+            }
+          });
+        })();
+      </script>
     </div>
 
     {% if result %}
@@ -984,6 +1019,129 @@
             <td>{{ r.count }}</td><td>{{ r.description }}</td><td>{{ r.mac }}</td>
             <td>{{ r.license_text }}</td>
             <td>{{ r.deprecated_license_text }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    {% elif result.xml_kind == 'performancecsv_compare' %}
+    <div class="section-jump">
+      <a href="#sec-perf-compare-overview">Vergleich</a>
+      <a href="#sec-perf-compare-modalities">Modalitäten</a>
+      <a href="#sec-perf-compare-hangings">Hangings</a>
+      <a href="#sec-perf-compare-users">User</a>
+    </div>
+
+    <div class="card" id="sec-perf-compare-overview">
+      <h2>Performance CSV Vergleich</h2>
+      <p class="compare-file-label">
+        Datei A: <strong>{{ result.filename_a }}</strong><br>
+        Datei B: <strong>{{ result.filename_b }}</strong>
+      </p>
+      {% if result.missing_headers %}
+      <p class="error">Hinweis: Folgende erwartete Spalten fehlen in mindestens einer Datei: {{ result.missing_headers|join(', ') }}</p>
+      {% endif %}
+      <div class="stats">
+        <div class="stat"><div class="k">Messungen A / B / Δ</div><div class="v">{{ result.performance_compare_summary.rows_a }} / {{ result.performance_compare_summary.rows_b }} / {{ result.performance_compare_summary.rows_delta }}</div></div>
+        <div class="stat"><div class="k">Modalitäten A / B</div><div class="v">{{ result.performance_compare_summary.modalities_a }} / {{ result.performance_compare_summary.modalities_b }}</div></div>
+        <div class="stat"><div class="k">User A / B</div><div class="v">{{ result.performance_compare_summary.users_a }} / {{ result.performance_compare_summary.users_b }}</div></div>
+        <div class="stat"><div class="k">langsam A / B / Δ</div><div class="v">{{ result.performance_compare_summary.slow_a }} / {{ result.performance_compare_summary.slow_b }} / {{ result.performance_compare_summary.slow_delta }}</div></div>
+        <div class="stat"><div class="k">First Display Ø A / B / Δ</div><div class="v">{{ result.performance_compare_summary.first_avg_a }} / {{ result.performance_compare_summary.first_avg_b }} / {{ result.performance_compare_summary.first_avg_delta }}</div></div>
+        <div class="stat"><div class="k">First Display {{ result.performance_percentile_label }} A / B / Δ</div><div class="v">{{ result.performance_compare_summary.first_p90_a }} / {{ result.performance_compare_summary.first_p90_b }} / {{ result.performance_compare_summary.first_p90_delta }}</div></div>
+        <div class="stat"><div class="k">Full Study Ø A / B / Δ</div><div class="v">{{ result.performance_compare_summary.full_avg_a }} / {{ result.performance_compare_summary.full_avg_b }} / {{ result.performance_compare_summary.full_avg_delta }}</div></div>
+        <div class="stat"><div class="k">Full Study {{ result.performance_percentile_label }} A / B / Δ</div><div class="v">{{ result.performance_compare_summary.full_p90_a }} / {{ result.performance_compare_summary.full_p90_b }} / {{ result.performance_compare_summary.full_p90_delta }}</div></div>
+        <div class="stat"><div class="k">Zeitraum A</div><div class="v" style="font-size:15px;">{{ result.performance_compare_summary.date_min_a }}{% if result.performance_compare_summary.date_max_a %}<br>{{ result.performance_compare_summary.date_max_a }}{% endif %}</div></div>
+        <div class="stat"><div class="k">Zeitraum B</div><div class="v" style="font-size:15px;">{{ result.performance_compare_summary.date_min_b }}{% if result.performance_compare_summary.date_max_b %}<br>{{ result.performance_compare_summary.date_max_b }}{% endif %}</div></div>
+      </div>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">
+        Δ bedeutet: Wert aus Datei B minus Wert aus Datei A. Positive Zeit-Deltas bedeuten, dass Datei B langsamer ist; negative Zeit-Deltas bedeuten, dass Datei B schneller ist.
+      </p>
+    </div>
+
+    <div class="card" id="sec-perf-compare-modalities">
+      <div class="h2-row">
+        <h2>Vergleich nach Modalität (<span>{{ result.performance_compare_modalities|length }}</span>)</h2>
+        <span class="perf-p90-hint">{{ result.performance_percentile_hint }}</span>
+      </div>
+      <div class="table-wrap">
+        <table id="performance-compare-modalities-table">
+          <tr>
+            <th>Modalität</th><th>Anzahl A</th><th>Anzahl B</th><th>Δ</th>
+            <th>Object Ø A</th><th>Object Ø B</th><th>Δ</th>
+            <th>First Ø A</th><th>First Ø B</th><th>Δ</th>
+            <th>First {{ result.performance_percentile_label }} A</th><th>First {{ result.performance_percentile_label }} B</th><th>Δ</th>
+            <th>Full Ø A</th><th>Full Ø B</th><th>Δ</th>
+            <th>Full {{ result.performance_percentile_label }} A</th><th>Full {{ result.performance_percentile_label }} B</th><th>Δ</th>
+            <th>langsam A</th><th>langsam B</th><th>Δ</th>
+          </tr>
+          {% for r in result.performance_compare_modalities %}
+          <tr>
+            <td>{{ r.label }}</td><td>{{ r.countA }}</td><td>{{ r.countB }}</td><td class="compare-delta">{{ r.countDelta }}</td>
+            <td>{{ r.objectAvgA }}</td><td>{{ r.objectAvgB }}</td><td class="compare-delta">{{ r.objectAvgDelta or '-' }}</td>
+            <td>{{ r.firstAvgA }}</td><td>{{ r.firstAvgB }}</td><td class="compare-delta">{{ r.firstAvgDelta or '-' }}</td>
+            <td>{{ r.firstP90A }}</td><td>{{ r.firstP90B }}</td><td class="compare-delta">{{ r.firstP90Delta or '-' }}</td>
+            <td>{{ r.fullAvgA }}</td><td>{{ r.fullAvgB }}</td><td class="compare-delta">{{ r.fullAvgDelta or '-' }}</td>
+            <td>{{ r.fullP90A }}</td><td>{{ r.fullP90B }}</td><td class="compare-delta">{{ r.fullP90Delta or '-' }}</td>
+            <td>{{ r.slowA }}</td><td>{{ r.slowB }}</td><td class="compare-delta">{{ r.slowDelta }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-perf-compare-hangings">
+      <div class="h2-row">
+        <h2>Vergleich nach Hanging (<span>{{ result.performance_compare_hangings|length }}</span>)</h2>
+        <span class="perf-p90-hint">{{ result.performance_percentile_hint }}</span>
+      </div>
+      <div class="table-wrap">
+        <table id="performance-compare-hangings-table">
+          <tr>
+            <th>Hanging</th><th>Anzahl A</th><th>Anzahl B</th><th>Δ</th>
+            <th>Object Ø A</th><th>Object Ø B</th><th>Δ</th>
+            <th>First Ø A</th><th>First Ø B</th><th>Δ</th>
+            <th>First {{ result.performance_percentile_label }} A</th><th>First {{ result.performance_percentile_label }} B</th><th>Δ</th>
+            <th>Full Ø A</th><th>Full Ø B</th><th>Δ</th>
+            <th>Full {{ result.performance_percentile_label }} A</th><th>Full {{ result.performance_percentile_label }} B</th><th>Δ</th>
+            <th>langsam A</th><th>langsam B</th><th>Δ</th>
+          </tr>
+          {% for r in result.performance_compare_hangings %}
+          <tr>
+            <td>{{ r.label }}</td><td>{{ r.countA }}</td><td>{{ r.countB }}</td><td class="compare-delta">{{ r.countDelta }}</td>
+            <td>{{ r.objectAvgA }}</td><td>{{ r.objectAvgB }}</td><td class="compare-delta">{{ r.objectAvgDelta or '-' }}</td>
+            <td>{{ r.firstAvgA }}</td><td>{{ r.firstAvgB }}</td><td class="compare-delta">{{ r.firstAvgDelta or '-' }}</td>
+            <td>{{ r.firstP90A }}</td><td>{{ r.firstP90B }}</td><td class="compare-delta">{{ r.firstP90Delta or '-' }}</td>
+            <td>{{ r.fullAvgA }}</td><td>{{ r.fullAvgB }}</td><td class="compare-delta">{{ r.fullAvgDelta or '-' }}</td>
+            <td>{{ r.fullP90A }}</td><td>{{ r.fullP90B }}</td><td class="compare-delta">{{ r.fullP90Delta or '-' }}</td>
+            <td>{{ r.slowA }}</td><td>{{ r.slowB }}</td><td class="compare-delta">{{ r.slowDelta }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-perf-compare-users">
+      <div class="h2-row">
+        <h2>Vergleich nach User (<span>{{ result.performance_compare_users|length }}</span>)</h2>
+        <span class="perf-p90-hint">{{ result.performance_percentile_hint }}</span>
+      </div>
+      <div class="table-wrap">
+        <table id="performance-compare-users-table">
+          <tr>
+            <th>User</th><th>Anzahl A</th><th>Anzahl B</th><th>Δ</th>
+            <th>Object Ø A</th><th>Object Ø B</th><th>Δ</th>
+            <th>First Ø A</th><th>First Ø B</th><th>Δ</th>
+            <th>Full Ø A</th><th>Full Ø B</th><th>Δ</th>
+            <th>langsam A</th><th>langsam B</th><th>Δ</th>
+          </tr>
+          {% for r in result.performance_compare_users %}
+          <tr>
+            <td>{{ r.label }}</td><td>{{ r.countA }}</td><td>{{ r.countB }}</td><td class="compare-delta">{{ r.countDelta }}</td>
+            <td>{{ r.objectAvgA }}</td><td>{{ r.objectAvgB }}</td><td class="compare-delta">{{ r.objectAvgDelta or '-' }}</td>
+            <td>{{ r.firstAvgA }}</td><td>{{ r.firstAvgB }}</td><td class="compare-delta">{{ r.firstAvgDelta or '-' }}</td>
+            <td>{{ r.fullAvgA }}</td><td>{{ r.fullAvgB }}</td><td class="compare-delta">{{ r.fullAvgDelta or '-' }}</td>
+            <td>{{ r.slowA }}</td><td>{{ r.slowB }}</td><td class="compare-delta">{{ r.slowDelta }}</td>
           </tr>
           {% endfor %}
         </table>
