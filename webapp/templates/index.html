@@ -151,14 +151,12 @@
 
     .perf-chart-panel {
       border: 1px solid var(--line);
-      border-radius: 14px;
-      background:
-        radial-gradient(circle at top left, rgba(107, 145, 134, 0.16), transparent 38%),
-        linear-gradient(180deg, var(--head-bg) 0%, var(--card) 100%);
-      padding: 14px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, var(--head-bg) 0%, var(--card) 100%);
+      padding: 12px;
       min-width: 0;
       width: 100%;
-      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
       page-break-inside: avoid;
       break-inside: avoid;
     }
@@ -188,16 +186,72 @@
     .perf-chart-box {
       position: relative;
       width: 100%;
-      min-height: 380px;
+      min-height: 400px;
       overflow: hidden;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.22);
+      border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--accent-soft) 8%), var(--card));
     }
 
     .perf-chart-svg {
       width: 100%;
-      height: 380px;
+      height: 400px;
       display: block;
+    }
+
+    .perf-chart-point-hit {
+      cursor: crosshair;
+      fill: transparent;
+      pointer-events: all;
+    }
+
+    .perf-chart-point {
+      pointer-events: none;
+      transition: transform 120ms ease, stroke-width 120ms ease;
+    }
+
+    .perf-chart-point-hit:hover + .perf-chart-point {
+      stroke-width: 2.4;
+      transform: scale(1.18);
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .perf-chart-tooltip {
+      position: fixed;
+      z-index: 2400;
+      display: none;
+      max-width: min(360px, calc(100vw - 28px));
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      line-height: 1.4;
+      pointer-events: none;
+    }
+
+    .perf-chart-tooltip strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .perf-chart-tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+      padding-top: 4px;
+      margin-top: 4px;
+    }
+
+    .perf-chart-tooltip-row span:first-child {
+      color: var(--muted);
+      font-weight: 700;
     }
 
     .perf-chart-export-btn {
@@ -228,6 +282,16 @@
       font-size: 12px;
       color: var(--muted);
       font-weight: 600;
+    }
+
+    .perf-chart-legend-inline {
+      margin: 0;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--head-bg);
+      color: var(--text);
+      gap: 12px;
     }
 
     .perf-chart-legend-item {
@@ -1017,7 +1081,7 @@
         <table id="performance-table">
           <tr><th>Start Date</th><th>User</th><th>Modality</th><th>Object count</th><th>Prior</th><th>First Display</th><th>Full Study</th><th>CFind</th><th>Bandwidth</th><th>Hangup Type</th><th>Hanging</th><th>Study Instance UID</th><th>Base Study</th></tr>
           {% for r in result.performance_rows %}
-          <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}" data-row="{{ r.rowNr }}" data-start="{{ r.startDate|e }}" data-start-epoch="{{ r.startEpochMs if r.startEpochMs is not none else '' }}" data-first-ms="{{ r.firstDisplayMs if r.firstDisplayMs is not none else '' }}" data-full-ms="{{ r.fullStudyMs if r.fullStudyMs is not none else '' }}" data-hanging="{{ r.hanging|e }}">
+          <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}" data-row="{{ r.rowNr }}" data-start="{{ r.startDate|e }}" data-start-epoch="{{ r.startEpochMs if r.startEpochMs is not none else '' }}" data-first-ms="{{ r.firstDisplayMs if r.firstDisplayMs is not none else '' }}" data-full-ms="{{ r.fullStudyMs if r.fullStudyMs is not none else '' }}" data-cfind="{{ r.cfindSec or r.cfindRaw }}" data-bandwidth="{{ r.bandwidth|e }}" data-object-count="{{ r.objectCount }}" data-prior="{{ r.prior|e }}" data-hanging="{{ r.hanging|e }}" data-study="{{ r.studyInstanceUid|e }}">
             <td>{{ r.startDate }}</td>
             <td>{{ r.user }}</td>
             <td>{{ r.modality }}</td>
@@ -1039,16 +1103,20 @@
         <div class="h2-row" style="margin-bottom:10px;">
           <h2 style="margin:0; font-size:16px;">Messzeiten-Diagramme nach Modalität</h2>
           <div class="toolbar" style="margin:0;">
+            <div class="perf-chart-legend perf-chart-legend-inline" aria-label="Legende der Diagrammfarben">
+              <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>Blau = First Display</span>
+              <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>Rot = Full Study</span>
+            </div>
             <span id="performance-chart-meta" class="perf-chart-meta">Alle Modalitäten · X-Achse: Start Date</span>
             <button type="button" id="performance-chart-pdf-export" class="toggle-btn perf-chart-export-btn">Diagramme als PDF</button>
           </div>
         </div>
-        <p class="perf-chart-note">Zeigt First Display und Full Study für die aktuell gefilterten Messungen über die Messzeit. Initial wird für jede Modalität ein eigenes Diagramm untereinander über die gesamte verfügbare Breite angezeigt; über den Modalitätsfilter kann die Ansicht auf eine Modalität eingegrenzt werden.</p>
+        <p class="perf-chart-note">Legende: Blau zeigt <strong>First Display</strong>, Rot zeigt <strong>Full Study</strong>. Die gestrichelten Linien markieren die Langsam-Schwellen. Beim Hovern über Messpunkte werden die Werte zur Messung angezeigt.</p>
         <div id="performance-chart-grid" class="perf-chart-grid"></div>
         <div id="performance-chart-empty" class="perf-chart-empty" style="display:none; position:relative; min-height:160px; border:1px solid var(--line); border-radius:12px;">Keine Messungen für die aktuelle Filterauswahl vorhanden.</div>
         <div class="perf-chart-legend">
-          <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>First Display</span>
-          <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>Full Study</span>
+          <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>Blau = First Display</span>
+          <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>Rot = Full Study</span>
         </div>
       </div>
     </div>
@@ -3049,6 +3117,10 @@
         const chartEmpty = document.getElementById('performance-chart-empty');
         const chartMeta = document.getElementById('performance-chart-meta');
         const chartPdfBtn = document.getElementById('performance-chart-pdf-export');
+        const chartTooltip = document.createElement('div');
+        chartTooltip.className = 'perf-chart-tooltip';
+        chartTooltip.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(chartTooltip);
         if (!rows.length || !countEl) return;
         let slowOnly = false;
         function norm(v) { return (v || '').toString().toLowerCase(); }
@@ -3063,6 +3135,47 @@
         function fmtMs(ms) {
           if (ms === null || ms === undefined || ms === '' || Number.isNaN(ms)) return '-';
           return (Number(ms) / 1000).toFixed(2) + ' s';
+        }
+        function tooltipRow(label, value) {
+          return '<div class="perf-chart-tooltip-row"><span>' + escapeHtml(label) + '</span><span>' + escapeHtml(value || '-') + '</span></div>';
+        }
+        function buildPointTooltip(item) {
+          return '<strong>' + escapeHtml((item.modality || '-') + ' · Messung ' + item.rowNr) + '</strong>'
+            + tooltipRow('Start Date', item.start)
+            + tooltipRow('User', item.user)
+            + tooltipRow('First Display', fmtMs(item.firstMs))
+            + tooltipRow('Full Study', fmtMs(item.fullMs))
+            + tooltipRow('CFind', item.cfind)
+            + tooltipRow('Bandwidth', item.bandwidth)
+            + tooltipRow('Object count', item.objectCount)
+            + tooltipRow('Prior', item.prior)
+            + tooltipRow('Hangup Type', item.hangupType)
+            + tooltipRow('Hanging', item.hanging)
+            + tooltipRow('Study UID', item.study);
+        }
+        function positionChartTooltip(ev) {
+          const pad = 14;
+          const tw = chartTooltip.offsetWidth || 320;
+          const th = chartTooltip.offsetHeight || 180;
+          let x = ev.clientX + 14;
+          let y = ev.clientY + 14;
+          if (x + tw + pad > window.innerWidth) x = Math.max(pad, ev.clientX - tw - 14);
+          if (y + th + pad > window.innerHeight) y = Math.max(pad, ev.clientY - th - 14);
+          chartTooltip.style.left = x + 'px';
+          chartTooltip.style.top = y + 'px';
+        }
+        function showChartTooltip(target, ev) {
+          const html = target.getAttribute('data-tooltip') || '';
+          if (!html) return;
+          chartTooltip.innerHTML = html;
+          chartTooltip.style.display = 'block';
+          chartTooltip.setAttribute('aria-hidden', 'false');
+          positionChartTooltip(ev);
+        }
+        function hideChartTooltip() {
+          chartTooltip.style.display = 'none';
+          chartTooltip.setAttribute('aria-hidden', 'true');
+          chartTooltip.innerHTML = '';
         }
         function niceMax(value) {
           if (!value || value <= 0) return 1000;
@@ -3177,8 +3290,13 @@
               const py = y(ms);
               points.push([px, py]);
               const isSlowPoint = (serie.key === 'firstMs' && ms >= 10000) || (serie.key === 'fullMs' && ms >= 30000);
-              const title = serie.label + ': ' + fmtMs(ms) + ' | Start Date: ' + (item.start || '-') + ' | Messung ' + item.rowNr + ' | ' + (item.modality || '-') + ' | ' + (item.hanging || '-');
-              circles.push('<circle cx="' + px.toFixed(2) + '" cy="' + py.toFixed(2) + '" r="' + (isSlowPoint ? '4.8' : '3.6') + '" fill="' + serie.color + '" stroke="#fff" stroke-width="1.6"><title>' + escapeHtml(title) + '</title></circle>');
+              const tooltip = buildPointTooltip(item);
+              circles.push(
+                '<g>'
+                + '<circle class="perf-chart-point-hit" cx="' + px.toFixed(2) + '" cy="' + py.toFixed(2) + '" r="11" data-tooltip="' + escapeHtml(tooltip) + '" />'
+                + '<circle class="perf-chart-point" cx="' + px.toFixed(2) + '" cy="' + py.toFixed(2) + '" r="' + (isSlowPoint ? '5.6' : '4.1') + '" fill="' + serie.color + '" stroke="#fff" stroke-width="1.6" />'
+                + '</g>'
+              );
             });
             const linePath = makePath(points);
             const areaPath = makeAreaPath(points);
@@ -3215,7 +3333,14 @@
               start: row.getAttribute('data-start') || '',
               startEpochMs: Number.isFinite(epoch) ? epoch : null,
               modality: row.getAttribute('data-modality') || '-',
+              user: row.getAttribute('data-user') || '-',
+              hangupType: row.getAttribute('data-hangup') || '-',
               hanging: row.getAttribute('data-hanging') || '',
+              cfind: row.getAttribute('data-cfind') || '-',
+              bandwidth: row.getAttribute('data-bandwidth') || '-',
+              objectCount: row.getAttribute('data-object-count') || '-',
+              prior: row.getAttribute('data-prior') || '-',
+              study: row.getAttribute('data-study') || '-',
               firstMs: Number.isFinite(first) ? first : null,
               fullMs: Number.isFinite(full) ? full : null,
             };
@@ -3268,6 +3393,11 @@
           if (!chartGrid.children.length) {
             chartEmpty.style.display = '';
           }
+          chartGrid.querySelectorAll('.perf-chart-point-hit').forEach(function (point) {
+            point.addEventListener('mouseenter', function (ev) { showChartTooltip(point, ev); });
+            point.addEventListener('mousemove', positionChartTooltip);
+            point.addEventListener('mouseleave', hideChartTooltip);
+          });
         }
         function exportPerformanceChartsPdf() {
           if (!chartGrid || !chartGrid.children.length) {
