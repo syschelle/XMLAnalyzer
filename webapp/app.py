@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.159"
+APP_VERSION = "v0.160"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -938,10 +938,16 @@ def _filename_stem(filename):
     return name
 
 
+def _split_filename_parts(stem):
+    # Keep only meaningful parts, independent of whether the difference is at
+    # the beginning, in the middle or at the end before the file extension.
+    return [p for p in re.split(r"[-_.\s]+", stem or "") if p]
+
+
 def _common_prefix_len(a, b):
     n = min(len(a), len(b))
     i = 0
-    while i < n and a[i].lower() == b[i].lower():
+    while i < n and str(a[i]).lower() == str(b[i]).lower():
         i += 1
     return i
 
@@ -949,7 +955,7 @@ def _common_prefix_len(a, b):
 def _common_suffix_len(a, b, prefix_len=0):
     max_len = min(len(a), len(b)) - prefix_len
     i = 0
-    while i < max_len and a[len(a) - 1 - i].lower() == b[len(b) - 1 - i].lower():
+    while i < max_len and str(a[len(a) - 1 - i]).lower() == str(b[len(b) - 1 - i]).lower():
         i += 1
     return i
 
@@ -972,10 +978,28 @@ def _build_filename_compare_labels(filename_a, filename_b):
         return (_pretty_compare_label(stem_a or filename_a or "Datei 1", "Datei 1"),
                 _pretty_compare_label(stem_b or filename_b or "Datei 2", "Datei 2"))
 
+    # Prefer delimiter-aware comparison first. This produces clean labels for:
+    # - beginning: baseline_performance.csv vs after_performance.csv
+    # - middle:    performance_baseline_2026.csv vs performance_after_2026.csv
+    # - end:       performance_2026_baseline.csv vs performance_2026_after.csv
+    parts_a = _split_filename_parts(stem_a)
+    parts_b = _split_filename_parts(stem_b)
+    if parts_a and parts_b and (len(parts_a) > 1 or len(parts_b) > 1):
+        prefix_parts = _common_prefix_len(parts_a, parts_b)
+        suffix_parts = _common_suffix_len(parts_a, parts_b, prefix_parts)
+        end_a = len(parts_a) - suffix_parts if suffix_parts else len(parts_a)
+        end_b = len(parts_b) - suffix_parts if suffix_parts else len(parts_b)
+        diff_parts_a = parts_a[prefix_parts:end_a]
+        diff_parts_b = parts_b[prefix_parts:end_b]
+        if diff_parts_a and diff_parts_b:
+            label_a = _pretty_compare_label(" ".join(diff_parts_a), stem_a)
+            label_b = _pretty_compare_label(" ".join(diff_parts_b), stem_b)
+            if label_a.lower() != label_b.lower():
+                return label_a, label_b
+
+    # Fallback for filenames without separators, e.g. perfbaseline.csv vs perfafter.csv.
     prefix_len = _common_prefix_len(stem_a, stem_b)
     suffix_len = _common_suffix_len(stem_a, stem_b, prefix_len)
-
-    # Avoid returning empty or meaningless fragments when the common parts overlap.
     end_a = len(stem_a) - suffix_len if suffix_len else len(stem_a)
     end_b = len(stem_b) - suffix_len if suffix_len else len(stem_b)
     diff_a = stem_a[prefix_len:end_a]
@@ -3465,7 +3489,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.159
+  APP_VERSION: v0.160
 
 jobs:
   build-export-xml-web:
@@ -3624,7 +3648,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.159`
+- `v0.160`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

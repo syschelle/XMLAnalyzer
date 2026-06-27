@@ -1030,10 +1030,10 @@
     {% set compare_label_b = result.performance_compare_label_b or result.filename_b %}
     <div class="section-jump">
       <a href="#sec-perf-compare-overview">Vergleich</a>
-      <a href="#sec-perf-compare-charts">Diagramme</a>
       <a href="#sec-perf-compare-modalities">Modalitäten</a>
       <a href="#sec-perf-compare-hangings">Hangings</a>
       <a href="#sec-perf-compare-users">User</a>
+      <a href="#sec-perf-compare-charts">Diagramme</a>
     </div>
 
     <div class="card" id="sec-perf-compare-overview">
@@ -1060,26 +1060,6 @@
       <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">
         Δ bedeutet: Wert aus {{ compare_label_b }} minus {{ compare_label_a }}. Positive Zeit-Deltas bedeuten, dass {{ compare_label_b }} langsamer ist; negative Zeit-Deltas bedeuten, dass {{ compare_label_b }} schneller ist.
       </p>
-    </div>
-
-    <div class="card" id="sec-perf-compare-charts">
-      <div class="h2-row" style="margin-bottom:10px;">
-        <h2 style="margin:0; font-size:16px;">Vergleichsdiagramme nach Modalität</h2>
-        <div class="toolbar" style="margin:0;">
-          <div class="perf-chart-legend perf-chart-legend-inline" aria-label="Legende der Vergleichsdiagramme">
-            <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>{{ compare_label_a }}</span>
-            <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>{{ compare_label_b }}</span>
-          </div>
-          <span id="performance-compare-chart-meta" class="perf-chart-meta">Modalitätenvergleich</span>
-          <button type="button" id="performance-compare-chart-pdf-export" class="toggle-btn perf-chart-export-btn">Diagramme als PDF</button>
-        </div>
-      </div>
-      <p class="perf-chart-note">
-        Je Modalität werden <strong>First Display Ø</strong> und <strong>Full Study Ø</strong> von {{ compare_label_a }} und {{ compare_label_b }} gegenübergestellt.
-        Niedrigere Balken bedeuten bessere Messzeiten.
-      </p>
-      <div id="performance-compare-chart-grid" class="perf-chart-grid"></div>
-      <div id="performance-compare-chart-empty" class="perf-chart-empty" style="display:none; position:relative; min-height:160px; border:1px solid var(--line); border-radius:12px;">Keine Vergleichsdaten für Diagramme vorhanden.</div>
     </div>
 
     <div class="card" id="sec-perf-compare-modalities">
@@ -1169,6 +1149,26 @@
           {% endfor %}
         </table>
       </div>
+    </div>
+
+    <div class="card" id="sec-perf-compare-charts">
+      <div class="h2-row" style="margin-bottom:10px;">
+        <h2 style="margin:0; font-size:16px;">Vergleichsdiagramme nach Modalität</h2>
+        <div class="toolbar" style="margin:0;">
+          <div class="perf-chart-legend perf-chart-legend-inline" aria-label="Legende der Vergleichsdiagramme">
+            <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>{{ compare_label_a }}</span>
+            <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>{{ compare_label_b }}</span>
+          </div>
+          <span id="performance-compare-chart-meta" class="perf-chart-meta">Modalitätenvergleich</span>
+          <button type="button" id="performance-compare-chart-pdf-export" class="toggle-btn perf-chart-export-btn">Diagramme als PDF</button>
+        </div>
+      </div>
+      <p class="perf-chart-note">
+        Je Modalität werden <strong>First Display Ø</strong> und <strong>Full Study Ø</strong> von {{ compare_label_a }} und {{ compare_label_b }} gegenübergestellt.
+        Niedrigere Balken bedeuten bessere Messzeiten.
+      </p>
+      <div id="performance-compare-chart-grid" class="perf-chart-grid"></div>
+      <div id="performance-compare-chart-empty" class="perf-chart-empty" style="display:none; position:relative; min-height:160px; border:1px solid var(--line); border-radius:12px;">Keine Vergleichsdaten für Diagramme vorhanden.</div>
     </div>
 
     {% elif result.xml_kind == 'performancecsv' %}
