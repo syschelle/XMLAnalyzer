@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.160`
+- `v0.161`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -129,6 +129,11 @@ docker compose -f docker-compose.image.yml down
 
 When enabled, ScriptAccess Code is not shown as a standalone button. It is intentionally hidden behind the letter `n` in the `ConfigScope` title.
 
+
+
+## Performance CSV column help
+
+Performance CSV tables include hover explanations on column headers. Move the mouse over a header to see what the metric means, including timing values, percentile values, slow-measurement counts and comparison deltas.
 
 ## Performance CSV comparison
 

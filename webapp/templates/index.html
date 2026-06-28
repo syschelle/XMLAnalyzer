@@ -905,6 +905,13 @@
       white-space: nowrap;
     }
 
+    th[title] {
+      cursor: help;
+      text-decoration: underline dotted;
+      text-underline-offset: 3px;
+    }
+
+
     .compare-file-label {
       color: var(--muted);
       font-size: 12px;
@@ -1070,13 +1077,13 @@
       <div class="table-wrap">
         <table id="performance-compare-modalities-table">
           <tr>
-            <th>Modalität</th><th>Anzahl {{ compare_label_a }}</th><th>Anzahl {{ compare_label_b }}</th><th>Δ</th>
-            <th>Object Ø {{ compare_label_a }}</th><th>Object Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>First Ø {{ compare_label_a }}</th><th>First Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>First {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th>First {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th>Δ</th>
-            <th>Full Ø {{ compare_label_a }}</th><th>Full Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>Full {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th>Full {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th>Δ</th>
-            <th>langsam {{ compare_label_a }}</th><th>langsam {{ compare_label_b }}</th><th>Δ</th>
+            <th title="DICOM-Modalität, nach der die Vergleichswerte zusammengefasst werden.">Modalität</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diese Gruppe.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diese Gruppe.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche First-Display-Zeit in {{ compare_label_a }}.">First Ø {{ compare_label_a }}</th><th title="Durchschnittliche First-Display-Zeit in {{ compare_label_b }}.">First Ø {{ compare_label_b }}</th><th title="Differenz der First-Display-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_a }}.">First {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_b }}.">First {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des First Display {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_a }}.">Full Ø {{ compare_label_a }}</th><th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_b }}.">Full Ø {{ compare_label_b }}</th><th title="Differenz der Full-Study-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_a }}.">Full {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_b }}.">Full {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des Full Study {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Anzahl langsamer Messungen in {{ compare_label_a }}.">langsam {{ compare_label_a }}</th><th title="Anzahl langsamer Messungen in {{ compare_label_b }}.">langsam {{ compare_label_b }}</th><th title="Differenz der langsamen Messungen: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
           </tr>
           {% for r in result.performance_compare_modalities %}
           <tr>
@@ -1101,13 +1108,13 @@
       <div class="table-wrap">
         <table id="performance-compare-hangings-table">
           <tr>
-            <th>Hanging</th><th>Anzahl {{ compare_label_a }}</th><th>Anzahl {{ compare_label_b }}</th><th>Δ</th>
-            <th>Object Ø {{ compare_label_a }}</th><th>Object Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>First Ø {{ compare_label_a }}</th><th>First Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>First {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th>First {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th>Δ</th>
-            <th>Full Ø {{ compare_label_a }}</th><th>Full Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>Full {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th>Full {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th>Δ</th>
-            <th>langsam {{ compare_label_a }}</th><th>langsam {{ compare_label_b }}</th><th>Δ</th>
+            <th title="Hanging Protocol bzw. Hanging-Name, nach dem die Vergleichswerte zusammengefasst werden.">Hanging</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diese Gruppe.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diese Gruppe.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche First-Display-Zeit in {{ compare_label_a }}.">First Ø {{ compare_label_a }}</th><th title="Durchschnittliche First-Display-Zeit in {{ compare_label_b }}.">First Ø {{ compare_label_b }}</th><th title="Differenz der First-Display-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_a }}.">First {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_b }}.">First {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des First Display {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_a }}.">Full Ø {{ compare_label_a }}</th><th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_b }}.">Full Ø {{ compare_label_b }}</th><th title="Differenz der Full-Study-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_a }}.">Full {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_b }}.">Full {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des Full Study {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Anzahl langsamer Messungen in {{ compare_label_a }}.">langsam {{ compare_label_a }}</th><th title="Anzahl langsamer Messungen in {{ compare_label_b }}.">langsam {{ compare_label_b }}</th><th title="Differenz der langsamen Messungen: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
           </tr>
           {% for r in result.performance_compare_hangings %}
           <tr>
@@ -1132,11 +1139,11 @@
       <div class="table-wrap">
         <table id="performance-compare-users-table">
           <tr>
-            <th>User</th><th>Anzahl {{ compare_label_a }}</th><th>Anzahl {{ compare_label_b }}</th><th>Δ</th>
-            <th>Object Ø {{ compare_label_a }}</th><th>Object Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>First Ø {{ compare_label_a }}</th><th>First Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>Full Ø {{ compare_label_a }}</th><th>Full Ø {{ compare_label_b }}</th><th>Δ</th>
-            <th>langsam {{ compare_label_a }}</th><th>langsam {{ compare_label_b }}</th><th>Δ</th>
+            <th title="Benutzer, nach dem die Vergleichswerte zusammengefasst werden.">User</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diesen Benutzer.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diesen Benutzer.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche First-Display-Zeit in {{ compare_label_a }}.">First Ø {{ compare_label_a }}</th><th title="Durchschnittliche First-Display-Zeit in {{ compare_label_b }}.">First Ø {{ compare_label_b }}</th><th title="Differenz der First-Display-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_a }}.">Full Ø {{ compare_label_a }}</th><th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_b }}.">Full Ø {{ compare_label_b }}</th><th title="Differenz der Full-Study-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Anzahl langsamer Messungen in {{ compare_label_a }}.">langsam {{ compare_label_a }}</th><th title="Anzahl langsamer Messungen in {{ compare_label_b }}.">langsam {{ compare_label_b }}</th><th title="Differenz der langsamen Messungen: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
           </tr>
           {% for r in result.performance_compare_users %}
           <tr>
@@ -1211,7 +1218,7 @@
       </div>
       <div class="table-wrap">
         <table id="performance-modalities-table">
-          <tr><th>Modalität</th><th>Anzahl</th><th>Object count Ø</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          <tr><th title="DICOM-Modalität, nach der die Performance-Messungen zusammengefasst werden.">Modalität</th><th title="Anzahl der Messungen in dieser Gruppe.">Anzahl</th><th title="Durchschnittliche Anzahl der Objekte bzw. Bilder pro Studie in dieser Gruppe.">Object count Ø</th><th title="Durchschnittliche Zeit bis zur ersten sichtbaren Bildanzeige.">First Display Ø</th><th title="{{ result.performance_percentile_label }} der Zeit bis zur ersten Bildanzeige. Dieser Wert zeigt, unterhalb welcher Zeit der Großteil der Messungen liegt.">First Display {{ result.performance_percentile_label }}</th><th title="Durchschnittliche Zeit bis die komplette Studie geladen bzw. verfügbar war.">Full Study Ø</th><th title="{{ result.performance_percentile_label }} der Zeit bis die komplette Studie geladen bzw. verfügbar war.">Full Study {{ result.performance_percentile_label }}</th><th title="Anzahl der Messungen, bei denen die Studie nicht initial gehängt wurde.">nicht initial gehängt</th><th title="Anzahl der Messungen mit Vorstudie bzw. Base Study/Prior-Bezug.">mit Priors</th><th title="Anzahl der Messungen, die die Langsam-Schwelle überschreiten: First Display ≥ 10 s oder Full Study ≥ 30 s.">langsam</th></tr>
           {% for m in result.performance_modalities %}
           <tr>
             <td>{{ m.modality }}</td><td>{{ m.count }}</td><td>{{ m.objectCountAvg or '-' }}</td><td>{{ m.firstAvg or '-' }}</td><td>{{ m.firstP90 or '-' }}</td><td>{{ m.fullAvg or '-' }}</td><td>{{ m.fullP90 or '-' }}</td><td>{{ m.notHungCount }}</td><td>{{ m.priorCount }}</td><td>{{ m.slowCount }}</td>
@@ -1225,7 +1232,7 @@
       <h2>Performance nach Hanging (<span>{{ result.performance_hangings|length }}</span>)</h2>
       <div class="table-wrap">
         <table id="performance-hangings-table">
-          <tr><th>Hanging</th><th>Anzahl</th><th>Object count Ø</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          <tr><th title="Hanging Protocol bzw. Hanging-Name, nach dem die Messungen zusammengefasst werden.">Hanging</th><th title="Anzahl der Messungen in dieser Gruppe.">Anzahl</th><th title="Durchschnittliche Anzahl der Objekte bzw. Bilder pro Studie in dieser Gruppe.">Object count Ø</th><th title="Durchschnittliche Zeit bis zur ersten sichtbaren Bildanzeige.">First Display Ø</th><th title="{{ result.performance_percentile_label }} der Zeit bis zur ersten Bildanzeige. Dieser Wert zeigt, unterhalb welcher Zeit der Großteil der Messungen liegt.">First Display {{ result.performance_percentile_label }}</th><th title="Durchschnittliche Zeit bis die komplette Studie geladen bzw. verfügbar war.">Full Study Ø</th><th title="{{ result.performance_percentile_label }} der Zeit bis die komplette Studie geladen bzw. verfügbar war.">Full Study {{ result.performance_percentile_label }}</th><th title="Anzahl der Messungen, bei denen die Studie nicht initial gehängt wurde.">nicht initial gehängt</th><th title="Anzahl der Messungen mit Vorstudie bzw. Base Study/Prior-Bezug.">mit Priors</th><th title="Anzahl der Messungen, die die Langsam-Schwelle überschreiten: First Display ≥ 10 s oder Full Study ≥ 30 s.">langsam</th></tr>
           {% for h in result.performance_hangings %}
           <tr>
             <td>{{ h.hanging }}</td><td>{{ h.count }}</td><td>{{ h.objectCountAvg or '-' }}</td><td>{{ h.firstAvg or '-' }}</td><td>{{ h.firstP90 or '-' }}</td><td>{{ h.fullAvg or '-' }}</td><td>{{ h.fullP90 or '-' }}</td><td>{{ h.notHungCount }}</td><td>{{ h.priorCount }}</td><td>{{ h.slowCount }}</td>
@@ -1239,7 +1246,7 @@
       <h2>Performance nach User (<span>{{ result.performance_users|length }}</span>)</h2>
       <div class="table-wrap">
         <table id="performance-users-table">
-          <tr><th>User</th><th>Anzahl</th><th>First Display Ø</th><th>First Display {{ result.performance_percentile_label }}</th><th>Full Study Ø</th><th>Full Study {{ result.performance_percentile_label }}</th><th>nicht initial gehängt</th><th>mit Priors</th><th>langsam</th></tr>
+          <tr><th title="Benutzer, nach dem die Performance-Messungen zusammengefasst werden.">User</th><th title="Anzahl der Messungen für diesen Benutzer.">Anzahl</th><th title="Durchschnittliche Zeit bis zur ersten sichtbaren Bildanzeige.">First Display Ø</th><th title="{{ result.performance_percentile_label }} der Zeit bis zur ersten Bildanzeige. Dieser Wert zeigt, unterhalb welcher Zeit der Großteil der Messungen liegt.">First Display {{ result.performance_percentile_label }}</th><th title="Durchschnittliche Zeit bis die komplette Studie geladen bzw. verfügbar war.">Full Study Ø</th><th title="{{ result.performance_percentile_label }} der Zeit bis die komplette Studie geladen bzw. verfügbar war.">Full Study {{ result.performance_percentile_label }}</th><th title="Anzahl der Messungen, bei denen die Studie nicht initial gehängt wurde.">nicht initial gehängt</th><th title="Anzahl der Messungen mit Vorstudie bzw. Base Study/Prior-Bezug.">mit Priors</th><th title="Anzahl der Messungen, die die Langsam-Schwelle überschreiten: First Display ≥ 10 s oder Full Study ≥ 30 s.">langsam</th></tr>
           {% for u in result.performance_users %}
           <tr>
             <td>{{ u.user }}</td><td>{{ u.count }}</td><td>{{ u.firstAvg or '-' }}</td><td>{{ u.firstP90 or '-' }}</td><td>{{ u.fullAvg or '-' }}</td><td>{{ u.fullP90 or '-' }}</td><td>{{ u.notHungCount }}</td><td>{{ u.priorCount }}</td><td>{{ u.slowCount }}</td>
@@ -1260,7 +1267,7 @@
       </div>
       <div class="table-wrap">
         <table id="performance-table">
-          <tr><th>Start Date</th><th>User</th><th>Modality</th><th>Object count</th><th>Prior</th><th>First Display</th><th>Full Study</th><th>CFind</th><th>Bandwidth</th><th>Hangup Type</th><th>Hanging</th><th>Study Instance UID</th><th>Base Study</th></tr>
+          <tr><th title="Startzeit der Messung aus der Performance CSV.">Start Date</th><th title="Benutzer, unter dem die Messung entstanden ist.">User</th><th title="DICOM-Modalität der Studie, z. B. CT, MR, CR oder US.">Modality</th><th title="Anzahl der Objekte bzw. Bilder in der Studie.">Object count</th><th title="Kennzeichnet, ob ein Prior-/Vorstudienbezug vorhanden ist.">Prior</th><th title="Zeit bis zur ersten sichtbaren Bildanzeige. Niedriger ist besser.">First Display</th><th title="Zeit bis die komplette Studie geladen bzw. verfügbar war. Niedriger ist besser.">Full Study</th><th title="Dauer der C-FIND-Abfrage bzw. Such-/Abfragezeit im DICOM-Kontext.">CFind</th><th title="Gemeldete Bandbreite bzw. Durchsatzwert aus der CSV.">Bandwidth</th><th title="Status/Typ, ob und wie die Studie initial gehängt wurde.">Hangup Type</th><th title="Verwendetes Hanging Protocol bzw. Hanging-Name.">Hanging</th><th title="Eindeutige DICOM Study Instance UID der Messung.">Study Instance UID</th><th title="Referenz auf die Basisstudie bzw. Vorstudie, falls vorhanden.">Base Study</th></tr>
           {% for r in result.performance_rows %}
           <tr class="performance-row {% if r.isSlow %}perf-slow{% endif %}" data-search="{{ r.searchText|e }}" data-modality="{{ r.modality|e }}" data-hangup="{{ r.hangupType|e }}" data-user="{{ r.user|e }}" data-slow="{{ 'ja' if r.isSlow else 'nein' }}" data-row="{{ r.rowNr }}" data-start="{{ r.startDate|e }}" data-start-epoch="{{ r.startEpochMs if r.startEpochMs is not none else '' }}" data-first-ms="{{ r.firstDisplayMs if r.firstDisplayMs is not none else '' }}" data-full-ms="{{ r.fullStudyMs if r.fullStudyMs is not none else '' }}" data-cfind="{{ r.cfindSec or r.cfindRaw }}" data-bandwidth="{{ r.bandwidth|e }}" data-object-count="{{ r.objectCount }}" data-prior="{{ r.prior|e }}" data-hanging="{{ r.hanging|e }}" data-study="{{ r.studyInstanceUid|e }}">
             <td>{{ r.startDate }}</td>
