@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.164`
+- `v0.165`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -161,3 +161,7 @@ Smoothing is disabled by default and can be enabled or disabled by the user in t
 When enabled, First Display and Full Study timings are normalized by Object count to reduce the impact of different study sizes.
 The displayed explanation describes the calculation: adjusted time = measured time × reference Object count / row Object count.
 The raw data is not changed and smoothing is not applied to export.xml or license XML views.
+
+## Performance CSV comparison context card
+
+In the two-file Performance CSV comparison, file labels, smoothing details, the active smoothing reference and missing-column warnings are grouped in a dedicated context card below the Performance CSV comparison title. The same context is included in the complete PDF report.

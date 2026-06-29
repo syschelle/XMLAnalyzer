@@ -919,6 +919,65 @@
       margin: 0 0 10px;
     }
 
+
+    .compare-context-card {
+      margin: 10px 0 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--accent-soft) 22%, var(--card) 78%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .compare-context-title {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .compare-context-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 8px;
+    }
+
+    .compare-context-item {
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--card);
+      font-size: 13px;
+    }
+
+    .compare-context-item .k {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+    }
+
+    .compare-context-item code {
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .compare-context-note {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .compare-context-note ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+
     @media (max-width: 1200px) {
       .wrap { padding: 12px; }
       .card { padding: 12px; }
@@ -1048,26 +1107,39 @@
         <h2>Performance CSV Vergleich</h2>
         <div class="toolbar" style="margin:0;"><button type="button" id="performance-compare-smoothing-toggle" class="toggle-btn">Glättung einschalten</button><button type="button" id="performance-compare-full-pdf-export" class="toggle-btn">Komplette PDF-Auswertung</button></div>
       </div>
-      <p class="compare-file-label">
-        {{ compare_label_a }}: <strong>{{ result.filename_a }}</strong><br>
-        {{ compare_label_b }}: <strong>{{ result.filename_b }}</strong>
-      </p>
-      <div id="performance-compare-smoothing-note" class="perf-chart-note" style="display:none; margin-bottom:10px;">
-        <strong>Glättung ist aktiv.</strong> {{ result.performance_compare_smoothing_note }}
-        {% if result.performance_compare_smoothing_reference %}<br>Globale Referenzgröße für die Übersicht: Object count Median {{ result.performance_compare_smoothing_reference }}.{% endif %}
+      <div class="compare-context-card" id="sec-perf-compare-context">
+        <div class="compare-context-title">Performance CSV Kontext</div>
+        <div class="compare-context-grid">
+          <div class="compare-context-item">
+            <span class="k">Vergleichsdatei {{ compare_label_a }}</span>
+            <strong>{{ compare_label_a }}</strong><br>
+            <code>{{ result.filename_a }}</code>
+          </div>
+          <div class="compare-context-item">
+            <span class="k">Vergleichsdatei {{ compare_label_b }}</span>
+            <strong>{{ compare_label_b }}</strong><br>
+            <code>{{ result.filename_b }}</code>
+          </div>
+        </div>
+
+        <div id="performance-compare-smoothing-note" class="compare-context-note" style="display:none;">
+          <strong>Glättung ist aktiv.</strong> {{ result.performance_compare_smoothing_note }}
+          {% if result.performance_compare_smoothing_reference %}<br>Globale Referenzgröße für die Übersicht: Object count Median {{ result.performance_compare_smoothing_reference }}.{% endif %}
+        </div>
+
+        {% if result.missing_headers %}
+        <div class="compare-context-note error" style="margin-top:10px;">
+          <strong>Hinweis: Folgende erwartete Spalten fehlen:</strong>
+          <ul>
+            {% for mf in result.missing_headers_by_file %}
+            {% if mf.missing_headers %}
+            <li><strong>{{ mf.label }}</strong> (<code>{{ mf.filename }}</code>): {{ mf.missing_headers|join(', ') }}</li>
+            {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
       </div>
-      {% if result.missing_headers %}
-      <div class="error">
-        <strong>Hinweis: Folgende erwartete Spalten fehlen:</strong>
-        <ul style="margin:6px 0 0 18px;">
-          {% for mf in result.missing_headers_by_file %}
-          {% if mf.missing_headers %}
-          <li><strong>{{ mf.label }}</strong> (<code>{{ mf.filename }}</code>): {{ mf.missing_headers|join(', ') }}</li>
-          {% endif %}
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
       <div class="stats performance-compare-mode-raw">
         <div class="stat"><div class="k">Messungen {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary.rows_a }} / {{ result.performance_compare_summary.rows_b }} / {{ result.performance_compare_summary.rows_delta }}</div></div>
         <div class="stat"><div class="k">Modalitäten {{ compare_label_a }} / {{ compare_label_b }}</div><div class="v">{{ result.performance_compare_summary.modalities_a }} / {{ result.performance_compare_summary.modalities_b }}</div></div>
@@ -4358,6 +4430,8 @@
         if (!cardEl) return '';
         const heading = headingOverride || pdfReportText(cardEl.querySelector('h2')) || 'Übersicht';
         const fileLabel = cardEl.querySelector('.compare-file-label');
+        const contextCard = cardEl.querySelector('.compare-context-card');
+        const contextText = contextCard && !isHiddenForPdfReport(contextCard, cardEl) ? pdfReportText(contextCard) : '';
         const stats = Array.from(cardEl.querySelectorAll('.stat')).filter(function (stat) { return !isHiddenForPdfReport(stat, cardEl); }).map(function (stat) {
           const k = pdfReportText(stat.querySelector('.k'));
           const v = pdfReportText(stat.querySelector('.v'));
@@ -4372,6 +4446,7 @@
           .join('');
         return '<section class="block"><h2>' + pdfReportEscape(heading) + '</h2>'
           + (fileLabel ? '<div class="file-label">' + pdfReportEscape(pdfReportText(fileLabel)) + '</div>' : '')
+          + (contextText ? '<div class="file-label">' + pdfReportEscape(contextText) + '</div>' : '')
           + (stats ? '<table class="summary-table">' + stats + '</table>' : '')
           + notes
           + '</section>';

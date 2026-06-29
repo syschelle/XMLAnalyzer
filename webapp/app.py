@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.164"
+APP_VERSION = "v0.165"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -3574,7 +3574,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.164
+  APP_VERSION: v0.165
 
 jobs:
   build-export-xml-web:
@@ -3711,6 +3711,10 @@ When enabled, First Display and Full Study timings are normalized by Object coun
 The displayed explanation describes the calculation: adjusted time = measured time × reference Object count / row Object count.
 The raw data is not changed and smoothing is not applied to export.xml or license XML views.
 
+## Performance CSV comparison context card
+
+In the two-file Performance CSV comparison, file labels, smoothing details, the active smoothing reference and missing-column warnings are grouped in a dedicated context card below the Performance CSV comparison title. The same context is included in the complete PDF report.
+
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
@@ -3746,7 +3750,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.164`
+- `v0.165`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
