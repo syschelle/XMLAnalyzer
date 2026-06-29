@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.167"
+APP_VERSION = "v0.168"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -1207,7 +1207,7 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
     summary_smoothed = build_summary(stats_a_smoothed, stats_b_smoothed)
     smoothing_reference = global_refs.get("__all__")
     smoothing_note = (
-        "Glättung aktiv: First Display und Full Study werden objektzahl-normalisiert. "
+        "First Display und Full Study werden objektzahl-normalisiert. "
         "Jede Messzeit wird mit Referenz-Object-count geteilt durch den Object count der Messung multipliziert. "
         "Als globale Referenz wird der gemeinsame Median der Object counts beider CSV-Dateien verwendet; "
         "in Modalität-, Hanging- und User-Tabellen wird jeweils der Median der angezeigten Gruppe verwendet. "
@@ -3574,7 +3574,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.167
+  APP_VERSION: v0.168
 
 jobs:
   build-export-xml-web:
@@ -3715,6 +3715,10 @@ The raw data is not changed and smoothing is not applied to export.xml or licens
 
 In the two-file Performance CSV comparison, file labels, smoothing details, the active smoothing reference and missing-column warnings are shown in a dedicated standalone context card below the Performance CSV comparison title card. Missing-column warnings are displayed in red. In the complete PDF report, this context is formatted as separate sections for compared files, smoothing information and missing-column warnings.
 
+## Performance CSV smoothing wording
+
+The smoothing context now avoids duplicate active-state wording in the UI and the complete PDF report.
+
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
@@ -3750,7 +3754,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.167`
+- `v0.168`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
