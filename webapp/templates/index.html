@@ -4468,9 +4468,39 @@
       function contextCardToPdfHtml(cardEl) {
         if (!cardEl) return '';
         const heading = pdfReportText(cardEl.querySelector('.compare-context-title')) || 'Performance CSV Kontext';
-        const text = pdfReportText(cardEl);
-        if (!text) return '';
-        return '<section class="block"><h2>' + pdfReportEscape(heading) + '</h2><div class="file-label">' + pdfReportEscape(text) + '</div></section>';
+
+        const fileItems = Array.from(cardEl.querySelectorAll('.compare-context-item')).map(function (item) {
+          const label = pdfReportText(item.querySelector('strong'));
+          const filename = pdfReportText(item.querySelector('code'));
+          if (!label && !filename) return '';
+          return '<tr><th>' + pdfReportEscape(label || 'Datei') + '</th><td>' + pdfReportEscape(filename) + '</td></tr>';
+        }).filter(Boolean).join('');
+
+        const smoothingNote = cardEl.querySelector('#performance-compare-smoothing-note');
+        const smoothingVisible = smoothingNote && !isHiddenForPdfReport(smoothingNote, cardEl);
+        const smoothingHtml = smoothingVisible
+          ? '<div class="context-box"><h3>Glättung</h3><p>' + pdfReportEscape(pdfReportText(smoothingNote)) + '</p></div>'
+          : '';
+
+        const warningBox = cardEl.querySelector('.compare-context-warning');
+        const warningItems = warningBox
+          ? Array.from(warningBox.querySelectorAll('li')).map(function (li) {
+              return pdfReportText(li);
+            }).filter(Boolean)
+          : [];
+        const warningHtml = warningItems.length
+          ? '<div class="context-box warning"><h3>Hinweis: Folgende erwartete Spalten fehlen</h3><ul>'
+            + warningItems.map(function (txt) { return '<li>' + pdfReportEscape(txt) + '</li>'; }).join('')
+            + '</ul></div>'
+          : '';
+
+        if (!fileItems && !smoothingHtml && !warningHtml) return '';
+
+        return '<section class="block context-section"><h2>' + pdfReportEscape(heading) + '</h2>'
+          + (fileItems ? '<div class="context-box"><h3>Verglichene Dateien</h3><table class="summary-table context-table">' + fileItems + '</table></div>' : '')
+          + smoothingHtml
+          + warningHtml
+          + '</section>';
       }
 
       function fullTableToPdfHtml(tableEl) {
@@ -4601,7 +4631,7 @@
         const chartSections = isCompare
           ? chartSectionsFromGridForReport('performance-compare-chart-grid', 'Vergleichsdiagramm')
           : singlePerformanceChartSectionsForReport();
-        const css = '@page{size:A4 landscape;margin:8mm;}body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:10px;}h1{font-size:20px;margin:0 0 5px;}h2{font-size:14px;margin:0 0 6px;}h3{font-size:12px;margin:0 0 4px;}.meta{font-size:10px;color:#555;margin:0 0 8px;}.cover{border-bottom:1px solid #d1d5db;margin-bottom:8mm;padding-bottom:5mm;}.block{break-inside:avoid;page-break-inside:avoid;margin-bottom:8mm;}.table-block{break-inside:auto;page-break-inside:auto;}table{border-collapse:collapse;width:100%;page-break-inside:auto;}tr{page-break-inside:avoid;page-break-after:auto;}th,td{border:1px solid #cfd4d9;padding:3px 4px;vertical-align:top;word-break:break-word;}th{background:#f3f5f7;font-weight:700;}.summary-table{max-width:100%;margin-top:4px;font-size:10px;}.summary-table th{width:28%;text-align:left;}.file-label,.note{font-size:10px;color:#444;margin:3px 0 6px;}.chart-page{break-inside:avoid;page-break-inside:avoid;margin-bottom:8mm;}.svg-wrap{border:1px solid #d1d5db;border-radius:8px;padding:5px;}svg{width:100%;height:145mm;display:block;}.legend{font-size:10px;color:#555;margin-top:4px;}';
+        const css = '@page{size:A4 landscape;margin:8mm;}body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:10px;}h1{font-size:20px;margin:0 0 5px;}h2{font-size:14px;margin:0 0 6px;}h3{font-size:12px;margin:0 0 4px;}.meta{font-size:10px;color:#555;margin:0 0 8px;}.cover{border-bottom:1px solid #d1d5db;margin-bottom:8mm;padding-bottom:5mm;}.block{break-inside:avoid;page-break-inside:avoid;margin-bottom:8mm;}.table-block{break-inside:auto;page-break-inside:auto;}table{border-collapse:collapse;width:100%;page-break-inside:auto;}tr{page-break-inside:avoid;page-break-after:auto;}th,td{border:1px solid #cfd4d9;padding:3px 4px;vertical-align:top;word-break:break-word;}th{background:#f3f5f7;font-weight:700;}.summary-table{max-width:100%;margin-top:4px;font-size:10px;}.summary-table th{width:28%;text-align:left;}.file-label,.note{font-size:10px;color:#444;margin:3px 0 6px;}.context-section{break-inside:avoid;page-break-inside:avoid;}.context-box{border:1px solid #d1d5db;border-radius:6px;padding:6px 8px;margin:5px 0;background:#fafafa;}.context-box h3{font-size:11px;margin:0 0 4px;color:#111;}.context-box p{margin:0;line-height:1.35;}.context-table{margin-top:2px;}.context-table th{width:22%;text-align:left;}.warning{border-color:#fca5a5;background:#fff1f2;color:#b91c1c;}.warning h3{color:#b91c1c;}.warning ul{margin:4px 0 0 16px;padding:0;}.warning li{margin:2px 0;color:#b91c1c;}.chart-page{break-inside:avoid;page-break-inside:avoid;margin-bottom:8mm;}.svg-wrap{border:1px solid #d1d5db;border-radius:8px;padding:5px;}svg{width:100%;height:145mm;display:block;}.legend{font-size:10px;color:#555;margin-top:4px;}';
         const reportHtml = '<!doctype html><html><head><meta charset="utf-8"><title>' + pdfReportEscape(reportTitle) + '</title><style>' + css + '</style></head><body>'
           + '<section class="cover"><h1>' + pdfReportEscape(reportTitle) + '</h1><div class="meta">Erstellt: ' + new Date().toLocaleString('de-DE') + (version ? '<br>Version: ' + pdfReportEscape(version) : '') + '<br>Quelle: aktuell im Browser geladene Performance-Auswertung</div><div class="legend">Dieser Report enthält die vollständigen Tabellen der Performance-Auswertung sowie die zugehörigen Diagramme. Die PDF-Datei wird über den Browser-Druckdialog erzeugt.</div></section>'
           + (isCompare ? contextCardToPdfHtml(contextCard) : '')
