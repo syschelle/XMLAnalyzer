@@ -1053,7 +1053,16 @@
         {{ compare_label_b }}: <strong>{{ result.filename_b }}</strong>
       </p>
       {% if result.missing_headers %}
-      <p class="error">Hinweis: Folgende erwartete Spalten fehlen in mindestens einer Datei: {{ result.missing_headers|join(', ') }}</p>
+      <div class="error">
+        <strong>Hinweis: Folgende erwartete Spalten fehlen:</strong>
+        <ul style="margin:6px 0 0 18px;">
+          {% for mf in result.missing_headers_by_file %}
+          {% if mf.missing_headers %}
+          <li><strong>{{ mf.label }}</strong> (<code>{{ mf.filename }}</code>): {{ mf.missing_headers|join(', ') }}</li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
       {% endif %}
       <div class="stats">
         <div class="stat"><div class="k">Messungen {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary.rows_a }} / {{ result.performance_compare_summary.rows_b }} / {{ result.performance_compare_summary.rows_delta }}</div></div>

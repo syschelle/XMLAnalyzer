@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.162`
+- `v0.163`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -148,3 +148,8 @@ The web upload supports selecting up to two files.
 A comparison view is available only when both selected files are Performance CSV files. The comparison includes tables and modality-based comparison charts with PDF export. ConfigScope derives comparison labels from the differing parts of the two filenames and uses those labels instead of generic A/B labels. The differing part may be at the beginning, in the middle or at the end before the `.csv` extension. The chart section is shown after the comparison tables.
 `export.xml` and license XML files do not support two-file comparison and must be analyzed individually.
 
+
+## Performance CSV missing columns
+
+In the two-file Performance CSV comparison, missing expected columns are reported per file.
+The warning specifies which selected CSV file is missing which columns, instead of showing only one combined list.

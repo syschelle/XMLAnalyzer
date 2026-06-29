@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.162"
+APP_VERSION = "v0.163"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -1133,6 +1133,9 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
     compare_modalities = compare_groups("modality", "-")
     compare_hangings = compare_groups("hanging", "Ohne Hanging")
     compare_users = compare_groups("user", "-")
+    missing_headers_a = sorted(set(result_a.get("missing_headers") or []))
+    missing_headers_b = sorted(set(result_b.get("missing_headers") or []))
+    missing_headers_all = sorted(set(missing_headers_a) | set(missing_headers_b))
     compare_chart_data = [
         {
             "label": row["label"],
@@ -1160,7 +1163,13 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
         "filename_b": filename_b,
         "performance_compare_label_a": label_a,
         "performance_compare_label_b": label_b,
-        "missing_headers": sorted(set(result_a.get("missing_headers") or []) | set(result_b.get("missing_headers") or [])),
+        "missing_headers": missing_headers_all,
+        "missing_headers_a": missing_headers_a,
+        "missing_headers_b": missing_headers_b,
+        "missing_headers_by_file": [
+            {"label": label_a, "filename": filename_a, "missing_headers": missing_headers_a},
+            {"label": label_b, "filename": filename_b, "missing_headers": missing_headers_b},
+        ],
         "performance_percentile": PERFORMANCE_PERCENTILE,
         "performance_percentile_label": _performance_percentile_label(PERFORMANCE_PERCENTILE),
         "performance_percentile_hint": _performance_percentile_hint(PERFORMANCE_PERCENTILE),
@@ -3489,7 +3498,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.162
+  APP_VERSION: v0.163
 
 jobs:
   build-export-xml-web:
@@ -3613,6 +3622,11 @@ DEPLOY_DOWNLOAD_ENABLED: "false"  # hide and disable Deploy Download
 When disabled, the Deploy Download button is hidden and `/download_bundle` returns `404`.
 After changing the Compose file, recreate the container.
 
+## Performance CSV missing columns
+
+In the two-file Performance CSV comparison, missing expected columns are reported per file.
+The warning specifies which selected CSV file is missing which columns, instead of showing only one combined list.
+
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
@@ -3648,7 +3662,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.162`
+- `v0.163`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
