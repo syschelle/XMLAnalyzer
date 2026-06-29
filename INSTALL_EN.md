@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.168`
+- `v0.169`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -169,3 +169,7 @@ In the two-file Performance CSV comparison, file labels, smoothing details, the 
 ## Performance CSV smoothing wording
 
 The smoothing context now avoids duplicate active-state wording in the UI and the complete PDF report.
+
+## German guide formatting
+
+The German guide now keeps the Performance CSV comparison section inside the same card-based layout as the previous guide sections.
