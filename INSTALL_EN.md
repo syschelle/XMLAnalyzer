@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.165`
+- `v0.166`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -164,4 +164,4 @@ The raw data is not changed and smoothing is not applied to export.xml or licens
 
 ## Performance CSV comparison context card
 
-In the two-file Performance CSV comparison, file labels, smoothing details, the active smoothing reference and missing-column warnings are grouped in a dedicated context card below the Performance CSV comparison title. The same context is included in the complete PDF report.
+In the two-file Performance CSV comparison, file labels, smoothing details, the active smoothing reference and missing-column warnings are shown in a dedicated standalone context card below the Performance CSV comparison title card. Missing-column warnings are displayed in red. The same context is included in the complete PDF report.
