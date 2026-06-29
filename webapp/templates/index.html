@@ -1046,12 +1046,16 @@
     <div class="card" id="sec-perf-compare-overview">
       <div class="h2-row">
         <h2>Performance CSV Vergleich</h2>
-        <button type="button" id="performance-compare-full-pdf-export" class="toggle-btn">Komplette PDF-Auswertung</button>
+        <div class="toolbar" style="margin:0;"><button type="button" id="performance-compare-smoothing-toggle" class="toggle-btn">Glättung einschalten</button><button type="button" id="performance-compare-full-pdf-export" class="toggle-btn">Komplette PDF-Auswertung</button></div>
       </div>
       <p class="compare-file-label">
         {{ compare_label_a }}: <strong>{{ result.filename_a }}</strong><br>
         {{ compare_label_b }}: <strong>{{ result.filename_b }}</strong>
       </p>
+      <div id="performance-compare-smoothing-note" class="perf-chart-note" style="display:none; margin-bottom:10px;">
+        <strong>Glättung ist aktiv.</strong> {{ result.performance_compare_smoothing_note }}
+        {% if result.performance_compare_smoothing_reference %}<br>Globale Referenzgröße für die Übersicht: Object count Median {{ result.performance_compare_smoothing_reference }}.{% endif %}
+      </div>
       {% if result.missing_headers %}
       <div class="error">
         <strong>Hinweis: Folgende erwartete Spalten fehlen:</strong>
@@ -1064,7 +1068,7 @@
         </ul>
       </div>
       {% endif %}
-      <div class="stats">
+      <div class="stats performance-compare-mode-raw">
         <div class="stat"><div class="k">Messungen {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary.rows_a }} / {{ result.performance_compare_summary.rows_b }} / {{ result.performance_compare_summary.rows_delta }}</div></div>
         <div class="stat"><div class="k">Modalitäten {{ compare_label_a }} / {{ compare_label_b }}</div><div class="v">{{ result.performance_compare_summary.modalities_a }} / {{ result.performance_compare_summary.modalities_b }}</div></div>
         <div class="stat"><div class="k">User {{ compare_label_a }} / {{ compare_label_b }}</div><div class="v">{{ result.performance_compare_summary.users_a }} / {{ result.performance_compare_summary.users_b }}</div></div>
@@ -1076,8 +1080,20 @@
         <div class="stat"><div class="k">Zeitraum {{ compare_label_a }}</div><div class="v" style="font-size:15px;">{{ result.performance_compare_summary.date_min_a }}{% if result.performance_compare_summary.date_max_a %}<br>{{ result.performance_compare_summary.date_max_a }}{% endif %}</div></div>
         <div class="stat"><div class="k">Zeitraum {{ compare_label_b }}</div><div class="v" style="font-size:15px;">{{ result.performance_compare_summary.date_min_b }}{% if result.performance_compare_summary.date_max_b %}<br>{{ result.performance_compare_summary.date_max_b }}{% endif %}</div></div>
       </div>
+      <div class="stats performance-compare-mode-smoothed" style="display:none;">
+        <div class="stat"><div class="k">Messungen {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary_smoothed.rows_a }} / {{ result.performance_compare_summary_smoothed.rows_b }} / {{ result.performance_compare_summary_smoothed.rows_delta }}</div></div>
+        <div class="stat"><div class="k">Modalitäten {{ compare_label_a }} / {{ compare_label_b }}</div><div class="v">{{ result.performance_compare_summary_smoothed.modalities_a }} / {{ result.performance_compare_summary_smoothed.modalities_b }}</div></div>
+        <div class="stat"><div class="k">User {{ compare_label_a }} / {{ compare_label_b }}</div><div class="v">{{ result.performance_compare_summary_smoothed.users_a }} / {{ result.performance_compare_summary_smoothed.users_b }}</div></div>
+        <div class="stat"><div class="k">langsam {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary_smoothed.slow_a }} / {{ result.performance_compare_summary_smoothed.slow_b }} / {{ result.performance_compare_summary_smoothed.slow_delta }}</div></div>
+        <div class="stat"><div class="k">First Display Ø {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary_smoothed.first_avg_a }} / {{ result.performance_compare_summary_smoothed.first_avg_b }} / {{ result.performance_compare_summary_smoothed.first_avg_delta }}</div></div>
+        <div class="stat"><div class="k">First Display {{ result.performance_percentile_label }} {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary_smoothed.first_p90_a }} / {{ result.performance_compare_summary_smoothed.first_p90_b }} / {{ result.performance_compare_summary_smoothed.first_p90_delta }}</div></div>
+        <div class="stat"><div class="k">Full Study Ø {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary_smoothed.full_avg_a }} / {{ result.performance_compare_summary_smoothed.full_avg_b }} / {{ result.performance_compare_summary_smoothed.full_avg_delta }}</div></div>
+        <div class="stat"><div class="k">Full Study {{ result.performance_percentile_label }} {{ compare_label_a }} / {{ compare_label_b }} / Δ</div><div class="v">{{ result.performance_compare_summary_smoothed.full_p90_a }} / {{ result.performance_compare_summary_smoothed.full_p90_b }} / {{ result.performance_compare_summary_smoothed.full_p90_delta }}</div></div>
+        <div class="stat"><div class="k">Zeitraum {{ compare_label_a }}</div><div class="v" style="font-size:15px;">{{ result.performance_compare_summary_smoothed.date_min_a }}{% if result.performance_compare_summary_smoothed.date_max_a %}<br>{{ result.performance_compare_summary_smoothed.date_max_a }}{% endif %}</div></div>
+        <div class="stat"><div class="k">Zeitraum {{ compare_label_b }}</div><div class="v" style="font-size:15px;">{{ result.performance_compare_summary_smoothed.date_min_b }}{% if result.performance_compare_summary_smoothed.date_max_b %}<br>{{ result.performance_compare_summary_smoothed.date_max_b }}{% endif %}</div></div>
+      </div>
       <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">
-        Δ bedeutet: Wert aus {{ compare_label_b }} minus {{ compare_label_a }}. Positive Zeit-Deltas bedeuten, dass {{ compare_label_b }} langsamer ist; negative Zeit-Deltas bedeuten, dass {{ compare_label_b }} schneller ist.
+        Δ bedeutet: Wert aus {{ compare_label_b }} minus {{ compare_label_a }}. Positive Zeit-Deltas bedeuten, dass {{ compare_label_b }} langsamer ist; negative Zeit-Deltas bedeuten, dass {{ compare_label_b }} schneller ist. Bei aktiver Glättung werden die angezeigten Zeitwerte zuvor objektzahl-normalisiert.
       </p>
     </div>
 
@@ -1087,7 +1103,7 @@
         <span class="perf-p90-hint">{{ result.performance_percentile_hint }}</span>
       </div>
       <div class="table-wrap">
-        <table id="performance-compare-modalities-table">
+        <table id="performance-compare-modalities-table" class="performance-compare-mode-raw">
           <tr>
             <th title="DICOM-Modalität, nach der die Vergleichswerte zusammengefasst werden.">Modalität</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diese Gruppe.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diese Gruppe.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
             <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
@@ -1109,6 +1125,28 @@
           </tr>
           {% endfor %}
         </table>
+<table id="performance-compare-modalities-table-smoothed" class="performance-compare-mode-smoothed" style="display:none;">
+          <tr>
+            <th title="DICOM-Modalität, nach der die Vergleichswerte zusammengefasst werden.">Modalität</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diese Gruppe.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diese Gruppe.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche First-Display-Zeit in {{ compare_label_a }}.">First Ø {{ compare_label_a }}</th><th title="Durchschnittliche First-Display-Zeit in {{ compare_label_b }}.">First Ø {{ compare_label_b }}</th><th title="Differenz der First-Display-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_a }}.">First {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_b }}.">First {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des First Display {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_a }}.">Full Ø {{ compare_label_a }}</th><th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_b }}.">Full Ø {{ compare_label_b }}</th><th title="Differenz der Full-Study-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_a }}.">Full {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_b }}.">Full {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des Full Study {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Anzahl langsamer Messungen in {{ compare_label_a }}.">langsam {{ compare_label_a }}</th><th title="Anzahl langsamer Messungen in {{ compare_label_b }}.">langsam {{ compare_label_b }}</th><th title="Differenz der langsamen Messungen: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+          </tr>
+          {% for r in result.performance_compare_modalities_smoothed %}
+          <tr>
+            <td>{{ r.label }}</td><td>{{ r.countA }}</td><td>{{ r.countB }}</td><td class="compare-delta">{{ r.countDelta }}</td>
+            <td>{{ r.objectAvgA }}</td><td>{{ r.objectAvgB }}</td><td class="compare-delta">{{ r.objectAvgDelta or '-' }}</td>
+            <td>{{ r.firstAvgA }}</td><td>{{ r.firstAvgB }}</td><td class="compare-delta">{{ r.firstAvgDelta or '-' }}</td>
+            <td>{{ r.firstP90A }}</td><td>{{ r.firstP90B }}</td><td class="compare-delta">{{ r.firstP90Delta or '-' }}</td>
+            <td>{{ r.fullAvgA }}</td><td>{{ r.fullAvgB }}</td><td class="compare-delta">{{ r.fullAvgDelta or '-' }}</td>
+            <td>{{ r.fullP90A }}</td><td>{{ r.fullP90B }}</td><td class="compare-delta">{{ r.fullP90Delta or '-' }}</td>
+            <td>{{ r.slowA }}</td><td>{{ r.slowB }}</td><td class="compare-delta">{{ r.slowDelta }}</td>
+          </tr>
+          {% endfor %}
+        </table>
       </div>
     </div>
 
@@ -1118,7 +1156,7 @@
         <span class="perf-p90-hint">{{ result.performance_percentile_hint }}</span>
       </div>
       <div class="table-wrap">
-        <table id="performance-compare-hangings-table">
+        <table id="performance-compare-hangings-table" class="performance-compare-mode-raw">
           <tr>
             <th title="Hanging Protocol bzw. Hanging-Name, nach dem die Vergleichswerte zusammengefasst werden.">Hanging</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diese Gruppe.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diese Gruppe.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
             <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
@@ -1140,6 +1178,28 @@
           </tr>
           {% endfor %}
         </table>
+<table id="performance-compare-hangings-table-smoothed" class="performance-compare-mode-smoothed" style="display:none;">
+          <tr>
+            <th title="Hanging Protocol bzw. Hanging-Name, nach dem die Vergleichswerte zusammengefasst werden.">Hanging</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diese Gruppe.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diese Gruppe.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche First-Display-Zeit in {{ compare_label_a }}.">First Ø {{ compare_label_a }}</th><th title="Durchschnittliche First-Display-Zeit in {{ compare_label_b }}.">First Ø {{ compare_label_b }}</th><th title="Differenz der First-Display-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_a }}.">First {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="First Display {{ result.performance_percentile_label }} in {{ compare_label_b }}.">First {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des First Display {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_a }}.">Full Ø {{ compare_label_a }}</th><th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_b }}.">Full Ø {{ compare_label_b }}</th><th title="Differenz der Full-Study-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_a }}.">Full {{ result.performance_percentile_label }} {{ compare_label_a }}</th><th title="Full Study {{ result.performance_percentile_label }} in {{ compare_label_b }}.">Full {{ result.performance_percentile_label }} {{ compare_label_b }}</th><th title="Differenz des Full Study {{ result.performance_percentile_label }}. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Anzahl langsamer Messungen in {{ compare_label_a }}.">langsam {{ compare_label_a }}</th><th title="Anzahl langsamer Messungen in {{ compare_label_b }}.">langsam {{ compare_label_b }}</th><th title="Differenz der langsamen Messungen: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+          </tr>
+          {% for r in result.performance_compare_hangings_smoothed %}
+          <tr>
+            <td>{{ r.label }}</td><td>{{ r.countA }}</td><td>{{ r.countB }}</td><td class="compare-delta">{{ r.countDelta }}</td>
+            <td>{{ r.objectAvgA }}</td><td>{{ r.objectAvgB }}</td><td class="compare-delta">{{ r.objectAvgDelta or '-' }}</td>
+            <td>{{ r.firstAvgA }}</td><td>{{ r.firstAvgB }}</td><td class="compare-delta">{{ r.firstAvgDelta or '-' }}</td>
+            <td>{{ r.firstP90A }}</td><td>{{ r.firstP90B }}</td><td class="compare-delta">{{ r.firstP90Delta or '-' }}</td>
+            <td>{{ r.fullAvgA }}</td><td>{{ r.fullAvgB }}</td><td class="compare-delta">{{ r.fullAvgDelta or '-' }}</td>
+            <td>{{ r.fullP90A }}</td><td>{{ r.fullP90B }}</td><td class="compare-delta">{{ r.fullP90Delta or '-' }}</td>
+            <td>{{ r.slowA }}</td><td>{{ r.slowB }}</td><td class="compare-delta">{{ r.slowDelta }}</td>
+          </tr>
+          {% endfor %}
+        </table>
       </div>
     </div>
 
@@ -1149,7 +1209,7 @@
         <span class="perf-p90-hint">{{ result.performance_percentile_hint }}</span>
       </div>
       <div class="table-wrap">
-        <table id="performance-compare-users-table">
+        <table id="performance-compare-users-table" class="performance-compare-mode-raw">
           <tr>
             <th title="Benutzer, nach dem die Vergleichswerte zusammengefasst werden.">User</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diesen Benutzer.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diesen Benutzer.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
             <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
@@ -1158,6 +1218,24 @@
             <th title="Anzahl langsamer Messungen in {{ compare_label_a }}.">langsam {{ compare_label_a }}</th><th title="Anzahl langsamer Messungen in {{ compare_label_b }}.">langsam {{ compare_label_b }}</th><th title="Differenz der langsamen Messungen: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
           </tr>
           {% for r in result.performance_compare_users %}
+          <tr>
+            <td>{{ r.label }}</td><td>{{ r.countA }}</td><td>{{ r.countB }}</td><td class="compare-delta">{{ r.countDelta }}</td>
+            <td>{{ r.objectAvgA }}</td><td>{{ r.objectAvgB }}</td><td class="compare-delta">{{ r.objectAvgDelta or '-' }}</td>
+            <td>{{ r.firstAvgA }}</td><td>{{ r.firstAvgB }}</td><td class="compare-delta">{{ r.firstAvgDelta or '-' }}</td>
+            <td>{{ r.fullAvgA }}</td><td>{{ r.fullAvgB }}</td><td class="compare-delta">{{ r.fullAvgDelta or '-' }}</td>
+            <td>{{ r.slowA }}</td><td>{{ r.slowB }}</td><td class="compare-delta">{{ r.slowDelta }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+<table id="performance-compare-users-table-smoothed" class="performance-compare-mode-smoothed" style="display:none;">
+          <tr>
+            <th title="Benutzer, nach dem die Vergleichswerte zusammengefasst werden.">User</th><th title="Anzahl der Messungen in {{ compare_label_a }} für diesen Benutzer.">Anzahl {{ compare_label_a }}</th><th title="Anzahl der Messungen in {{ compare_label_b }} für diesen Benutzer.">Anzahl {{ compare_label_b }}</th><th title="Differenz: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_a }}.">Object Ø {{ compare_label_a }}</th><th title="Durchschnittliche Objekt-/Bildanzahl in {{ compare_label_b }}.">Object Ø {{ compare_label_b }}</th><th title="Differenz der durchschnittlichen Objektanzahl: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+            <th title="Durchschnittliche First-Display-Zeit in {{ compare_label_a }}.">First Ø {{ compare_label_a }}</th><th title="Durchschnittliche First-Display-Zeit in {{ compare_label_b }}.">First Ø {{ compare_label_b }}</th><th title="Differenz der First-Display-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_a }}.">Full Ø {{ compare_label_a }}</th><th title="Durchschnittliche Full-Study-Zeit in {{ compare_label_b }}.">Full Ø {{ compare_label_b }}</th><th title="Differenz der Full-Study-Durchschnittszeit. Positiv bedeutet: {{ compare_label_b }} ist langsamer.">Δ</th>
+            <th title="Anzahl langsamer Messungen in {{ compare_label_a }}.">langsam {{ compare_label_a }}</th><th title="Anzahl langsamer Messungen in {{ compare_label_b }}.">langsam {{ compare_label_b }}</th><th title="Differenz der langsamen Messungen: {{ compare_label_b }} minus {{ compare_label_a }}.">Δ</th>
+          </tr>
+          {% for r in result.performance_compare_users_smoothed %}
           <tr>
             <td>{{ r.label }}</td><td>{{ r.countA }}</td><td>{{ r.countB }}</td><td class="compare-delta">{{ r.countDelta }}</td>
             <td>{{ r.objectAvgA }}</td><td>{{ r.objectAvgB }}</td><td class="compare-delta">{{ r.objectAvgDelta or '-' }}</td>
@@ -1206,7 +1284,7 @@
       </div>
       <p class="perf-chart-note">
         Je Modalität werden <strong>First Display Ø</strong> und <strong>Full Study Ø</strong> von {{ compare_label_a }} und {{ compare_label_b }} gegenübergestellt.
-        Niedrigere Balken bedeuten bessere Messzeiten.
+        Niedrigere Balken bedeuten bessere Messzeiten. Bei aktiver Glättung nutzt das Diagramm die objektzahl-normalisierten Werte.
       </p>
       <div id="performance-compare-chart-grid" class="perf-chart-grid"></div>
       <div id="performance-compare-chart-empty" class="perf-chart-empty" style="display:none; position:relative; min-height:160px; border:1px solid var(--line); border-radius:12px;">Keine Vergleichsdaten für Diagramme vorhanden.</div>
@@ -3761,13 +3839,17 @@
       })();
 
       (function () {
-        const compareData = {{ (result.performance_compare_chart_data|default([], true) if result is defined and result and result.xml_kind == 'performancecsv_compare' else [])|tojson }};
+        const compareDataRaw = {{ (result.performance_compare_chart_data|default([], true) if result is defined and result and result.xml_kind == 'performancecsv_compare' else [])|tojson }};
+        const compareDataSmoothed = {{ (result.performance_compare_chart_data_smoothed|default([], true) if result is defined and result and result.xml_kind == 'performancecsv_compare' else [])|tojson }};
+        let compareSmoothingEnabled = false;
         const compareLabelA = {{ (result.performance_compare_label_a|default('Datei 1', true) if result is defined and result and result.xml_kind == 'performancecsv_compare' else 'Datei 1')|tojson }};
         const compareLabelB = {{ (result.performance_compare_label_b|default('Datei 2', true) if result is defined and result and result.xml_kind == 'performancecsv_compare' else 'Datei 2')|tojson }};
         const grid = document.getElementById('performance-compare-chart-grid');
         const empty = document.getElementById('performance-compare-chart-empty');
         const meta = document.getElementById('performance-compare-chart-meta');
         const pdfBtn = document.getElementById('performance-compare-chart-pdf-export');
+        const smoothingBtn = document.getElementById('performance-compare-smoothing-toggle');
+        const smoothingNote = document.getElementById('performance-compare-smoothing-note');
         if (!grid || !empty) return;
 
         function validNumber(v) {
@@ -3843,10 +3925,11 @@
 
         function renderCompareCharts() {
           grid.innerHTML = '';
-          const rows = (compareData || []).filter(function (item) {
+          const activeData = compareSmoothingEnabled ? compareDataSmoothed : compareDataRaw;
+          const rows = (activeData || []).filter(function (item) {
             return validNumber(item.firstAvgSecA) || validNumber(item.firstAvgSecB) || validNumber(item.fullAvgSecA) || validNumber(item.fullAvgSecB);
           });
-          if (meta) meta.textContent = 'Diagramme: ' + rows.length + ' · ' + compareLabelA + ' vs. ' + compareLabelB;
+          if (meta) meta.textContent = 'Diagramme: ' + rows.length + ' · ' + compareLabelA + ' vs. ' + compareLabelB + (compareSmoothingEnabled ? ' · geglättet' : ' · Rohwerte');
           if (!rows.length) {
             empty.style.display = '';
             return;
@@ -3913,8 +3996,25 @@
           setTimeout(function () { w.print(); }, 250);
         }
 
+        function updateCompareSmoothingUi() {
+          document.querySelectorAll('.performance-compare-mode-raw').forEach(function (el) {
+            el.style.display = compareSmoothingEnabled ? 'none' : '';
+          });
+          document.querySelectorAll('.performance-compare-mode-smoothed').forEach(function (el) {
+            el.style.display = compareSmoothingEnabled ? '' : 'none';
+          });
+          if (smoothingNote) smoothingNote.style.display = compareSmoothingEnabled ? '' : 'none';
+          if (smoothingBtn) smoothingBtn.textContent = compareSmoothingEnabled ? 'Glättung ausschalten' : 'Glättung einschalten';
+          renderCompareCharts();
+        }
+        if (smoothingBtn) {
+          smoothingBtn.addEventListener('click', function () {
+            compareSmoothingEnabled = !compareSmoothingEnabled;
+            updateCompareSmoothingUi();
+          });
+        }
         if (pdfBtn) pdfBtn.addEventListener('click', exportCompareChartsPdf);
-        renderCompareCharts();
+        updateCompareSmoothingUi();
       })();
 
 
@@ -4245,18 +4345,27 @@
         return ((el && el.innerText) || '').replace(/\s+/g, ' ').trim();
       }
 
+      function isHiddenForPdfReport(el, stopAt) {
+        let node = el;
+        while (node && node !== stopAt && node.nodeType === 1) {
+          if (window.getComputedStyle(node).display === 'none') return true;
+          node = node.parentElement;
+        }
+        return false;
+      }
+
       function statsCardToPdfHtml(cardEl, headingOverride) {
         if (!cardEl) return '';
         const heading = headingOverride || pdfReportText(cardEl.querySelector('h2')) || 'Übersicht';
         const fileLabel = cardEl.querySelector('.compare-file-label');
-        const stats = Array.from(cardEl.querySelectorAll('.stat')).map(function (stat) {
+        const stats = Array.from(cardEl.querySelectorAll('.stat')).filter(function (stat) { return !isHiddenForPdfReport(stat, cardEl); }).map(function (stat) {
           const k = pdfReportText(stat.querySelector('.k'));
           const v = pdfReportText(stat.querySelector('.v'));
           if (!k && !v) return '';
           return '<tr><th>' + pdfReportEscape(k) + '</th><td>' + pdfReportEscape(v) + '</td></tr>';
         }).filter(Boolean).join('');
-        const notes = Array.from(cardEl.querySelectorAll('p'))
-          .filter(function (p) { return !p.classList.contains('error'); })
+        const notes = Array.from(cardEl.querySelectorAll('p, .perf-chart-note'))
+          .filter(function (p) { return !p.classList.contains('error') && !isHiddenForPdfReport(p, cardEl); })
           .map(function (p) { return pdfReportText(p); })
           .filter(Boolean)
           .map(function (txt) { return '<p class="note">' + pdfReportEscape(txt) + '</p>'; })
@@ -4380,9 +4489,9 @@
         const compareLabelBForReport = pdfReportText(document.getElementById('performance-compare-label-b-hidden')) || 'Datei 2';
         const tables = isCompare
           ? [
-              pdfTableSection('performance-compare-modalities-table', 'Vergleich nach Modalität'),
-              pdfTableSection('performance-compare-hangings-table', 'Vergleich nach Hanging'),
-              pdfTableSection('performance-compare-users-table', 'Vergleich nach User'),
+              pdfTableSection((document.getElementById('performance-compare-smoothing-toggle') && document.getElementById('performance-compare-smoothing-toggle').textContent.indexOf('ausschalten') >= 0) ? 'performance-compare-modalities-table-smoothed' : 'performance-compare-modalities-table', 'Vergleich nach Modalität'),
+              pdfTableSection((document.getElementById('performance-compare-smoothing-toggle') && document.getElementById('performance-compare-smoothing-toggle').textContent.indexOf('ausschalten') >= 0) ? 'performance-compare-hangings-table-smoothed' : 'performance-compare-hangings-table', 'Vergleich nach Hanging'),
+              pdfTableSection((document.getElementById('performance-compare-smoothing-toggle') && document.getElementById('performance-compare-smoothing-toggle').textContent.indexOf('ausschalten') >= 0) ? 'performance-compare-users-table-smoothed' : 'performance-compare-users-table', 'Vergleich nach User'),
               pdfTableSection('performance-compare-detail-a-table', 'Performance Details – ' + compareLabelAForReport),
               pdfTableSection('performance-compare-detail-b-table', 'Performance Details – ' + compareLabelBForReport),
             ]

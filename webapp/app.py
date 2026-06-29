@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.163"
+APP_VERSION = "v0.164"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -1015,9 +1015,9 @@ def _build_filename_compare_labels(filename_a, filename_b):
     return label_a, label_b
 
 
-def _performance_numeric_stats(group_rows):
-    fvals = [r["firstDisplayMs"] for r in group_rows if r.get("firstDisplayMs") is not None]
-    fulls = [r["fullStudyMs"] for r in group_rows if r.get("fullStudyMs") is not None]
+def _performance_numeric_stats(group_rows, first_key="firstDisplayMs", full_key="fullStudyMs", slow_key="isSlow"):
+    fvals = [r.get(first_key) for r in group_rows if r.get(first_key) is not None]
+    fulls = [r.get(full_key) for r in group_rows if r.get(full_key) is not None]
     object_counts = [r["objectCount"] for r in group_rows if isinstance(r.get("objectCount"), int)]
     return {
         "count": len(group_rows),
@@ -1031,14 +1031,48 @@ def _performance_numeric_stats(group_rows):
         "fullAvg": _fmt_ms_seconds(_avg(fulls)),
         "fullP90Value": _percentile(fulls, PERFORMANCE_PERCENTILE),
         "fullP90": _fmt_ms_seconds(_percentile(fulls, PERFORMANCE_PERCENTILE)),
-        "slowCount": sum(1 for r in group_rows if r.get("isSlow")),
+        "slowCount": sum(1 for r in group_rows if r.get(slow_key)),
     }
 
+
+def _object_count_reference(rows, key=None, fallback="-"):
+    groups = defaultdict(list)
+    for r in rows:
+        label = (r.get(key) if key else "__all__") or fallback
+        count = r.get("objectCount")
+        if isinstance(count, int) and count > 0:
+            groups[label].append(count)
+    return {label: _percentile(values, 50) for label, values in groups.items() if values}
+
+
+def _rows_with_object_count_smoothing(rows, references, key=None, fallback="-"):
+    out = []
+    for row in rows:
+        item = dict(row)
+        label = (item.get(key) if key else "__all__") or fallback
+        ref = references.get(label)
+        count = item.get("objectCount")
+        factor = None
+        if ref is not None and isinstance(count, int) and count > 0:
+            factor = float(ref) / float(count)
+        first = item.get("firstDisplayMs")
+        full = item.get("fullStudyMs")
+        item["firstDisplayMsSmoothed"] = first * factor if factor is not None and first is not None else first
+        item["fullStudyMsSmoothed"] = full * factor if factor is not None and full is not None else full
+        item["smoothingFactor"] = factor
+        item["smoothingReferenceObjectCount"] = ref
+        item["isSlowSmoothed"] = (
+            (item["firstDisplayMsSmoothed"] is not None and item["firstDisplayMsSmoothed"] >= 10000)
+            or (item["fullStudyMsSmoothed"] is not None and item["fullStudyMsSmoothed"] >= 30000)
+        )
+        out.append(item)
+    return out
 
 
 def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
     rows_a = result_a.get("performance_rows") or []
     rows_b = result_b.get("performance_rows") or []
+    all_rows = rows_a + rows_b
     label_a, label_b = _build_filename_compare_labels(filename_a, filename_b)
 
     def group_by(rows, key, fallback="-"):
@@ -1048,14 +1082,27 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
             out.setdefault(label, []).append(r)
         return out
 
-    def compare_groups(key, fallback):
-        grouped_a = group_by(rows_a, key, fallback)
-        grouped_b = group_by(rows_b, key, fallback)
+    def compare_groups(key, fallback, smoothed=False):
+        source_a = rows_a
+        source_b = rows_b
+        first_key = "firstDisplayMs"
+        full_key = "fullStudyMs"
+        slow_key = "isSlow"
+        if smoothed:
+            refs = _object_count_reference(all_rows, key=key, fallback=fallback)
+            source_a = _rows_with_object_count_smoothing(rows_a, refs, key=key, fallback=fallback)
+            source_b = _rows_with_object_count_smoothing(rows_b, refs, key=key, fallback=fallback)
+            first_key = "firstDisplayMsSmoothed"
+            full_key = "fullStudyMsSmoothed"
+            slow_key = "isSlowSmoothed"
+
+        grouped_a = group_by(source_a, key, fallback)
+        grouped_b = group_by(source_b, key, fallback)
         labels = sorted(set(grouped_a.keys()) | set(grouped_b.keys()), key=lambda x: x.lower())
         out = []
         for label in labels:
-            a = _performance_numeric_stats(grouped_a.get(label, []))
-            b = _performance_numeric_stats(grouped_b.get(label, []))
+            a = _performance_numeric_stats(grouped_a.get(label, []), first_key=first_key, full_key=full_key, slow_key=slow_key)
+            b = _performance_numeric_stats(grouped_b.get(label, []), first_key=first_key, full_key=full_key, slow_key=slow_key)
             out.append({
                 "label": label,
                 "countA": a["count"],
@@ -1091,69 +1138,91 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
         out.sort(key=lambda r: (-(r["countA"] + r["countB"]), r["label"].lower()))
         return out
 
+    def make_chart_data(rows):
+        return [
+            {
+                "label": row["label"],
+                "countA": row["countA"],
+                "countB": row["countB"],
+                "firstAvgSecA": None if row.get("firstAvgMsA") is None else round(row["firstAvgMsA"] / 1000.0, 3),
+                "firstAvgSecB": None if row.get("firstAvgMsB") is None else round(row["firstAvgMsB"] / 1000.0, 3),
+                "fullAvgSecA": None if row.get("fullAvgMsA") is None else round(row["fullAvgMsA"] / 1000.0, 3),
+                "fullAvgSecB": None if row.get("fullAvgMsB") is None else round(row["fullAvgMsB"] / 1000.0, 3),
+                "firstP90SecA": None if row.get("firstP90MsA") is None else round(row["firstP90MsA"] / 1000.0, 3),
+                "firstP90SecB": None if row.get("firstP90MsB") is None else round(row["firstP90MsB"] / 1000.0, 3),
+                "fullP90SecA": None if row.get("fullP90MsA") is None else round(row["fullP90MsA"] / 1000.0, 3),
+                "fullP90SecB": None if row.get("fullP90MsB") is None else round(row["fullP90MsB"] / 1000.0, 3),
+                "slowA": row["slowA"],
+                "slowB": row["slowB"],
+            }
+            for row in rows
+        ]
+
     stats_a = _performance_numeric_stats(rows_a)
     stats_b = _performance_numeric_stats(rows_b)
+    global_refs = _object_count_reference(all_rows)
+    rows_a_smoothed_global = _rows_with_object_count_smoothing(rows_a, global_refs)
+    rows_b_smoothed_global = _rows_with_object_count_smoothing(rows_b, global_refs)
+    stats_a_smoothed = _performance_numeric_stats(rows_a_smoothed_global, first_key="firstDisplayMsSmoothed", full_key="fullStudyMsSmoothed", slow_key="isSlowSmoothed")
+    stats_b_smoothed = _performance_numeric_stats(rows_b_smoothed_global, first_key="firstDisplayMsSmoothed", full_key="fullStudyMsSmoothed", slow_key="isSlowSmoothed")
 
     def delta_ms(a, b):
         return _fmt_delta_seconds(None if a is None or b is None else b - a)
 
-    summary = {
-        "filename_a": filename_a,
-        "filename_b": filename_b,
-        "label_a": label_a,
-        "label_b": label_b,
-        "rows_a": len(rows_a),
-        "rows_b": len(rows_b),
-        "rows_delta": _fmt_delta_int(len(rows_b) - len(rows_a)),
-        "modalities_a": result_a.get("performance_summary", {}).get("modalities_total", 0),
-        "modalities_b": result_b.get("performance_summary", {}).get("modalities_total", 0),
-        "users_a": result_a.get("performance_summary", {}).get("users_total", 0),
-        "users_b": result_b.get("performance_summary", {}).get("users_total", 0),
-        "slow_a": stats_a["slowCount"],
-        "slow_b": stats_b["slowCount"],
-        "slow_delta": _fmt_delta_int(stats_b["slowCount"] - stats_a["slowCount"]),
-        "first_avg_a": stats_a["firstAvg"] or "-",
-        "first_avg_b": stats_b["firstAvg"] or "-",
-        "first_avg_delta": delta_ms(stats_a["firstAvgValue"], stats_b["firstAvgValue"]),
-        "first_p90_a": stats_a["firstP90"] or "-",
-        "first_p90_b": stats_b["firstP90"] or "-",
-        "first_p90_delta": delta_ms(stats_a["firstP90Value"], stats_b["firstP90Value"]),
-        "full_avg_a": stats_a["fullAvg"] or "-",
-        "full_avg_b": stats_b["fullAvg"] or "-",
-        "full_avg_delta": delta_ms(stats_a["fullAvgValue"], stats_b["fullAvgValue"]),
-        "full_p90_a": stats_a["fullP90"] or "-",
-        "full_p90_b": stats_b["fullP90"] or "-",
-        "full_p90_delta": delta_ms(stats_a["fullP90Value"], stats_b["fullP90Value"]),
-        "date_min_a": result_a.get("performance_summary", {}).get("date_min", ""),
-        "date_max_a": result_a.get("performance_summary", {}).get("date_max", ""),
-        "date_min_b": result_b.get("performance_summary", {}).get("date_min", ""),
-        "date_max_b": result_b.get("performance_summary", {}).get("date_max", ""),
-    }
+    def build_summary(a_stats, b_stats):
+        return {
+            "filename_a": filename_a,
+            "filename_b": filename_b,
+            "label_a": label_a,
+            "label_b": label_b,
+            "rows_a": len(rows_a),
+            "rows_b": len(rows_b),
+            "rows_delta": _fmt_delta_int(len(rows_b) - len(rows_a)),
+            "modalities_a": result_a.get("performance_summary", {}).get("modalities_total", 0),
+            "modalities_b": result_b.get("performance_summary", {}).get("modalities_total", 0),
+            "users_a": result_a.get("performance_summary", {}).get("users_total", 0),
+            "users_b": result_b.get("performance_summary", {}).get("users_total", 0),
+            "slow_a": a_stats["slowCount"],
+            "slow_b": b_stats["slowCount"],
+            "slow_delta": _fmt_delta_int(b_stats["slowCount"] - a_stats["slowCount"]),
+            "first_avg_a": a_stats["firstAvg"] or "-",
+            "first_avg_b": b_stats["firstAvg"] or "-",
+            "first_avg_delta": delta_ms(a_stats["firstAvgValue"], b_stats["firstAvgValue"]),
+            "first_p90_a": a_stats["firstP90"] or "-",
+            "first_p90_b": b_stats["firstP90"] or "-",
+            "first_p90_delta": delta_ms(a_stats["firstP90Value"], b_stats["firstP90Value"]),
+            "full_avg_a": a_stats["fullAvg"] or "-",
+            "full_avg_b": b_stats["fullAvg"] or "-",
+            "full_avg_delta": delta_ms(a_stats["fullAvgValue"], b_stats["fullAvgValue"]),
+            "full_p90_a": a_stats["fullP90"] or "-",
+            "full_p90_b": b_stats["fullP90"] or "-",
+            "full_p90_delta": delta_ms(a_stats["fullP90Value"], b_stats["fullP90Value"]),
+            "date_min_a": result_a.get("performance_summary", {}).get("date_min", ""),
+            "date_max_a": result_a.get("performance_summary", {}).get("date_max", ""),
+            "date_min_b": result_b.get("performance_summary", {}).get("date_min", ""),
+            "date_max_b": result_b.get("performance_summary", {}).get("date_max", ""),
+        }
+
+    summary = build_summary(stats_a, stats_b)
+    summary_smoothed = build_summary(stats_a_smoothed, stats_b_smoothed)
+    smoothing_reference = global_refs.get("__all__")
+    smoothing_note = (
+        "Glättung aktiv: First Display und Full Study werden objektzahl-normalisiert. "
+        "Jede Messzeit wird mit Referenz-Object-count geteilt durch den Object count der Messung multipliziert. "
+        "Als globale Referenz wird der gemeinsame Median der Object counts beider CSV-Dateien verwendet; "
+        "in Modalität-, Hanging- und User-Tabellen wird jeweils der Median der angezeigten Gruppe verwendet. "
+        "Messungen ohne gültigen Object count bleiben unverändert. Die Rohdaten werden nicht verändert."
+    )
 
     compare_modalities = compare_groups("modality", "-")
     compare_hangings = compare_groups("hanging", "Ohne Hanging")
     compare_users = compare_groups("user", "-")
+    compare_modalities_smoothed = compare_groups("modality", "-", smoothed=True)
+    compare_hangings_smoothed = compare_groups("hanging", "Ohne Hanging", smoothed=True)
+    compare_users_smoothed = compare_groups("user", "-", smoothed=True)
     missing_headers_a = sorted(set(result_a.get("missing_headers") or []))
     missing_headers_b = sorted(set(result_b.get("missing_headers") or []))
     missing_headers_all = sorted(set(missing_headers_a) | set(missing_headers_b))
-    compare_chart_data = [
-        {
-            "label": row["label"],
-            "countA": row["countA"],
-            "countB": row["countB"],
-            "firstAvgSecA": None if row.get("firstAvgMsA") is None else round(row["firstAvgMsA"] / 1000.0, 3),
-            "firstAvgSecB": None if row.get("firstAvgMsB") is None else round(row["firstAvgMsB"] / 1000.0, 3),
-            "fullAvgSecA": None if row.get("fullAvgMsA") is None else round(row["fullAvgMsA"] / 1000.0, 3),
-            "fullAvgSecB": None if row.get("fullAvgMsB") is None else round(row["fullAvgMsB"] / 1000.0, 3),
-            "firstP90SecA": None if row.get("firstP90MsA") is None else round(row["firstP90MsA"] / 1000.0, 3),
-            "firstP90SecB": None if row.get("firstP90MsB") is None else round(row["firstP90MsB"] / 1000.0, 3),
-            "fullP90SecA": None if row.get("fullP90MsA") is None else round(row["fullP90MsA"] / 1000.0, 3),
-            "fullP90SecB": None if row.get("fullP90MsB") is None else round(row["fullP90MsB"] / 1000.0, 3),
-            "slowA": row["slowA"],
-            "slowB": row["slowB"],
-        }
-        for row in compare_modalities
-    ]
 
     return {
         "xml_kind": "performancecsv_compare",
@@ -1174,10 +1243,17 @@ def _build_performance_comparison(result_a, result_b, filename_a, filename_b):
         "performance_percentile_label": _performance_percentile_label(PERFORMANCE_PERCENTILE),
         "performance_percentile_hint": _performance_percentile_hint(PERFORMANCE_PERCENTILE),
         "performance_compare_summary": summary,
+        "performance_compare_summary_smoothed": summary_smoothed,
+        "performance_compare_smoothing_note": smoothing_note,
+        "performance_compare_smoothing_reference": _fmt_decimal(smoothing_reference, 1) if smoothing_reference is not None else "",
         "performance_compare_modalities": compare_modalities,
         "performance_compare_hangings": compare_hangings,
         "performance_compare_users": compare_users,
-        "performance_compare_chart_data": compare_chart_data,
+        "performance_compare_modalities_smoothed": compare_modalities_smoothed,
+        "performance_compare_hangings_smoothed": compare_hangings_smoothed,
+        "performance_compare_users_smoothed": compare_users_smoothed,
+        "performance_compare_chart_data": make_chart_data(compare_modalities),
+        "performance_compare_chart_data_smoothed": make_chart_data(compare_modalities_smoothed),
         "performance_a": result_a,
         "performance_b": result_b,
     }
@@ -3498,7 +3574,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.163
+  APP_VERSION: v0.164
 
 jobs:
   build-export-xml-web:
@@ -3627,6 +3703,14 @@ After changing the Compose file, recreate the container.
 In the two-file Performance CSV comparison, missing expected columns are reported per file.
 The warning specifies which selected CSV file is missing which columns, instead of showing only one combined list.
 
+## Performance CSV smoothing
+
+The two-file Performance CSV comparison now includes an optional smoothing toggle.
+Smoothing is disabled by default and can be enabled or disabled by the user in the browser.
+When enabled, First Display and Full Study timings are normalized by Object count to reduce the impact of different study sizes.
+The displayed explanation describes the calculation: adjusted time = measured time × reference Object count / row Object count.
+The raw data is not changed and smoothing is not applied to export.xml or license XML views.
+
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
@@ -3662,7 +3746,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.163`
+- `v0.164`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

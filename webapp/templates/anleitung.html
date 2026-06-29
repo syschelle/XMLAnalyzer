@@ -126,5 +126,9 @@
 
   <h2>Performance CSV: Fehlende Spalten</h2>
   <p>Beim Vergleich von zwei Performance CSVs zeigt ConfigScope fehlende erwartete Spalten pro Datei an. Dadurch ist direkt ersichtlich, in welcher CSV welche Spalte fehlt.</p>
+
+  <h2>Glättung im Performance-Vergleich</h2>
+  <p>Beim Vergleich von zwei Performance CSVs kann die Glättung über den Button <strong>Glättung einschalten</strong> aktiviert oder wieder deaktiviert werden. Standardmäßig werden die Rohwerte angezeigt.</p>
+  <p>Bei aktiver Glättung werden First Display und Full Study anhand des Object count normalisiert. Formel: geglättete Zeit = gemessene Zeit × Referenz-Object-count / Object count der Messung. Als Referenz wird der Median der Object counts verwendet. Dadurch werden Unterschiede durch unterschiedlich große Studien reduziert; die Rohdaten selbst werden nicht verändert.</p>
 </body>
 </html>

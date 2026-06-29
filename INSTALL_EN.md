@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.163`
+- `v0.164`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -153,3 +153,11 @@ A comparison view is available only when both selected files are Performance CSV
 
 In the two-file Performance CSV comparison, missing expected columns are reported per file.
 The warning specifies which selected CSV file is missing which columns, instead of showing only one combined list.
+
+## Performance CSV smoothing
+
+The two-file Performance CSV comparison now includes an optional smoothing toggle.
+Smoothing is disabled by default and can be enabled or disabled by the user in the browser.
+When enabled, First Display and Full Study timings are normalized by Object count to reduce the impact of different study sizes.
+The displayed explanation describes the calculation: adjusted time = measured time × reference Object count / row Object count.
+The raw data is not changed and smoothing is not applied to export.xml or license XML views.
