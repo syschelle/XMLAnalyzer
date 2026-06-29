@@ -1,0 +1,51 @@
+name: Build and Release ESP32 Firmware
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Generate firmware version header
+        run: |
+          printf '#pragma once\n#define FW_VERSION "%s"\n' "${GITHUB_REF_NAME}" > src/build_version.h
+          cat src/build_version.h
+
+      - name: Build firmware
+        run: pio run -e nodemcu-32s
+
+      - name: Verify firmware file
+        run: |
+          ls -lh .pio/build/nodemcu-32s/
+          test -f .pio/build/nodemcu-32s/firmware.bin
+
+      - name: Prepare release file
+        run: |
+          cp .pio/build/nodemcu-32s/firmware.bin firmware.bin
+
+      - name: Create GitHub Release and upload firmware.bin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" firmware.bin \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "ESP32 firmware ${GITHUB_REF_NAME}" \
+            --verify-tag
