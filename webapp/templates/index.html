@@ -1044,7 +1044,10 @@
     </div>
 
     <div class="card" id="sec-perf-compare-overview">
-      <h2>Performance CSV Vergleich</h2>
+      <div class="h2-row">
+        <h2>Performance CSV Vergleich</h2>
+        <button type="button" id="performance-compare-full-pdf-export" class="toggle-btn">Komplette PDF-Auswertung</button>
+      </div>
       <p class="compare-file-label">
         {{ compare_label_a }}: <strong>{{ result.filename_a }}</strong><br>
         {{ compare_label_b }}: <strong>{{ result.filename_b }}</strong>
@@ -1158,6 +1161,28 @@
       </div>
     </div>
 
+
+    <div id="performance-compare-raw-data" style="display:none;">
+      <span id="performance-compare-label-a-hidden">{{ compare_label_a }}</span>
+      <span id="performance-compare-label-b-hidden">{{ compare_label_b }}</span>
+      <table id="performance-compare-detail-a-table">
+        <tr><th>Start Date</th><th>User</th><th>Modality</th><th>Object count</th><th>Prior</th><th>First Display</th><th>Full Study</th><th>CFind</th><th>Bandwidth</th><th>Hangup Type</th><th>Hanging</th><th>Study Instance UID</th><th>Base Study</th></tr>
+        {% for r in result.performance_a.performance_rows %}
+        <tr>
+          <td>{{ r.startDate }}</td><td>{{ r.user }}</td><td>{{ r.modality }}</td><td>{{ r.objectCount }}</td><td>{{ r.prior }}</td><td>{{ r.firstDisplaySec or r.firstDisplayRaw }}</td><td>{{ r.fullStudySec or r.fullStudyRaw }}</td><td>{{ r.cfindSec or r.cfindRaw }}</td><td>{{ r.bandwidth }}</td><td>{{ r.hangupType }}</td><td>{{ r.hanging }}</td><td>{{ r.studyInstanceUid }}</td><td>{{ r.baseStudy }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <table id="performance-compare-detail-b-table">
+        <tr><th>Start Date</th><th>User</th><th>Modality</th><th>Object count</th><th>Prior</th><th>First Display</th><th>Full Study</th><th>CFind</th><th>Bandwidth</th><th>Hangup Type</th><th>Hanging</th><th>Study Instance UID</th><th>Base Study</th></tr>
+        {% for r in result.performance_b.performance_rows %}
+        <tr>
+          <td>{{ r.startDate }}</td><td>{{ r.user }}</td><td>{{ r.modality }}</td><td>{{ r.objectCount }}</td><td>{{ r.prior }}</td><td>{{ r.firstDisplaySec or r.firstDisplayRaw }}</td><td>{{ r.fullStudySec or r.fullStudyRaw }}</td><td>{{ r.cfindSec or r.cfindRaw }}</td><td>{{ r.bandwidth }}</td><td>{{ r.hangupType }}</td><td>{{ r.hanging }}</td><td>{{ r.studyInstanceUid }}</td><td>{{ r.baseStudy }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+
     <div class="card" id="sec-perf-compare-charts">
       <div class="h2-row" style="margin-bottom:10px;">
         <h2 style="margin:0; font-size:16px;">Vergleichsdiagramme nach Modalität</h2>
@@ -1188,7 +1213,10 @@
     </div>
 
     <div class="card" id="sec-perf-overview">
-      <h2>Performance-Auswertung: {{ filename }}</h2>
+      <div class="h2-row">
+        <h2>Performance-Auswertung: {{ filename }}</h2>
+        <button type="button" id="performance-full-pdf-export" class="toggle-btn">Komplette PDF-Auswertung</button>
+      </div>
       {% if result.missing_headers %}
       <p class="error">Hinweis: Folgende erwartete Spalten fehlen: {{ result.missing_headers|join(', ') }}</p>
       {% endif %}
@@ -3570,6 +3598,8 @@
             + seriesMarkup
             + '</svg>';
         }
+        window.__buildPerformanceChartSvg = buildPerformanceChartSvg;
+
         function renderPerformanceChart(visibleRows) {
           if (!chartGrid || !chartEmpty) return;
           const data = visibleRows.map(function (row, idx) {
@@ -4192,6 +4222,195 @@
 
         return { headers: cleanedHeaders, rows: cleanedRows };
       }
+
+      function pdfReportEscape(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function pdfReportText(el) {
+        return ((el && el.innerText) || '').replace(/\s+/g, ' ').trim();
+      }
+
+      function statsCardToPdfHtml(cardEl, headingOverride) {
+        if (!cardEl) return '';
+        const heading = headingOverride || pdfReportText(cardEl.querySelector('h2')) || 'Übersicht';
+        const fileLabel = cardEl.querySelector('.compare-file-label');
+        const stats = Array.from(cardEl.querySelectorAll('.stat')).map(function (stat) {
+          const k = pdfReportText(stat.querySelector('.k'));
+          const v = pdfReportText(stat.querySelector('.v'));
+          if (!k && !v) return '';
+          return '<tr><th>' + pdfReportEscape(k) + '</th><td>' + pdfReportEscape(v) + '</td></tr>';
+        }).filter(Boolean).join('');
+        const notes = Array.from(cardEl.querySelectorAll('p'))
+          .filter(function (p) { return !p.classList.contains('error'); })
+          .map(function (p) { return pdfReportText(p); })
+          .filter(Boolean)
+          .map(function (txt) { return '<p class="note">' + pdfReportEscape(txt) + '</p>'; })
+          .join('');
+        return '<section class="block"><h2>' + pdfReportEscape(heading) + '</h2>'
+          + (fileLabel ? '<div class="file-label">' + pdfReportEscape(pdfReportText(fileLabel)) + '</div>' : '')
+          + (stats ? '<table class="summary-table">' + stats + '</table>' : '')
+          + notes
+          + '</section>';
+      }
+
+      function fullTableToPdfHtml(tableEl) {
+        if (!tableEl) return '';
+        const clone = tableEl.cloneNode(true);
+        clone.querySelectorAll('tr').forEach(function (row) {
+          const hasFilterControls = !!row.querySelector('select, input, button');
+          if (hasFilterControls) {
+            row.remove();
+            return;
+          }
+          if (row.style) row.style.display = '';
+        });
+        clone.querySelectorAll('a').forEach(function (a) {
+          a.replaceWith(document.createTextNode((a.innerText || a.textContent || '').trim()));
+        });
+        clone.querySelectorAll('button,input,select,textarea').forEach(function (el) { el.remove(); });
+        clone.querySelectorAll('[style]').forEach(function (el) {
+          if (el.style) {
+            el.style.display = '';
+            el.style.position = '';
+            el.style.left = '';
+            el.style.top = '';
+          }
+        });
+        clone.removeAttribute('id');
+        clone.style.borderCollapse = 'collapse';
+        clone.style.width = '100%';
+        clone.style.fontFamily = 'Arial, sans-serif';
+        clone.style.fontSize = '8.5px';
+        clone.querySelectorAll('th,td').forEach(function (cell) {
+          cell.style.border = '1px solid #cfd4d9';
+          cell.style.padding = '3px 4px';
+          cell.style.verticalAlign = 'top';
+          cell.style.whiteSpace = 'normal';
+          cell.style.wordBreak = 'break-word';
+          if (cell.tagName === 'TH') {
+            cell.style.background = '#f3f5f7';
+            cell.style.fontWeight = '700';
+          }
+        });
+        return clone.outerHTML;
+      }
+
+      function pdfTableSection(tableId, title) {
+        const table = document.getElementById(tableId);
+        if (!table) return '';
+        return '<section class="block table-block"><h2>' + pdfReportEscape(title) + '</h2>' + fullTableToPdfHtml(table) + '</section>';
+      }
+
+      function allPerformanceRowsForReport() {
+        return Array.from(document.querySelectorAll('.performance-row')).map(function (row, idx) {
+          const first = Number(row.getAttribute('data-first-ms') || '');
+          const full = Number(row.getAttribute('data-full-ms') || '');
+          const epoch = Number(row.getAttribute('data-start-epoch') || '');
+          return {
+            xIndex: idx + 1,
+            rowNr: row.getAttribute('data-row') || String(idx + 1),
+            start: row.getAttribute('data-start') || '',
+            startEpochMs: Number.isFinite(epoch) ? epoch : null,
+            modality: row.getAttribute('data-modality') || '-',
+            user: row.getAttribute('data-user') || '-',
+            hangupType: row.getAttribute('data-hangup') || '-',
+            hanging: row.getAttribute('data-hanging') || '',
+            cfind: row.getAttribute('data-cfind') || '-',
+            bandwidth: row.getAttribute('data-bandwidth') || '-',
+            objectCount: row.getAttribute('data-object-count') || '-',
+            prior: row.getAttribute('data-prior') || '-',
+            study: row.getAttribute('data-study') || '-',
+            firstMs: Number.isFinite(first) ? first : null,
+            fullMs: Number.isFinite(full) ? full : null,
+          };
+        });
+      }
+
+      function singlePerformanceChartSectionsForReport() {
+        if (typeof window.__buildPerformanceChartSvg !== 'function') return '';
+        const rows = allPerformanceRowsForReport();
+        const groups = new Map();
+        rows.forEach(function (item) {
+          const key = item.modality || '-';
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(item);
+        });
+        const labels = Array.from(groups.keys()).sort(function (a, b) { return a.localeCompare(b, 'de'); });
+        return labels.map(function (label) {
+          const items = groups.get(label) || [];
+          if (!items.some(function (item) { return item.firstMs !== null || item.fullMs !== null; })) return '';
+          const svg = window.__buildPerformanceChartSvg(items, label);
+          return '<section class="chart-page"><h2>Diagramm Modalität ' + pdfReportEscape(label) + '</h2><div class="meta">Messungen: ' + items.length + '</div><div class="svg-wrap">' + svg + '</div></section>';
+        }).filter(Boolean).join('');
+      }
+
+      function chartSectionsFromGridForReport(gridId, titlePrefix) {
+        const grid = document.getElementById(gridId);
+        if (!grid) return '';
+        return Array.from(grid.querySelectorAll('.perf-chart-panel')).map(function (panel) {
+          const title = pdfReportText(panel.querySelector('h3')) || titlePrefix || 'Diagramm';
+          const meta = pdfReportText(panel.querySelector('.perf-chart-panel-meta'));
+          const svg = panel.querySelector('svg');
+          if (!svg) return '';
+          return '<section class="chart-page"><h2>' + pdfReportEscape(title) + '</h2><div class="meta">' + pdfReportEscape(meta) + '</div><div class="svg-wrap">' + svg.outerHTML + '</div></section>';
+        }).filter(Boolean).join('');
+      }
+
+      function openFullPerformancePdfReport(kind) {
+        const isCompare = kind === 'compare';
+        const reportTitle = isCompare ? 'Performance CSV Vergleich – kompletter Kundenreport' : 'Performance CSV Auswertung – kompletter Kundenreport';
+        const summaryCard = document.getElementById(isCompare ? 'sec-perf-compare-overview' : 'sec-perf-overview');
+        const version = pdfReportText(document.querySelector('.version-badge'));
+        const compareLabelAForReport = pdfReportText(document.getElementById('performance-compare-label-a-hidden')) || 'Datei 1';
+        const compareLabelBForReport = pdfReportText(document.getElementById('performance-compare-label-b-hidden')) || 'Datei 2';
+        const tables = isCompare
+          ? [
+              pdfTableSection('performance-compare-modalities-table', 'Vergleich nach Modalität'),
+              pdfTableSection('performance-compare-hangings-table', 'Vergleich nach Hanging'),
+              pdfTableSection('performance-compare-users-table', 'Vergleich nach User'),
+              pdfTableSection('performance-compare-detail-a-table', 'Performance Details – ' + compareLabelAForReport),
+              pdfTableSection('performance-compare-detail-b-table', 'Performance Details – ' + compareLabelBForReport),
+            ]
+          : [
+              pdfTableSection('performance-modalities-table', 'Performance nach Modalität'),
+              pdfTableSection('performance-hangings-table', 'Performance nach Hanging'),
+              pdfTableSection('performance-users-table', 'Performance nach User'),
+              pdfTableSection('performance-table', 'Performance Details – vollständige Rohdaten'),
+            ];
+        const chartSections = isCompare
+          ? chartSectionsFromGridForReport('performance-compare-chart-grid', 'Vergleichsdiagramm')
+          : singlePerformanceChartSectionsForReport();
+        const css = '@page{size:A4 landscape;margin:8mm;}body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:10px;}h1{font-size:20px;margin:0 0 5px;}h2{font-size:14px;margin:0 0 6px;}h3{font-size:12px;margin:0 0 4px;}.meta{font-size:10px;color:#555;margin:0 0 8px;}.cover{border-bottom:1px solid #d1d5db;margin-bottom:8mm;padding-bottom:5mm;}.block{break-inside:avoid;page-break-inside:avoid;margin-bottom:8mm;}.table-block{break-inside:auto;page-break-inside:auto;}table{border-collapse:collapse;width:100%;page-break-inside:auto;}tr{page-break-inside:avoid;page-break-after:auto;}th,td{border:1px solid #cfd4d9;padding:3px 4px;vertical-align:top;word-break:break-word;}th{background:#f3f5f7;font-weight:700;}.summary-table{max-width:100%;margin-top:4px;font-size:10px;}.summary-table th{width:28%;text-align:left;}.file-label,.note{font-size:10px;color:#444;margin:3px 0 6px;}.chart-page{break-inside:avoid;page-break-inside:avoid;margin-bottom:8mm;}.svg-wrap{border:1px solid #d1d5db;border-radius:8px;padding:5px;}svg{width:100%;height:145mm;display:block;}.legend{font-size:10px;color:#555;margin-top:4px;}';
+        const reportHtml = '<!doctype html><html><head><meta charset="utf-8"><title>' + pdfReportEscape(reportTitle) + '</title><style>' + css + '</style></head><body>'
+          + '<section class="cover"><h1>' + pdfReportEscape(reportTitle) + '</h1><div class="meta">Erstellt: ' + new Date().toLocaleString('de-DE') + (version ? '<br>Version: ' + pdfReportEscape(version) : '') + '<br>Quelle: aktuell im Browser geladene Performance-Auswertung</div><div class="legend">Dieser Report enthält die vollständigen Tabellen der Performance-Auswertung sowie die zugehörigen Diagramme. Die PDF-Datei wird über den Browser-Druckdialog erzeugt.</div></section>'
+          + statsCardToPdfHtml(summaryCard, isCompare ? 'Übersicht Vergleich' : 'Übersicht Performance')
+          + tables.join('')
+          + (chartSections ? '<section class="block"><h2>Diagramme</h2><div class="meta">Diagramme werden aus den aktuell geladenen Performance-Daten erzeugt.</div></section>' + chartSections : '')
+          + '</body></html>';
+        const w = window.open('', '_blank');
+        if (!w) return;
+        w.document.open();
+        w.document.write(reportHtml);
+        w.document.close();
+        w.focus();
+        setTimeout(function () { w.print(); }, 250);
+      }
+
+      const performanceFullPdfBtn = document.getElementById('performance-full-pdf-export');
+      if (performanceFullPdfBtn) {
+        performanceFullPdfBtn.addEventListener('click', function () { openFullPerformancePdfReport('single'); });
+      }
+      const performanceCompareFullPdfBtn = document.getElementById('performance-compare-full-pdf-export');
+      if (performanceCompareFullPdfBtn) {
+        performanceCompareFullPdfBtn.addEventListener('click', function () { openFullPerformancePdfReport('compare'); });
+      }
+
 
       if (pdfExportOpen && pdfExportModal && pdfExportClose && pdfSelectList && pdfSelectAll && pdfSelectNone && pdfExportRun && excelExportRun) {
         pdfExportOpen.addEventListener('click', function () {

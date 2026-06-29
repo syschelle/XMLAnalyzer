@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.161`
+- `v0.162`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -130,6 +130,13 @@ docker compose -f docker-compose.image.yml down
 When enabled, ScriptAccess Code is not shown as a standalone button. It is intentionally hidden behind the letter `n` in the `ConfigScope` title.
 
 
+
+
+## Complete Performance PDF report
+
+For Performance CSV results, ConfigScope provides a dedicated complete PDF report button. The report is generated through the browser print/PDF dialog and includes the complete performance tables plus the related charts. For two-file comparisons, the report also includes the raw detail rows for both CSV files. This is available for both a single Performance CSV and the two-file Performance CSV comparison.
+
+The complete report is designed for sharing the full analysis with customers. It does not create a server-side PDF file; the file only exists where the user explicitly saves it from the browser.
 
 ## Performance CSV column help
 
