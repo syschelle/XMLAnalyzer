@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.169`
+- `v0.170`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -173,3 +173,8 @@ The smoothing context now avoids duplicate active-state wording in the UI and th
 ## German guide formatting
 
 The German guide now keeps the Performance CSV comparison section inside the same card-based layout as the previous guide sections.
+
+## ScriptAccess clipboard copy
+
+The ScriptAccess code dialog now includes a clipboard copy action.
+The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.

@@ -2030,6 +2030,36 @@
           .replace(/'/g, '&#39;');
       }
 
+      async function copyTextToClipboard(text) {
+        const value = String(text || '');
+        if (!value) return false;
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(value);
+            return true;
+          } catch (_e) {
+            // Fallback below.
+          }
+        }
+        const ta = document.createElement('textarea');
+        ta.value = value;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        let ok = false;
+        try {
+          ok = document.execCommand('copy');
+        } catch (_e) {
+          ok = false;
+        }
+        document.body.removeChild(ta);
+        return ok;
+      }
+
       function appBaseHref() {
         const p = (window.location.pathname || '/').replace(/\/+$/, '');
         const basePath = p ? (p + '/') : '/';
@@ -2153,14 +2183,9 @@
         }
         scriptAccessClose.addEventListener('click', closeScriptAccessModal);
         scriptAccessCopy.addEventListener('click', async function () {
-          try {
-            await navigator.clipboard.writeText(scriptAccessCode.value || '');
-            scriptAccessCopy.textContent = 'Kopiert';
-            setTimeout(function () { scriptAccessCopy.textContent = 'In Zwischenablage'; }, 1200);
-          } catch (_e) {
-            scriptAccessCopy.textContent = 'Kopieren fehlgeschlagen';
-            setTimeout(function () { scriptAccessCopy.textContent = 'In Zwischenablage'; }, 1600);
-          }
+          const ok = await copyTextToClipboard(scriptAccessCode.value || '');
+          scriptAccessCopy.textContent = ok ? 'Kopiert' : 'Kopieren fehlgeschlagen';
+          setTimeout(function () { scriptAccessCopy.textContent = 'In Zwischenablage'; }, ok ? 1200 : 1600);
         });
         scriptAccessModal.addEventListener('click', function (e) {
           if (e.target === scriptAccessModal) closeScriptAccessModal();
@@ -5102,15 +5127,97 @@
 <script>
   // harter Fallback: funktioniert auch dann, wenn der große Haupt-Scriptblock später aussteigt
   window.__scriptAccessInlineClick = function () {
+    function fallbackUrl(path) {
+      var base = (window.location.origin + window.location.pathname.replace(/\/+$/, '') + '/');
+      return new URL(String(path || '').replace(/^\/+/, ''), base).toString();
+    }
+
+    function fallbackEscape(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function fallbackCopy(text) {
+      var value = String(text || '');
+      if (!value) return Promise.resolve(false);
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(value).then(function () { return true; }).catch(function () { return fallbackCopyLegacy(value); });
+      }
+      return Promise.resolve(fallbackCopyLegacy(value));
+    }
+
+    function fallbackCopyLegacy(value) {
+      var ta = document.createElement('textarea');
+      ta.value = value;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (_e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    function showFallbackDialog(code, generatedAt, copied) {
+      var old = document.getElementById('script-access-fallback-modal');
+      if (old) old.remove();
+
+      var wrap = document.createElement('div');
+      wrap.id = 'script-access-fallback-modal';
+      wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(17,24,39,.55);display:flex;align-items:center;justify-content:center;padding:18px;';
+      wrap.innerHTML =
+        '<div style="width:min(520px,96vw);background:#fff;color:#1f2937;border-radius:12px;border:1px solid #e5e7eb;box-shadow:0 20px 50px rgba(15,23,42,.25);padding:16px;font-family:Inter,Segoe UI,Arial,sans-serif;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;"><strong>ScriptAccess Code</strong><button type="button" data-sa-close style="border:0;border-radius:8px;padding:6px 10px;cursor:pointer;">Schließen</button></div>'
+        + '<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">' + fallbackEscape(generatedAt ? ('Generiert am: ' + generatedAt) : '') + '</div>'
+        + '<input data-sa-code readonly value="' + fallbackEscape(code || '') + '" style="box-sizing:border-box;width:100%;font-size:24px;font-weight:800;letter-spacing:1px;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-bottom:10px;">'
+        + '<button type="button" data-sa-copy style="background:#4b6b63;color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;">In Zwischenablage kopieren</button>'
+        + '<span data-sa-status style="margin-left:10px;font-size:12px;color:' + (copied ? '#166534' : '#6b7280') + ';">' + (copied ? 'Kopiert' : 'Bereit zum Kopieren') + '</span>'
+        + '</div>';
+      document.body.appendChild(wrap);
+
+      var close = wrap.querySelector('[data-sa-close]');
+      var copy = wrap.querySelector('[data-sa-copy]');
+      var input = wrap.querySelector('[data-sa-code]');
+      var status = wrap.querySelector('[data-sa-status]');
+
+      function closeDialog() { wrap.remove(); }
+      close.addEventListener('click', closeDialog);
+      wrap.addEventListener('click', function (e) { if (e.target === wrap) closeDialog(); });
+      input.addEventListener('focus', function () { input.select(); });
+      copy.addEventListener('click', function () {
+        fallbackCopy(input.value || '').then(function (ok) {
+          status.textContent = ok ? 'Kopiert' : 'Kopieren fehlgeschlagen';
+          status.style.color = ok ? '#166534' : '#b91c1c';
+        });
+      });
+      setTimeout(function () { input.focus(); input.select(); }, 50);
+    }
+
     try {
       if (window.__openScriptAccessModal) {
         window.__openScriptAccessModal();
         return false;
       }
-      fetch((window.location.origin + window.location.pathname.replace(/\/+$/, '') + '/script_access_code_json').replace('//script_access_code_json', '/script_access_code_json'))
-        .then(function (r) { return r.json(); })
-        .then(function (d) { alert('ScriptAccess Code: ' + (d.code || 'n/a')); })
-        .catch(function () { alert('ScriptAccess konnte nicht geöffnet werden.'); });
+
+      fetch(fallbackUrl('script_access_code_json'))
+        .then(function (r) { if (!r.ok) throw new Error('ScriptAccess unavailable'); return r.json(); })
+        .then(function (d) {
+          var code = d.code || '';
+          fallbackCopy(code).then(function (ok) {
+            showFallbackDialog(code, d.generated_at || '', ok);
+          });
+        })
+        .catch(function () {
+          showFallbackDialog('ScriptAccess konnte nicht geöffnet werden.', '', false);
+        });
       return false;
     } catch (_e) {
       return false;

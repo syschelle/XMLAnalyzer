@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.169"
+APP_VERSION = "v0.170"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -3574,7 +3574,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.169
+  APP_VERSION: v0.170
 
 jobs:
   build-export-xml-web:
@@ -3723,6 +3723,11 @@ The smoothing context now avoids duplicate active-state wording in the UI and th
 
 The German guide now keeps the Performance CSV comparison section inside the same card-based layout as the previous guide sections.
 
+## ScriptAccess clipboard copy
+
+The ScriptAccess code dialog now includes a clipboard copy action.
+The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.
+
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
 
@@ -3758,7 +3763,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.169`
+- `v0.170`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

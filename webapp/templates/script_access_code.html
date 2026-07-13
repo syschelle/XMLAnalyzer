@@ -10,6 +10,25 @@
     .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; }
     .code { font-size: 34px; font-weight: 700; letter-spacing: 1px; margin: 14px 0; }
     .muted { color:#6b7280; }
+    .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin: 12px 0; }
+    button {
+      background:#4b6b63;
+      color:#fff;
+      border:0;
+      border-radius:8px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    button:hover { background:#3f5b54; }
+    .status { font-size:12px; color:#6b7280; }
+    .status.ok { color:#166534; font-weight:700; }
+    .status.err { color:#b91c1c; font-weight:700; }
+    .copy-field {
+      position:absolute;
+      left:-9999px;
+      top:0;
+    }
   </style>
 </head>
 <body>
@@ -17,9 +36,55 @@
     <div class="card">
       <h1 style="margin:0 0 8px;">ScriptAccess Code</h1>
       <div class="muted">Generiert am: {{ generated_at }}</div>
-      <div class="code">{{ code }}</div>
+      <div id="script-access-code-value" class="code">{{ code }}</div>
+      <div class="actions">
+        <button type="button" id="copy-script-access-code">In Zwischenablage kopieren</button>
+        <span id="copy-script-access-status" class="status">Bereit zum Kopieren</span>
+      </div>
+      <textarea id="copy-script-access-field" class="copy-field" readonly>{{ code }}</textarea>
       <div class="muted">Hinweis: Diese Seite rekonstruiert die Code-Generierung aus den gefundenen Klassenhinweisen.</div>
     </div>
   </div>
+  <script>
+    (function () {
+      const btn = document.getElementById('copy-script-access-code');
+      const status = document.getElementById('copy-script-access-status');
+      const field = document.getElementById('copy-script-access-field');
+      const valueEl = document.getElementById('script-access-code-value');
+
+      async function copyText(text) {
+        const value = String(text || '');
+        if (!value) return false;
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(value);
+            return true;
+          } catch (_e) {
+            // Fallback below.
+          }
+        }
+        field.value = value;
+        field.focus();
+        field.select();
+        try {
+          return document.execCommand('copy');
+        } catch (_e) {
+          return false;
+        }
+      }
+
+      if (btn && status) {
+        btn.addEventListener('click', async function () {
+          const ok = await copyText((valueEl && valueEl.textContent) || '');
+          status.textContent = ok ? 'Kopiert' : 'Kopieren fehlgeschlagen';
+          status.className = ok ? 'status ok' : 'status err';
+          setTimeout(function () {
+            status.textContent = 'Bereit zum Kopieren';
+            status.className = 'status';
+          }, ok ? 1400 : 2200);
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
