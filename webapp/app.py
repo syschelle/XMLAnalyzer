@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.170"
+APP_VERSION = "v0.182"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -76,8 +76,10 @@ PERFORMANCE_PERCENTILE = 90
 
 try:
     from pydicom.datadict import keyword_for_tag as _pydicom_keyword_for_tag
+    from pydicom.datadict import tag_for_keyword as _pydicom_tag_for_keyword
 except Exception:
     _pydicom_keyword_for_tag = None
+    _pydicom_tag_for_keyword = None
 
 
 def _generate_script_access_code(ts_ms=None):
@@ -174,6 +176,18 @@ PRIVATE_DICOM_TAG_LABELS = {
     "FFFF0015": "Has Varying Orientation",
 }
 
+IMAGE_LABEL_DICOM_ALIASES = {
+    "FrameNumber": "Frame Number",
+    "StudyComments": "StudyComments [0032,4000]",
+}
+
+IMAGE_LABEL_POSITION_ORDER = {
+    "topleft": 0,
+    "topright": 1,
+    "bottomleft": 2,
+    "bottomright": 3,
+}
+
 
 def _dicom_tag_to_hex_label(tag_value: str) -> str:
     t = (tag_value or "").strip()
@@ -213,6 +227,140 @@ def _split_dicom_label(label: str):
         num = (m.group(2) or "").strip()
         return desc, num
     return txt, ""
+
+
+def _dicom_keyword_to_hex_label(keyword: str) -> str:
+    t = (keyword or "").strip()
+    if not t:
+        return ""
+    alias = IMAGE_LABEL_DICOM_ALIASES.get(t)
+    if alias:
+        return alias
+    if re.match(r"^[0-9A-Fa-f]{4},[0-9A-Fa-f]{4}$", t):
+        return f"[{t.upper()}]"
+    if t.upper().startswith("FFFF,") and re.match(r"^FFFF,[0-9A-Fa-f]{4}$", t.upper()):
+        private_label = PRIVATE_DICOM_TAG_LABELS.get(t.replace(",", "").upper())
+        return f"{private_label} [{t.upper()}]" if private_label else f"[{t.upper()}]"
+    if t.startswith("VISUAL."):
+        return "Interner VISUAL-Wert"
+    if _pydicom_tag_for_keyword is not None:
+        try:
+            n = _pydicom_tag_for_keyword(t)
+            if n is not None:
+                group = (int(n) >> 16) & 0xFFFF
+                element = int(n) & 0xFFFF
+                kw = (_pydicom_keyword_for_tag(int(n)) or t).strip() if _pydicom_keyword_for_tag is not None else t
+                return f"{kw} [{group:04X},{element:04X}]"
+        except Exception:
+            pass
+    return t
+
+
+def _extract_image_label_rows(roles):
+    prefixes = {
+        "impaxee.jvision.SEQLABEL.demographics": "Bildbeschriftung",
+        "impaxee.jvision.MAPPING.demographics": "Bild-Overlay",
+    }
+    role_groups = {}
+
+    for role in roles:
+        role_path = role.get("path", "") or "(ohne Rolle)"
+        for item in role.get("item_nodes", []):
+            item_name = _normalize_item_name(item.attrib.get("name", ""))
+            for prefix, label_type in prefixes.items():
+                if not item_name.startswith(prefix + "#"):
+                    continue
+                rest = item_name[len(prefix) + 1:]
+                if "." not in rest:
+                    continue
+                config_id, field = rest.split(".", 1)
+                key = (label_type, config_id, role_path)
+                entry = role_groups.setdefault(key, {
+                    "type": label_type,
+                    "configId": config_id,
+                    "fields": {},
+                    "role": role_path,
+                })
+                entry["fields"][field] = (item.text or "").strip()
+
+    groups = {}
+    for entry in role_groups.values():
+        fields = entry.get("fields", {})
+        definition = (fields.get("definition", "") or "").strip()
+        if not definition:
+            continue
+        key = (
+            entry.get("type", ""),
+            entry.get("configId", ""),
+            (fields.get("name", "") or "").strip(),
+            (fields.get("conditionText", "") or "").strip(),
+            definition,
+        )
+        merged = groups.setdefault(key, {
+            "type": entry.get("type", ""),
+            "configId": entry.get("configId", ""),
+            "fields": fields,
+            "roles": set(),
+        })
+        merged["roles"].add(entry.get("role", "") or "(ohne Rolle)")
+
+    rows = []
+    for _, entry in sorted(groups.items(), key=lambda x: (x[1]["type"], x[1]["configId"])):
+        fields = entry.get("fields", {})
+        definition = (fields.get("definition", "") or "").strip()
+        if not definition:
+            continue
+        try:
+            mapping_root = ET.fromstring(definition)
+        except Exception:
+            continue
+
+        config_name = (fields.get("name", "") or "").strip()
+        group_name = config_name or f"{entry.get('type', '')} {entry.get('configId', '')}".strip()
+        condition_text = (fields.get("conditionText", "") or "").strip()
+        roles_text = " | ".join(sorted(entry.get("roles", set()), key=lambda x: x.lower()))
+
+        for paragraph_index, paragraph in enumerate(mapping_root.findall(".//paragraph"), 1):
+            location = (paragraph.attrib.get("location", "") or "").strip()
+            location_key = re.sub(r"[^a-z0-9]", "", location.lower())
+            for line_index, line in enumerate(paragraph.findall("line"), 1):
+                for group_index, wordgroup in enumerate(line.findall("wordgroup"), 1):
+                    substitute = (wordgroup.attrib.get("substitute", "") or "").strip()
+                    if not substitute:
+                        continue
+                    tag_label = _dicom_keyword_to_hex_label(substitute)
+                    tag_desc, tag_number = _split_dicom_label(tag_label)
+                    rows.append({
+                        "type": entry["type"],
+                        "configId": entry["configId"],
+                        "name": config_name,
+                        "groupName": group_name,
+                        "conditionText": condition_text,
+                        "roles": roles_text,
+                        "location": location,
+                        "line": line_index,
+                        "positionSort": IMAGE_LABEL_POSITION_ORDER.get(location_key, 99),
+                        "position": f"{location or 'ohne Position'} / Zeile {line_index}",
+                        "order": f"{paragraph_index}.{line_index}.{group_index}",
+                        "substitute": substitute,
+                        "prefix": (wordgroup.attrib.get("prefix", "") or "").strip(),
+                        "postfix": (wordgroup.attrib.get("postfix", "") or "").strip(),
+                        "renderedAs": (wordgroup.attrib.get("renderedAs", "") or "").strip(),
+                        "levelOfDetail": (wordgroup.attrib.get("levelOfDetail", "") or "").strip(),
+                        "dicomTagDescription": tag_desc,
+                        "dicomTagNumber": tag_number,
+                    })
+
+    rows.sort(key=lambda r: (
+        r.get("type", ""),
+        (r.get("name") or r.get("configId") or "").lower(),
+        r.get("conditionText", ""),
+        r.get("positionSort", 99),
+        r.get("line", 0),
+        r.get("order", ""),
+        r.get("substitute", ""),
+    ))
+    return rows
 
 
 @app.after_request
@@ -618,6 +766,213 @@ def _decode_performance_csv(raw):
         except Exception:
             continue
     return raw.decode("latin1", errors="replace"), "latin1"
+
+
+def _csv_unique_headers(headers):
+    seen = defaultdict(int)
+    out = []
+    for idx, raw in enumerate(headers or []):
+        name = (raw or "").strip() or f"Spalte {idx + 1}"
+        seen[name] += 1
+        out.append(name if seen[name] == 1 else f"{name} {seen[name]}")
+    return out
+
+
+def _strip_html_text(value):
+    text = re.sub(r"<[^>]*>", " ", str(value or ""))
+    text = text.replace("&nbsp;", " ")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _read_csv_rows(raw, default_delimiter=";"):
+    text, encoding = _decode_performance_csv(raw)
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        raise ValueError("Leere CSV-Datei")
+
+    delimiter = default_delimiter
+    try:
+        sample = "\n".join(lines[:20])
+        dialect = csv.Sniffer().sniff(sample, delimiters=";,\t")
+        delimiter = dialect.delimiter
+    except Exception:
+        counts = {d: lines[0].count(d) for d in (";", ",", "\t")}
+        delimiter = max(counts, key=counts.get) if any(counts.values()) else default_delimiter
+
+    reader = csv.reader(lines, delimiter=delimiter)
+    raw_headers = next(reader, [])
+    headers = _csv_unique_headers(raw_headers)
+    rows = []
+    for row in reader:
+        if not any((v or "").strip() for v in row):
+            continue
+        padded = list(row) + [""] * max(0, len(headers) - len(row))
+        rows.append({headers[i]: padded[i].strip() if i < len(padded) else "" for i in range(len(headers))})
+    return headers, rows, encoding, delimiter
+
+
+def _looks_like_diit_reporting(headers):
+    h = set(headers or [])
+    required = {"Projekt Nr.", "D365", "Lokation", "Kunde", "Produkt", "Platform Titel", "Hostname", "AET"}
+    return len(required.intersection(h)) >= 6
+
+
+def _counter_items(counter, key_name, limit=80):
+    return [
+        {key_name: key or "-", "count": count}
+        for key, count in sorted(counter.items(), key=lambda x: (-x[1], str(x[0])))[:limit]
+    ]
+
+
+def _version_sort_key(value):
+    parts = [int(p) for p in re.findall(r"\d+", str(value or ""))]
+    return tuple(parts + [0] * max(0, 6 - len(parts)))
+
+
+def _version_key_text(value):
+    return "|".join(str(p) for p in _version_sort_key(value))
+
+
+def analyze_diit_reporting_csv(raw, filename="diit_reporting.csv"):
+    headers, raw_rows, encoding, delimiter = _read_csv_rows(raw, default_delimiter=";")
+    if not _looks_like_diit_reporting(headers):
+        raise ValueError("Keine DIIT Reporting CSV")
+
+    rows = []
+    for idx, r in enumerate(raw_rows, start=1):
+        project_no = r.get("Projekt Nr.", "")
+        sap_no = r.get("SAP Nr.", "")
+        d365 = r.get("D365", "")
+        location = r.get("Lokation", "")
+        customer = _strip_html_text(r.get("Kunde", ""))
+        city = r.get("Stadt", "")
+        country = r.get("Land", "")
+        product = r.get("Produkt", "")
+        product_version = r.get("Version", "")
+        platform_title = r.get("Platform Titel", "")
+        hostname = r.get("Hostname", "")
+        aet = r.get("AET", "")
+        namespace = r.get("Namespace", "")
+        cus_ams = r.get("Cus Ams", "")
+        db = r.get("DB", "")
+        db_version = r.get("Version 2", "")
+        sbk = r.get("SBK", "")
+        release_date = r.get("Release Date", "")
+        note = _strip_html_text(r.get("Bemerkung", ""))
+        info = _strip_html_text(r.get("Information", ""))
+
+        search_text = " ".join([
+            project_no, sap_no, d365, location, customer, city, country, product, product_version,
+            platform_title, hostname, aet, namespace, cus_ams, db, db_version, sbk, release_date, note, info,
+        ]).lower()
+
+        rows.append({
+            "rowNr": idx,
+            "projectNo": project_no,
+            "sapNo": sap_no,
+            "d365": d365,
+            "location": location,
+            "customer": customer,
+            "city": city,
+            "country": country,
+            "product": product,
+            "productVersion": product_version,
+            "productVersionKey": _version_key_text(product_version),
+            "platformTitle": platform_title,
+            "hostname": hostname,
+            "aet": aet,
+            "namespace": namespace,
+            "cusAms": cus_ams,
+            "db": db,
+            "dbVersion": db_version,
+            "sbk": sbk,
+            "releaseDate": release_date,
+            "note": note,
+            "info": info,
+            "missingSystem": not (hostname or aet),
+            "searchText": search_text,
+        })
+
+    customers = {r["customer"] for r in rows if r.get("customer")}
+    projects = {r["projectNo"] for r in rows if r.get("projectNo")}
+    locations = {r["location"] for r in rows if r.get("location")}
+    hostnames = {r["hostname"] for r in rows if r.get("hostname")}
+    aets = {r["aet"] for r in rows if r.get("aet")}
+
+    product_counts = Counter(r.get("product") or "-" for r in rows)
+    product_version_counts = Counter(
+        f"{r.get('product') or '-'} {r.get('productVersion') or ''}".strip()
+        for r in rows
+    )
+    db_counts = Counter(
+        f"{r.get('db') or '-'} {r.get('dbVersion') or ''}".strip()
+        for r in rows
+    )
+    country_counts = Counter(r.get("country") or "-" for r in rows)
+    sbk_counts = Counter(r.get("sbk") or "-" for r in rows)
+    cus_ams_counts = Counter(r.get("cusAms") or "-" for r in rows)
+
+    customer_counter = Counter()
+    customer_namespaces = defaultdict(set)
+    customer_hostnames = defaultdict(set)
+    for r in rows:
+        label = r.get("customer") or r.get("location") or r.get("d365") or "-"
+        customer_counter[label] += 1
+        namespace = (r.get("namespace") or "").strip()
+        if namespace:
+            customer_namespaces[label].add(namespace)
+        hostname = (r.get("hostname") or "").strip()
+        if hostname:
+            customer_hostnames[label].add(hostname)
+    for r in rows:
+        label = r.get("customer") or r.get("location") or r.get("d365") or "-"
+        r["customerCount"] = customer_counter.get(label, 0)
+        r["duplicateCustomer"] = r["customerCount"] > 1
+
+    summary = {
+        "rows_total": len(rows),
+        "projects_total": len(projects),
+        "customers_total": len(customers),
+        "locations_total": len(locations),
+        "duplicate_customers_total": sum(1 for _customer, count in customer_counter.items() if count > 1),
+        "hostnames_total": len(hostnames),
+        "aets_total": len(aets),
+        "missing_system_total": sum(1 for r in rows if r.get("missingSystem")),
+        "products_total": len([k for k in product_counts if k != "-"]),
+        "db_total": len([k for k in db_counts if k != "-"]),
+    }
+
+    return {
+        "xml_kind": "diitreportcsv",
+        "root": "diit_reporting.csv",
+        "filename": filename,
+        "encoding": encoding,
+        "delimiter": delimiter,
+        "headers": headers,
+        "diit_summary": summary,
+        "diit_products": _counter_items(product_counts, "product"),
+        "diit_product_versions": _counter_items(product_version_counts, "productVersion"),
+        "diit_databases": _counter_items(db_counts, "database"),
+        "diit_countries": _counter_items(country_counts, "country"),
+        "diit_sbk": _counter_items(sbk_counts, "sbk"),
+        "diit_cus_ams": _counter_items(cus_ams_counts, "cusAms"),
+        "diit_customers": [
+            {
+                "customer": customer or "-",
+                "count": count,
+                "namespaces": sorted(customer_namespaces.get(customer, set())),
+                "hostnames": sorted(customer_hostnames.get(customer, set())),
+            }
+            for customer, count in sorted(customer_counter.items(), key=lambda x: (-x[1], str(x[0])))[:120]
+        ],
+        "diit_rows": rows,
+        "diit_filters": {
+            "products": sorted({r["product"] for r in rows if r.get("product")}),
+            "versions": sorted({r["productVersion"] for r in rows if r.get("productVersion")}, key=_version_sort_key, reverse=True),
+            "countries": sorted({r["country"] for r in rows if r.get("country")}),
+            "db": sorted({r["db"] for r in rows if r.get("db")}),
+        },
+    }
 
 
 def _parse_float_de(value):
@@ -1896,6 +2251,8 @@ def analyze_xml(file_storage):
         all_items.extend(cfg.findall("item"))
 
     type_counts = Counter(i.attrib.get("type", "") for i in all_items)
+    image_label_rows = _extract_image_label_rows(roles)
+    image_label_group_count = len({r.get("groupName", "") for r in image_label_rows if r.get("groupName", "")})
 
     # DICOM send endpoints grouped by ID. Keep the role(s) where every endpoint is configured,
     # because the global item scan below otherwise loses the role context.
@@ -3224,6 +3581,8 @@ def analyze_xml(file_storage):
         "roles_count": len(roles),
         "items_count": len(all_items),
         "type_counts": sorted(type_counts.items(), key=lambda x: x[0]),
+        "image_label_rows": image_label_rows,
+        "image_label_group_count": image_label_group_count,
         "enterprise_roles": enterprise_roles,
         "workstation_roles": workstation_roles,
         "workstation_stats": workstation_stats,
@@ -3335,7 +3694,7 @@ def index():
 
     files = [f for f in request.files.getlist("xml_file") if f and (f.filename or "").strip()]
     if not files:
-        return render_template("index.html", error="Bitte eine XML-Datei, ein Lizenzfile oder performance.csv auswählen.")
+        return render_template("index.html", error="Bitte eine XML-Datei, ein Lizenzfile, performance.csv oder DIIT Reporting CSV auswählen.")
     if len(files) > 2:
         return render_template("index.html", error="Bitte maximal zwei Dateien auswählen. Der Vergleich ist nur für zwei performance.csv-Dateien vorgesehen.")
 
@@ -3346,7 +3705,7 @@ def index():
 
     if len(files) == 2:
         if not all(name.endswith(".csv") for name in lower_filenames):
-            return render_template("index.html", error="Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml und Lizenzfile bitte einzeln analysieren.")
+            return render_template("index.html", error="Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml, Lizenzfile und DIIT Reporting CSV bitte einzeln analysieren.")
         try:
             parsed = []
             for f, filename in zip(files, filenames):
@@ -3371,9 +3730,12 @@ def index():
 
     if lower_filename.endswith(".csv"):
         try:
-            result = analyze_performance_csv(BytesIO(raw), filename=filename)
+            try:
+                result = analyze_diit_reporting_csv(raw, filename=filename)
+            except ValueError:
+                result = analyze_performance_csv(BytesIO(raw), filename=filename)
         except Exception:
-            return render_template("index.html", error="Fehler beim Parsen der performance.csv. Bitte CSV-Struktur prüfen.")
+            return render_template("index.html", error="Fehler beim Parsen der CSV-Datei. Bitte Struktur prüfen.")
     else:
         try:
             result = analyze_xml(BytesIO(raw))
@@ -3384,6 +3746,8 @@ def index():
         detected_type = "Lizenzfile"
     elif result.get("xml_kind") == "performancecsv":
         detected_type = "Performance CSV"
+    elif result.get("xml_kind") == "diitreportcsv":
+        detected_type = "DIIT Reporting CSV"
     else:
         detected_type = "Konfigurationsfile"
 
@@ -3574,7 +3938,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.170
+  APP_VERSION: v0.182
 
 jobs:
   build-export-xml-web:
@@ -3763,7 +4127,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.170`
+- `v0.182`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

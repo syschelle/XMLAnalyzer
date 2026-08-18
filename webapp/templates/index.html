@@ -453,6 +453,27 @@
       height: 1px;
     }
 
+    .namespace-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      min-width: 220px;
+    }
+
+    .namespace-pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 7px;
+      background: var(--head-bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
     table {
       border-collapse: collapse;
       width: 100%;
@@ -821,6 +842,19 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
 
+    .image-label-group td {
+      background: color-mix(in srgb, var(--accent-soft) 82%, #ffffff 18%);
+      color: var(--text);
+      font-weight: 800;
+      border-top: 2px solid var(--accent);
+      white-space: normal;
+    }
+
+    .image-label-group-title {
+      display: inline-block;
+      margin-right: 4px;
+    }
+
     .aet-tooltip-cell {
       cursor: help;
       text-decoration: underline dotted;
@@ -1011,7 +1045,7 @@
     <div class="hero">
       <div>
         <h1>Co{% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit; color:inherit;">n</button>{% else %}n{% endif %}figScope</h1>
-        <p>Upload und Analyse von export.xml, Lizenzfile und performance.csv.</p>
+        <p>Upload und Analyse von export.xml, Lizenzfile, performance.csv und DIIT Reporting CSV.</p>
       </div>
       <div class="hero-actions">
         <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener" class="pdf-btn">Anleitung</a>
@@ -1031,7 +1065,7 @@
       <form id="analyze-form" method="post" enctype="multipart/form-data">
         <input type="file" name="xml_file" accept=".xml,.csv" multiple required>
         <button type="submit">Analysieren</button>
-        <span style="margin-left:10px; color: var(--muted); font-size: 12px;"><strong>Upload-Limit:</strong> 200 MB · unterstützt: export.xml, Lizenzfile, performance.csv · für Performance-Vergleich max. 2 CSV-Dateien auswählen</span>
+        <span style="margin-left:10px; color: var(--muted); font-size: 12px;"><strong>Upload-Limit:</strong> 200 MB · unterstützt: export.xml, Lizenzfile, performance.csv, DIIT Reporting CSV · für Performance-Vergleich max. 2 CSV-Dateien auswählen</span>
         {% if detected_type %}
         <span style="margin-left:10px;"><strong>Dateityp-Erkennung:</strong> {{ detected_type }}</span>
         {% endif %}
@@ -1053,7 +1087,7 @@
               const allCsv = files.every(function (f) { return (f.name || '').toLowerCase().endsWith('.csv'); });
               if (!allCsv) {
                 e.preventDefault();
-                alert('Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml und Lizenzfile bitte einzeln analysieren.');
+                alert('Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml, Lizenzfile und DIIT Reporting CSV bitte einzeln analysieren.');
               }
             }
           });
@@ -1096,6 +1130,115 @@
             <td>{{ r.count }}</td><td>{{ r.description }}</td><td>{{ r.mac }}</td>
             <td>{{ r.license_text }}</td>
             <td>{{ r.deprecated_license_text }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    {% elif result.xml_kind == 'diitreportcsv' %}
+    <div class="section-jump">
+      <a href="#sec-diit-overview">Übersicht</a>
+      <a href="#sec-diit-products">Produkte</a>
+      <a href="#sec-diit-customers">Kunden</a>
+      <a href="#sec-diit-details">Details</a>
+    </div>
+
+    <div class="card" id="sec-diit-overview">
+      <h2>DIIT Reporting Auswertung: {{ filename }}</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Zeilen</div><div class="v">{{ result.diit_summary.rows_total }}</div></div>
+        <div class="stat"><div class="k">Projekte</div><div class="v">{{ result.diit_summary.projects_total }}</div></div>
+        <div class="stat"><div class="k">Kunden</div><div class="v">{{ result.diit_summary.customers_total }}</div></div>
+        <div class="stat"><div class="k">Kunden-Duplikate</div><div class="v">{{ result.diit_summary.duplicate_customers_total }}</div></div>
+        <div class="stat"><div class="k">Lokationen</div><div class="v">{{ result.diit_summary.locations_total }}</div></div>
+        <div class="stat"><div class="k">Produkte</div><div class="v">{{ result.diit_summary.products_total }}</div></div>
+        <div class="stat"><div class="k">Hostnames</div><div class="v">{{ result.diit_summary.hostnames_total }}</div></div>
+        <div class="stat"><div class="k">AETs</div><div class="v">{{ result.diit_summary.aets_total }}</div></div>
+        <div class="stat"><div class="k">ohne Host/AET</div><div class="v">{{ result.diit_summary.missing_system_total }}</div></div>
+      </div>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:12px;">
+        CSV-Encoding erkannt: {{ result.encoding }}, Trennzeichen: <code>{{ result.delimiter }}</code>.
+      </p>
+    </div>
+
+    <div class="card" id="sec-diit-products">
+      <h2>Produkte und Versionen</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Produkt</th><th>Anzahl</th></tr>
+          {% for p in result.diit_products %}
+          <tr><td>{{ p.product }}</td><td>{{ p.count }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <tr><th>Produkt / Version</th><th>Anzahl</th></tr>
+          {% for p in result.diit_product_versions %}
+          <tr><td>{{ p.productVersion }}</td><td>{{ p.count }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Datenbank, Land, SBK und AMS</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Datenbank</th><th>Anzahl</th><th>Land</th><th>Anzahl</th><th>SBK</th><th>Anzahl</th><th>Cus AMS</th><th>Anzahl</th></tr>
+          {% set max_meta = [result.diit_databases|length, result.diit_countries|length, result.diit_sbk|length, result.diit_cus_ams|length]|max %}
+          {% for i in range(max_meta) %}
+          <tr>
+            <td>{{ result.diit_databases[i].database if i < result.diit_databases|length else '' }}</td>
+            <td>{{ result.diit_databases[i].count if i < result.diit_databases|length else '' }}</td>
+            <td>{{ result.diit_countries[i].country if i < result.diit_countries|length else '' }}</td>
+            <td>{{ result.diit_countries[i].count if i < result.diit_countries|length else '' }}</td>
+            <td>{{ result.diit_sbk[i].sbk if i < result.diit_sbk|length else '' }}</td>
+            <td>{{ result.diit_sbk[i].count if i < result.diit_sbk|length else '' }}</td>
+            <td>{{ result.diit_cus_ams[i].cusAms if i < result.diit_cus_ams|length else '' }}</td>
+            <td>{{ result.diit_cus_ams[i].count if i < result.diit_cus_ams|length else '' }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-diit-customers">
+      <div class="h2-row">
+        <h2>Kunden / Systeme (<span id="diit-customer-visible-count">{{ result.diit_customers|length }}</span>/{{ result.diit_customers|length }})</h2>
+        <button type="button" id="diit-customer-duplicates-toggle" class="toggle-btn">Nur Duplikate anzeigen</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Kunde</th><th>Anzahl</th><th>Namespaces</th><th>Hostnames</th></tr>
+          {% for c in result.diit_customers %}
+          <tr class="diit-customer-row" data-duplicate="{{ 'ja' if c.count > 1 else 'nein' }}">
+            <td>{{ c.customer }}</td>
+            <td>{{ c.count }}</td>
+            <td>{% if c.namespaces %}<div class="namespace-list">{% for ns in c.namespaces %}<span class="namespace-pill">{{ ns }}</span>{% endfor %}</div>{% else %}-{% endif %}</td>
+            <td>{% if c.hostnames %}<div class="namespace-list">{% for hn in c.hostnames %}<span class="namespace-pill">{{ hn }}</span>{% endfor %}</div>{% else %}-{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-diit-details">
+      <h2>DIIT Reporting Details (<span id="diit-visible-count">{{ result.diit_rows|length }}</span>/{{ result.diit_rows|length }})</h2>
+      <div class="toolbar">
+        <input type="text" id="diit-search" class="search-input" placeholder="DIIT Reporting suchen (Kunde, Hostname, AET, Produkt ...)">
+        <select id="diit-product-filter" class="search-input"><option value="">Produkt: alle</option>{% for v in result.diit_filters.products %}<option value="{{ v|e }}">{{ v }}</option>{% endfor %}</select>
+        <select id="diit-version-max-filter" class="search-input"><option value="">Version: alle</option>{% for v in result.diit_filters.versions %}<option value="{{ v|e }}">Version {{ v }} und älter</option>{% endfor %}</select>
+        <select id="diit-country-filter" class="search-input"><option value="">Land: alle</option>{% for v in result.diit_filters.countries %}<option value="{{ v|e }}">{{ v }}</option>{% endfor %}</select>
+        <select id="diit-db-filter" class="search-input"><option value="">DB: alle</option>{% for v in result.diit_filters.db %}<option value="{{ v|e }}">{{ v }}</option>{% endfor %}</select>
+      </div>
+      <div class="table-wrap">
+        <table id="diit-report-table">
+          <tr><th>Projekt</th><th>SAP</th><th>D365</th><th>Lokation</th><th>Kunde</th><th>Stadt</th><th>Land</th><th>Produkt</th><th>Version</th><th>Platform Titel</th><th>Hostname</th><th>AET</th><th>Namespace</th><th>Cus AMS</th><th>DB</th><th>DB Version</th><th>SBK</th><th>Release Date</th></tr>
+          {% for r in result.diit_rows %}
+          <tr class="diit-row" data-search="{{ r.searchText|e }}" data-product="{{ r.product|e }}" data-version="{{ r.productVersion|e }}" data-version-key="{{ r.productVersionKey|e }}" data-country="{{ r.country|e }}" data-db="{{ r.db|e }}" data-duplicate-customer="{{ 'ja' if r.duplicateCustomer else 'nein' }}">
+            <td>{{ r.projectNo }}</td><td>{{ r.sapNo }}</td><td>{{ r.d365 }}</td><td>{{ r.location }}</td><td>{{ r.customer }}</td><td>{{ r.city }}</td><td>{{ r.country }}</td><td>{{ r.product }}</td><td>{{ r.productVersion }}</td><td>{{ r.platformTitle }}</td><td>{{ r.hostname }}</td><td>{{ r.aet }}</td><td>{{ r.namespace }}</td><td>{{ r.cusAms }}</td><td>{{ r.db }}</td><td>{{ r.dbVersion }}</td><td>{{ r.sbk }}</td><td>{{ r.releaseDate }}</td>
           </tr>
           {% endfor %}
         </table>
@@ -1518,6 +1661,7 @@
       <a href="#sec-archives">Archive</a>
       <a href="#sec-store">Speichern</a>
       <a href="#sec-scripts">Scripts</a>
+      <a href="#sec-image-labels">Bildbeschriftung</a>
       <a href="#sec-worklist">AL Standard</a>
       <a href="#sec-worklist-scheduled">AL Geplant</a>
       <a href="#sec-import-workflows">Import Workflows</a>
@@ -1546,6 +1690,7 @@
         <div class="stat"><div class="k">Media Creation Server</div><div class="v">{{ result.media_creation_servers|length }}</div></div>
         <div class="stat"><div class="k">DICOM Printer</div><div class="v">{{ result.dicom_printers_by_mcs|length }}</div></div>
         <div class="stat"><div class="k">Scripts</div><div class="v">{{ result.scripts|length }}</div></div>
+        <div class="stat"><div class="k">Bildbeschriftung</div><div class="v">{{ result.image_label_group_count }}</div></div>
         <div class="stat"><div class="k">Hangingprotokolle (deaktiviert: {{ result.hanging_stats.inactive_count }})</div><div class="v">{{ result.hanging_protocols|length }}</div></div>
         <div class="stat"><div class="k">Rollenanzahl</div><div class="v">{{ result.enterprise_roles|length }}</div></div>
         <div class="stat"><div class="k">Workstations</div><div class="v">{{ result.workstation_stats.devices_total }}</div></div>
@@ -1620,6 +1765,54 @@
               {% endif %}
             </td>
           </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+
+    <div class="card" id="sec-image-labels">
+      <h2>Bildbeschriftung (<span id="image-label-visible-count">{{ result.image_label_group_count }}</span>)</h2>
+      <div class="table-wrap">
+        <table id="image-label-table">
+          <tr><th>Rubrik</th><th>Bedingung</th><th>Rollen</th><th>Position</th><th>Substitute</th><th>DICOM-Tag</th><th>Beschreibung</th><th>Prefix</th><th>Postfix</th><th>Format</th><th>Level</th></tr>
+          <tr class="filter-row">
+            <th><select id="image-label-group-filter" class="search-input"><option value="">Demographics: alle</option></select></th>
+            <th></th>
+            <th><select id="image-label-role-filter" class="search-input"><option value="">Rolle: alle</option></select></th>
+            <th></th>
+            <th></th>
+            <th><input type="text" id="image-label-dicom-search" class="search-input" placeholder="DICOM-Tag suchen..." /></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+          </tr>
+          {% for group_name, rows in result.image_label_rows|groupby('groupName') %}
+          <tr class="image-label-group" data-group="{{ group_name|e }}">
+            <td colspan="11"><span class="image-label-group-title">{{ group_name }}</span></td>
+          </tr>
+            {% for r in rows %}
+            <tr class="image-label-row"
+                data-group="{{ group_name|e }}"
+                data-roles="{{ r.roles|e }}"
+                data-dicom-tag="{{ r.dicomTagNumber|e }}"
+                data-dicom-description="{{ r.dicomTagDescription|e }}"
+                data-substitute="{{ r.substitute|e }}">
+              <td>{{ r.type }}</td>
+              <td>{{ r.conditionText }}</td>
+              <td>{{ r.roles }}</td>
+              <td>{{ r.position }}</td>
+              <td>{{ r.substitute }}</td>
+              <td>{{ r.dicomTagNumber }}</td>
+              <td>{{ r.dicomTagDescription }}</td>
+              <td>{{ r.prefix }}</td>
+              <td>{{ r.postfix }}</td>
+              <td>{{ r.renderedAs }}</td>
+              <td>{{ r.levelOfDetail }}</td>
+            </tr>
+            {% endfor %}
           {% endfor %}
         </table>
       </div>
@@ -2215,6 +2408,97 @@
           setCookie('theme', next, 365);
         });
       }
+
+      (function () {
+        const table = document.getElementById('image-label-table');
+        const groupSelect = document.getElementById('image-label-group-filter');
+        const roleSelect = document.getElementById('image-label-role-filter');
+        const tagSearch = document.getElementById('image-label-dicom-search');
+        const visibleCount = document.getElementById('image-label-visible-count');
+        if (!table || !groupSelect || !roleSelect || !tagSearch) return;
+
+        const groupRows = Array.from(table.querySelectorAll('.image-label-group'));
+        const detailRows = Array.from(table.querySelectorAll('.image-label-row'));
+        const groups = Array.from(new Set(groupRows.map(function (row) {
+          return row.getAttribute('data-group') || '';
+        }).filter(Boolean))).sort(function (a, b) {
+          return a.localeCompare(b, 'de');
+        });
+
+        groups.forEach(function (groupName) {
+          const option = document.createElement('option');
+          option.value = groupName;
+          option.textContent = groupName;
+          groupSelect.appendChild(option);
+        });
+
+        const roles = Array.from(new Set(detailRows.flatMap(function (row) {
+          return (row.getAttribute('data-roles') || '').split('|').map(function (roleName) {
+            return roleName.trim();
+          }).filter(Boolean);
+        }))).sort(function (a, b) {
+          return a.localeCompare(b, 'de');
+        });
+
+        roles.forEach(function (roleName) {
+          const option = document.createElement('option');
+          option.value = roleName;
+          option.textContent = roleName;
+          roleSelect.appendChild(option);
+        });
+
+        function normalize(value) {
+          return (value || '').toString().trim().toLowerCase();
+        }
+
+        function rowMatches(row, selectedGroup, selectedRole, needle) {
+          const rowGroup = row.getAttribute('data-group') || '';
+          if (selectedGroup && rowGroup !== selectedGroup) return false;
+          if (selectedRole) {
+            const rowRoles = (row.getAttribute('data-roles') || '').split('|').map(function (roleName) {
+              return roleName.trim();
+            });
+            if (rowRoles.indexOf(selectedRole) === -1) return false;
+          }
+          if (!needle) return true;
+          const haystack = [
+            row.getAttribute('data-dicom-tag'),
+            row.getAttribute('data-dicom-description'),
+            row.getAttribute('data-substitute'),
+            row.innerText
+          ].join(' ').toLowerCase();
+          return haystack.indexOf(needle) !== -1;
+        }
+
+        function applyImageLabelFilters() {
+          const selectedGroup = groupSelect.value || '';
+          const selectedRole = roleSelect.value || '';
+          const needle = normalize(tagSearch.value);
+          let visibleGroups = 0;
+
+          groupRows.forEach(function (groupRow) {
+            const groupName = groupRow.getAttribute('data-group') || '';
+            let visibleInGroup = 0;
+
+            detailRows.forEach(function (detailRow) {
+              if ((detailRow.getAttribute('data-group') || '') !== groupName) return;
+              const show = rowMatches(detailRow, selectedGroup, selectedRole, needle);
+              detailRow.style.display = show ? '' : 'none';
+              if (show) visibleInGroup += 1;
+            });
+
+            groupRow.style.display = visibleInGroup ? '' : 'none';
+            if (visibleInGroup) visibleGroups += 1;
+          });
+
+          if (visibleCount) visibleCount.textContent = String(visibleGroups);
+        }
+
+        groupSelect.addEventListener('change', applyImageLabelFilters);
+        roleSelect.addEventListener('change', applyImageLabelFilters);
+        tagSearch.addEventListener('input', applyImageLabelFilters);
+        applyImageLabelFilters();
+      })();
 
       const btn = document.getElementById('toggle-old-workstations');
       const onlyOldBtn = document.getElementById('only-old-workstations');
@@ -5024,6 +5308,87 @@
         sel.addEventListener('change', applyEwRoleFilter);
         ewEnabledCb.addEventListener('change', applyEwRoleFilter);
         applyEwRoleFilter();
+      }
+
+      const diitRows = Array.from(document.querySelectorAll('.diit-row'));
+      const diitSearch = document.getElementById('diit-search');
+      const diitProduct = document.getElementById('diit-product-filter');
+      const diitVersionMax = document.getElementById('diit-version-max-filter');
+      const diitCountry = document.getElementById('diit-country-filter');
+      const diitDb = document.getElementById('diit-db-filter');
+      const diitVisibleCount = document.getElementById('diit-visible-count');
+      const diitCustomerRows = Array.from(document.querySelectorAll('.diit-customer-row'));
+      const diitCustomerVisibleCount = document.getElementById('diit-customer-visible-count');
+      const diitDuplicateToggle = document.getElementById('diit-customer-duplicates-toggle');
+      if (diitRows.length && diitSearch && diitProduct && diitVersionMax && diitCountry && diitDb && diitVisibleCount) {
+        let diitDuplicatesOnly = false;
+        function versionKey(value) {
+          const parts = String(value || '').match(/\d+/g) || [];
+          while (parts.length < 6) parts.push('0');
+          return parts.slice(0, 6).map(function (p) { return Number(p) || 0; });
+        }
+        function versionKeyFromData(value) {
+          const parts = String(value || '').split('|').filter(Boolean);
+          while (parts.length < 6) parts.push('0');
+          return parts.slice(0, 6).map(function (p) { return Number(p) || 0; });
+        }
+        function versionCompare(a, b) {
+          for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+            const av = a[i] || 0;
+            const bv = b[i] || 0;
+            if (av < bv) return -1;
+            if (av > bv) return 1;
+          }
+          return 0;
+        }
+        function applyDiitFilter() {
+          const q = (diitSearch.value || '').trim().toLowerCase();
+          const product = diitProduct.value || '';
+          const maxVersion = diitVersionMax.value || '';
+          const maxVersionKey = maxVersion ? versionKey(maxVersion) : null;
+          const country = diitCountry.value || '';
+          const db = diitDb.value || '';
+          let visible = 0;
+          diitRows.forEach(function (row) {
+            const text = row.getAttribute('data-search') || '';
+            const rowVersionOk = !maxVersionKey || versionCompare(versionKeyFromData(row.getAttribute('data-version-key') || row.getAttribute('data-version')), maxVersionKey) <= 0;
+            const show = (!q || text.includes(q))
+              && (!product || row.getAttribute('data-product') === product)
+              && rowVersionOk
+              && (!country || row.getAttribute('data-country') === country)
+              && (!db || row.getAttribute('data-db') === db)
+              && (!diitDuplicatesOnly || row.getAttribute('data-duplicate-customer') === 'ja');
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+          });
+          diitVisibleCount.textContent = String(visible);
+
+          if (diitCustomerRows.length && diitCustomerVisibleCount) {
+            let customerVisible = 0;
+            diitCustomerRows.forEach(function (row) {
+              const show = !diitDuplicatesOnly || row.getAttribute('data-duplicate') === 'ja';
+              row.style.display = show ? '' : 'none';
+              if (show) customerVisible += 1;
+            });
+            diitCustomerVisibleCount.textContent = String(customerVisible);
+          }
+
+          if (diitDuplicateToggle) {
+            diitDuplicateToggle.textContent = diitDuplicatesOnly ? 'Alle Kunden anzeigen' : 'Nur Duplikate anzeigen';
+          }
+        }
+        diitSearch.addEventListener('input', applyDiitFilter);
+        diitProduct.addEventListener('change', applyDiitFilter);
+        diitVersionMax.addEventListener('change', applyDiitFilter);
+        diitCountry.addEventListener('change', applyDiitFilter);
+        diitDb.addEventListener('change', applyDiitFilter);
+        if (diitDuplicateToggle) {
+          diitDuplicateToggle.addEventListener('click', function () {
+            diitDuplicatesOnly = !diitDuplicatesOnly;
+            applyDiitFilter();
+          });
+        }
+        applyDiitFilter();
       }
 
       const analyzeForm = document.getElementById('analyze-form');
