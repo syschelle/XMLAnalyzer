@@ -991,7 +991,7 @@
     }
 
 
-    /* v0.180: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.181: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1263,7 +1263,7 @@
     }
 
 
-    /* v0.180: DICOM Services inspired result workspace */
+    /* v0.181: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1640,7 +1640,7 @@
 
 
 
-    /* v0.180: darker DU-style dark theme and square controls */
+    /* v0.181: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1825,7 +1825,7 @@
 
 
 
-    /* v0.180: restore header blue, square controls, blue section headers */
+    /* v0.181: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -1989,6 +1989,63 @@
       border-color: #6f9acc;
       background: #6f9acc;
       color: #ffffff;
+    }
+
+
+    /* v0.181: square all buttons and strengthen table column separators */
+    button,
+    .toggle-btn,
+    .code-btn,
+    .pdf-btn,
+    .section-jump a,
+    .du-shell-nav a,
+    .du-shell-nav button,
+    .du-shell-right .theme-toggle,
+    .du-shell-right .version-badge,
+    .du-shell-right .pdf-btn,
+    #analyze-form button[type="submit"],
+    #analyze-form input[type="file"]::file-selector-button,
+    #analyze-form input[type="file"]::-webkit-file-upload-button {
+      border-radius: 0 !important;
+    }
+
+    select,
+    input[type="text"],
+    input[type="search"],
+    .search-input,
+    #analyze-form input[type="file"] {
+      border-radius: 0 !important;
+    }
+
+    th {
+      border-right: 1px solid #b4bcc5;
+      box-shadow: inset 0 -1px 0 #c7cdd1;
+    }
+
+    th:last-child {
+      border-right: 0;
+    }
+
+    td {
+      border-right: 1px solid #e3e6e8;
+    }
+
+    td:last-child {
+      border-right: 0;
+    }
+
+    :root[data-theme="dark"] th {
+      border-right: 1px solid #46505b;
+      box-shadow: inset 0 -1px 0 #2c3138;
+    }
+
+    :root[data-theme="dark"] td {
+      border-right: 1px solid #2a3037;
+    }
+
+    :root[data-theme="dark"] th:last-child,
+    :root[data-theme="dark"] td:last-child {
+      border-right: 0;
     }
 
     @media (max-width: 1100px) {
