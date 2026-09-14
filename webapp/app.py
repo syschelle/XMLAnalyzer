@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.174"
+APP_VERSION = "v0.175"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -3574,7 +3574,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.174
+  APP_VERSION: v0.175
 
 jobs:
   build-export-xml-web:
@@ -3729,11 +3729,16 @@ The ScriptAccess code dialog now includes a clipboard copy action.
 The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.
 
 
-## DICOM Services inspired shell v0.174
+## DICOM Services inspired shell v0.175
 
 The ConfigScope UI now uses a safer DICOM Services inspired shell:
 a blue full-width top bar, horizontal navigation and a calm card-based workspace.
 The upload form and analysis flow remain unchanged.
+
+## DICOM Services inspired result workspace v0.175
+
+The result workspace now uses flatter DICOM Services inspired cards, compact metric tiles, sticky table headers, zebra rows, hover highlighting and a toolbar-style section navigation.
+The upload form and backend analysis flow remain unchanged.
 
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
@@ -3770,7 +3775,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.174`
+- `v0.175`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

@@ -990,7 +990,7 @@
     }
 
 
-    /* v0.174: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.175: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1251,6 +1251,383 @@
       overflow: hidden;
     }
 
+
+    /* v0.175: DICOM Services inspired result workspace */
+    .result-anchor {
+      scroll-margin-top: 68px;
+    }
+
+    .section-jump {
+      position: sticky;
+      top: 50px;
+      z-index: 45;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      margin: 0 0 12px;
+      background: #f1f2f4;
+      border: 1px solid #c7cdd1;
+      border-radius: 7px;
+      box-shadow: 0 1px 4px rgba(34, 39, 42, 0.08);
+    }
+
+    .section-jump a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 10px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #0570c7;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .section-jump a:hover {
+      background: #e6f3fe;
+      border-color: #b4dcfd;
+      color: #033d6d;
+    }
+
+    .card[id^="sec-"],
+    .card:has(.table-wrap),
+    .compare-context-card {
+      background: #fff;
+      border: 1px solid #c7cdd1;
+      border-radius: 7px;
+      box-shadow: none;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .card[id^="sec-"] > h2,
+    .card[id^="sec-"] > .h2-row,
+    .card:has(.table-wrap) > h2,
+    .card:has(.table-wrap) > .h2-row,
+    .compare-context-card > .compare-context-title {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0;
+      padding: 9px 12px;
+      background: #f1f2f4;
+      border-bottom: 1px solid #c7cdd1;
+      color: #22272a;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .card[id^="sec-"] > h2,
+    .card:has(.table-wrap) > h2 {
+      justify-content: flex-start;
+    }
+
+    .card[id^="sec-"] > .h2-row h2,
+    .card:has(.table-wrap) > .h2-row h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .card[id^="sec-"] > .h2-row .toolbar,
+    .card:has(.table-wrap) > .h2-row .toolbar {
+      margin: 0 !important;
+    }
+
+    .card[id^="sec-"] > .stats,
+    .card[id^="sec-"] > p,
+    .card[id^="sec-"] > .toolbar,
+    .card[id^="sec-"] > .table-wrap,
+    .card[id^="sec-"] > .perf-chart-wrap,
+    .card[id^="sec-"] > .compare-context-grid,
+    .card[id^="sec-"] > .compare-context-note,
+    .card:has(.table-wrap) > .toolbar,
+    .card:has(.table-wrap) > .table-wrap,
+    .card:has(.table-wrap) > .stats,
+    .card:has(.table-wrap) > p,
+    .compare-context-card > .compare-context-grid,
+    .compare-context-card > .compare-context-note {
+      margin-left: 12px;
+      margin-right: 12px;
+    }
+
+    .card[id^="sec-"] > .stats,
+    .card:has(.table-wrap) > .stats {
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card[id^="sec-"] > p,
+    .card:has(.table-wrap) > p {
+      margin-top: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stats {
+      gap: 8px;
+    }
+
+    .stat {
+      border: 1px solid #d7dde3;
+      border-radius: 7px;
+      background: #f7f7f8;
+      padding: 10px 11px;
+      box-shadow: none;
+    }
+
+    .stat .k {
+      color: #5c6770;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.015em;
+    }
+
+    .stat .v {
+      color: #22272a;
+      font-size: 19px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .toolbar {
+      gap: 6px;
+      padding: 8px 0;
+    }
+
+    .toggle-btn,
+    .code-btn,
+    .pdf-btn,
+    button {
+      border-radius: 6px;
+      border: 1px solid #c7cdd1;
+      background: #fff;
+      color: #0570c7;
+      min-height: 32px;
+      padding: 6px 10px;
+      font-weight: 800;
+      box-shadow: none;
+    }
+
+    .toggle-btn:hover,
+    .code-btn:hover,
+    .pdf-btn:hover,
+    button:hover {
+      background: #e6f3fe;
+      border-color: #8dcafc;
+      color: #033d6d;
+      transform: none;
+      box-shadow: none;
+    }
+
+    #analyze-form button[type="submit"] {
+      background: #0570c7;
+      border-color: #0570c7;
+      color: #fff;
+    }
+
+    #analyze-form button[type="submit"]:hover {
+      background: #04599f;
+      border-color: #04599f;
+      color: #fff;
+    }
+
+    .table-wrap {
+      border: 1px solid #c7cdd1;
+      border-radius: 7px;
+      margin-top: 10px;
+      margin-bottom: 12px;
+      background: #fff;
+      max-height: 68vh;
+      overflow: auto;
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: #f1f2f4;
+      color: #22272a;
+      border-bottom: 1px solid #c7cdd1;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    td {
+      background: #fff;
+      border-bottom: 1px solid #e3e6e8;
+      color: #22272a;
+    }
+
+    tr:nth-child(even) td {
+      background: #f7f7f8;
+    }
+
+    tr:hover td {
+      background: #e9ebed;
+    }
+
+    .search-input,
+    select,
+    input[type="text"],
+    input[type="search"] {
+      border: 1px solid #c7cdd1;
+      border-radius: 6px;
+      background: #fff;
+      color: #22272a;
+      min-height: 30px;
+      padding: 4px 7px;
+    }
+
+    .perf-chart-wrap {
+      border-top: 1px solid #c7cdd1;
+      padding: 12px;
+      margin-top: 0;
+    }
+
+    .perf-chart-panel {
+      border: 1px solid #c7cdd1;
+      border-radius: 7px;
+      background: #fff;
+      box-shadow: none;
+    }
+
+    .perf-chart-title {
+      color: #22272a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .perf-chart-note,
+    .perf-chart-meta,
+    .perf-p90-hint {
+      color: #5c6770;
+    }
+
+    .compare-context-card {
+      margin: 0 0 14px;
+    }
+
+    .compare-context-card > .compare-context-title {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .compare-context-grid {
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+
+    .compare-context-item {
+      border: 1px solid #c7cdd1;
+      border-radius: 7px;
+      background: #f7f7f8;
+      padding: 9px 10px;
+    }
+
+    .compare-context-note {
+      margin-bottom: 12px;
+      padding: 10px;
+      border: 1px solid #d7dde3;
+      border-radius: 7px;
+      background: #f7f7f8;
+    }
+
+    .compare-context-warning {
+      background: #fff1f2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+    }
+
+    .error {
+      border-radius: 7px;
+    }
+
+    :root[data-theme="dark"] .section-jump,
+    :root[data-theme="dark"] .card[id^="sec-"] > h2,
+    :root[data-theme="dark"] .card[id^="sec-"] > .h2-row,
+    :root[data-theme="dark"] .card:has(.table-wrap) > h2,
+    :root[data-theme="dark"] .card:has(.table-wrap) > .h2-row,
+    :root[data-theme="dark"] .compare-context-card > .compare-context-title,
+    :root[data-theme="dark"] th {
+      background: #172033;
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    :root[data-theme="dark"] .card[id^="sec-"],
+    :root[data-theme="dark"] .card:has(.table-wrap),
+    :root[data-theme="dark"] .table-wrap,
+    :root[data-theme="dark"] .perf-chart-panel,
+    :root[data-theme="dark"] .compare-context-card {
+      background: var(--card);
+      border-color: var(--line);
+    }
+
+    :root[data-theme="dark"] .stat,
+    :root[data-theme="dark"] .compare-context-item,
+    :root[data-theme="dark"] .compare-context-note {
+      background: var(--head-bg);
+      border-color: var(--line);
+    }
+
+    :root[data-theme="dark"] .stat .v,
+    :root[data-theme="dark"] td {
+      color: var(--text);
+    }
+
+    :root[data-theme="dark"] .stat .k,
+    :root[data-theme="dark"] .perf-chart-note,
+    :root[data-theme="dark"] .perf-chart-meta,
+    :root[data-theme="dark"] .perf-p90-hint {
+      color: var(--muted);
+    }
+
+    :root[data-theme="dark"] td {
+      background: var(--card);
+      border-color: var(--line);
+    }
+
+    :root[data-theme="dark"] tr:nth-child(even) td {
+      background: var(--row-alt);
+    }
+
+    :root[data-theme="dark"] tr:hover td {
+      background: #24312d;
+    }
+
+    :root[data-theme="dark"] .toggle-btn,
+    :root[data-theme="dark"] .code-btn,
+    :root[data-theme="dark"] .pdf-btn,
+    :root[data-theme="dark"] button,
+    :root[data-theme="dark"] .search-input,
+    :root[data-theme="dark"] select,
+    :root[data-theme="dark"] input[type="text"],
+    :root[data-theme="dark"] input[type="search"] {
+      background: #111827;
+      border-color: var(--line);
+      color: #93c5fd;
+    }
+
+    :root[data-theme="dark"] #analyze-form button[type="submit"] {
+      background: #0570c7;
+      border-color: #0570c7;
+      color: #fff;
+    }
+
+
     @media (max-width: 1100px) {
       .du-shell-header {
         height: auto;
@@ -1300,7 +1677,7 @@
   <header class="du-shell-header" aria-label="ConfigScope Hauptnavigation">
     <div class="du-shell-left">
       <a href="#upload-card" class="du-shell-logo" title="ConfigScope">CS</a>
-      <div class="du-shell-title">ConfigScope</div>
+      <div class="du-shell-title">Co{% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit; color:inherit;">n</button>{% else %}n{% endif %}figScope</div>
       <nav class="du-shell-nav">
         <a class="active" href="#upload-card">Upload</a>
         {% if result %}<a href="#result-start">Auswertung</a>{% endif %}
