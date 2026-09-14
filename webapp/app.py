@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.173"
+APP_VERSION = "v0.174"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -3574,7 +3574,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.173
+  APP_VERSION: v0.174
 
 jobs:
   build-export-xml-web:
@@ -3728,11 +3728,12 @@ The German guide now keeps the Performance CSV comparison section inside the sam
 The ScriptAccess code dialog now includes a clipboard copy action.
 The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.
 
-## Stability rollback v0.173
 
-Version v0.173 rolls back the unstable shared UI shell introduced in v0.172 and returns to the last stable ConfigScope UI baseline from v0.170.
+## DICOM Services inspired shell v0.174
 
-The ScriptAccess clipboard copy feature remains included.
+The ConfigScope UI now uses a safer DICOM Services inspired shell:
+a blue full-width top bar, horizontal navigation and a calm card-based workspace.
+The upload form and analysis flow remain unchanged.
 
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
@@ -3769,7 +3770,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.173`
+- `v0.174`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
