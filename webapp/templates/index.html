@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ConfigScope</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='configscope-icon.png') }}">
   <script>
     (function () {
       const m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
@@ -990,7 +991,7 @@
     }
 
 
-    /* v0.177: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.178: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1031,16 +1032,26 @@
     .du-shell-logo {
       width: 40px;
       min-width: 40px;
-      height: 34px;
-      border-radius: 6px;
+      height: 40px;
+      border-radius: 0;
       display: grid;
       place-items: center;
-      background: rgba(255, 255, 255, 0.16);
-      border: 1px solid rgba(255, 255, 255, 0.24);
+      background: transparent;
+      border: 0;
       color: #fff;
       font-size: 13px;
       font-weight: 900;
       letter-spacing: -0.03em;
+      text-decoration: none;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    .du-shell-logo-image {
+      display: block;
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
     }
 
     .du-shell-title {
@@ -1252,7 +1263,7 @@
     }
 
 
-    /* v0.177: DICOM Services inspired result workspace */
+    /* v0.178: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1629,7 +1640,7 @@
 
 
 
-    /* v0.177: darker DU-style dark theme and square controls */
+    /* v0.178: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1801,8 +1812,8 @@
     }
 
     :root[data-theme="dark"] .du-shell-logo {
-      background: rgba(0, 0, 0, 0.18);
-      border-color: rgba(255, 255, 255, 0.20);
+      background: transparent;
+      border-color: transparent;
       color: #fff;
     }
 
@@ -1814,7 +1825,7 @@
 
 
 
-    /* v0.177: restore header blue, square controls, blue section headers */
+    /* v0.178: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -2028,7 +2039,7 @@
 
   <header class="du-shell-header" aria-label="ConfigScope Hauptnavigation">
     <div class="du-shell-left">
-      <a href="#upload-card" class="du-shell-logo" title="ConfigScope">CS</a>
+      <a href="#upload-card" class="du-shell-logo" title="ConfigScope"><img src="{{ url_for('static', filename='configscope-icon.png') }}" alt="ConfigScope icon" class="du-shell-logo-image"></a>
       <div class="du-shell-title">Co{% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit; color:inherit;">n</button>{% else %}n{% endif %}figScope</div>
       <nav class="du-shell-nav">
         <a class="active" href="#upload-card">Upload</a>
