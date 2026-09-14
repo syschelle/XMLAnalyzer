@@ -990,7 +990,7 @@
     }
 
 
-    /* v0.175: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.176: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1252,7 +1252,7 @@
     }
 
 
-    /* v0.175: DICOM Services inspired result workspace */
+    /* v0.176: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1625,6 +1625,191 @@
       background: #0570c7;
       border-color: #0570c7;
       color: #fff;
+    }
+
+
+
+    /* v0.176: darker DU-style dark theme and square controls */
+    :root {
+      --radius: 6px;
+    }
+
+    .hero,
+    .card,
+    .table-wrap,
+    .perf-chart-panel,
+    .compare-context-card,
+    .compare-context-item,
+    .compare-context-note,
+    .stat,
+    .section-jump,
+    .error,
+    .du-shell-logo,
+    #analyze-form input[type="file"] {
+      border-radius: 4px;
+    }
+
+    .toggle-btn,
+    .code-btn,
+    .pdf-btn,
+    button,
+    select,
+    input[type="text"],
+    input[type="search"],
+    #analyze-form input[type="file"] {
+      border-radius: 2px;
+    }
+
+    .du-shell-header {
+      background: #6c97c7;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.32);
+      box-shadow: none;
+    }
+
+    .du-shell-nav a,
+    .du-shell-nav button,
+    .du-shell-right .theme-toggle,
+    .du-shell-right .version-badge,
+    .du-shell-right .pdf-btn {
+      border-radius: 0;
+    }
+
+    .du-shell-nav a:hover,
+    .du-shell-nav button:hover,
+    .du-shell-right .theme-toggle:hover,
+    .du-shell-right .pdf-btn:hover {
+      background: rgba(0, 0, 0, 0.14);
+      border-bottom-color: #ffffff;
+    }
+
+    .du-shell-nav .active {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #101215;
+      --card: #121417;
+      --text: #eceff4;
+      --muted: #a8b0bc;
+      --line: #2e333b;
+      --head-bg: #171b20;
+      --accent: #6d97c8;
+      --accent-hover: #82a8d5;
+      --accent-soft: #1d2430;
+      --stale: #49252a;
+      --shadow: none;
+      --hero-a: #101215;
+      --hero-b: #15181d;
+      --hero-c: #1a1e24;
+      --row-alt: #171a1f;
+    }
+
+    :root[data-theme="dark"] body {
+      background: #0f1114;
+      color: #eceff4;
+    }
+
+    :root[data-theme="dark"] .wrap {
+      background: #0f1114;
+    }
+
+    :root[data-theme="dark"] .hero,
+    :root[data-theme="dark"] .card,
+    :root[data-theme="dark"] .card[id^="sec-"],
+    :root[data-theme="dark"] .card:has(.table-wrap),
+    :root[data-theme="dark"] .perf-chart-panel,
+    :root[data-theme="dark"] .compare-context-card,
+    :root[data-theme="dark"] .table-wrap,
+    :root[data-theme="dark"] .compare-context-item,
+    :root[data-theme="dark"] .compare-context-note,
+    :root[data-theme="dark"] .stat {
+      background: #111317;
+      border-color: #2c3138;
+      box-shadow: none;
+    }
+
+    :root[data-theme="dark"] .hero p,
+    :root[data-theme="dark"] .upload-description,
+    :root[data-theme="dark"] .upload-hint,
+    :root[data-theme="dark"] .perf-chart-note,
+    :root[data-theme="dark"] .perf-chart-meta,
+    :root[data-theme="dark"] .perf-p90-hint,
+    :root[data-theme="dark"] .stat .k {
+      color: #aab2bd;
+    }
+
+    :root[data-theme="dark"] .section-jump,
+    :root[data-theme="dark"] .card[id^="sec-"] > h2,
+    :root[data-theme="dark"] .card[id^="sec-"] > .h2-row,
+    :root[data-theme="dark"] .card:has(.table-wrap) > h2,
+    :root[data-theme="dark"] .card:has(.table-wrap) > .h2-row,
+    :root[data-theme="dark"] .compare-context-card > .compare-context-title,
+    :root[data-theme="dark"] th {
+      background: #161a1f;
+      border-color: #2c3138;
+      color: #eef2f7;
+    }
+
+    :root[data-theme="dark"] td {
+      background: #111317;
+      border-color: #22272e;
+      color: #eef2f7;
+    }
+
+    :root[data-theme="dark"] tr:nth-child(even) td {
+      background: #15191e;
+    }
+
+    :root[data-theme="dark"] tr:hover td {
+      background: #20262d;
+    }
+
+    :root[data-theme="dark"] .toggle-btn,
+    :root[data-theme="dark"] .code-btn,
+    :root[data-theme="dark"] .pdf-btn,
+    :root[data-theme="dark"] button,
+    :root[data-theme="dark"] .search-input,
+    :root[data-theme="dark"] select,
+    :root[data-theme="dark"] input[type="text"],
+    :root[data-theme="dark"] input[type="search"],
+    :root[data-theme="dark"] #analyze-form input[type="file"] {
+      background: #171b20;
+      border-color: #39414b;
+      color: #d7e7fb;
+      box-shadow: none;
+    }
+
+    :root[data-theme="dark"] .toggle-btn:hover,
+    :root[data-theme="dark"] .code-btn:hover,
+    :root[data-theme="dark"] .pdf-btn:hover,
+    :root[data-theme="dark"] button:hover {
+      background: #202731;
+      border-color: #5e7ea6;
+      color: #f0f6ff;
+    }
+
+    :root[data-theme="dark"] #analyze-form button[type="submit"] {
+      background: #6c97c7;
+      border-color: #6c97c7;
+      color: #ffffff;
+    }
+
+    :root[data-theme="dark"] #analyze-form button[type="submit"]:hover {
+      background: #83abd6;
+      border-color: #83abd6;
+      color: #081018;
+    }
+
+    :root[data-theme="dark"] .du-shell-logo {
+      background: rgba(0, 0, 0, 0.18);
+      border-color: rgba(255, 255, 255, 0.20);
+      color: #fff;
+    }
+
+    :root[data-theme="dark"] .error {
+      background: #3c1e22;
+      border-color: #7f1d1d;
+      color: #ffd7d7;
     }
 
 
