@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.182`
+- `v0.171`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -178,3 +178,7 @@ The German guide now keeps the Performance CSV comparison section inside the sam
 
 The ScriptAccess code dialog now includes a clipboard copy action.
 The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.
+
+## Shared UI shell
+
+ConfigScope now uses a shared app-shell style inspired by the Schulungsplantool and Rolemapper UI direction: a left navigation area, compact cards, clearer workspace spacing and responsive behavior for smaller screens. This is a UI-only change and does not merge unrelated functional features from other projects.
