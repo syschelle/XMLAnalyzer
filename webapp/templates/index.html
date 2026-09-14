@@ -991,107 +991,221 @@
 
 
 
-    /* v0.171: shared application shell inspired by Schulungsplantool and Rolemapper */
+    /* v0.172: closer shared UI shell based on Rolemapper and Schulungsplantool */
     body {
-      background: var(--bg);
+      background: #f4f7fb;
       display: grid;
-      grid-template-columns: 252px minmax(0, 1fr);
+      grid-template-columns: 250px minmax(0, 1fr);
+      grid-template-rows: 66px minmax(0, 1fr);
       min-height: 100vh;
+      color: #1f2937;
     }
 
-    .app-sidebar {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      padding: 26px 20px;
-      border-right: 1px solid var(--line);
-      background: color-mix(in srgb, var(--card) 94%, var(--accent-soft) 6%);
-      box-shadow: 12px 0 30px rgba(15, 23, 42, 0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 22px;
-      z-index: 10;
+    :root[data-theme="dark"] body {
+      background: #111827;
+      color: var(--text);
     }
 
-    .app-brand {
+    .app-topbar {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      background: linear-gradient(90deg, #0f3f68 0%, #123f62 58%, #0f2f4b 100%);
+      color: #fff;
+      min-height: 66px;
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+      z-index: 30;
+    }
+
+    .app-topbar-left {
+      display: flex;
+      align-items: center;
+      min-width: 0;
       gap: 12px;
     }
 
-    .app-logo {
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
+    .app-menu-button {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
       display: grid;
       place-items: center;
-      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
       color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+
+    .app-topbar-kicker {
+      color: #93c5fd;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .app-topbar-title {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.05;
       font-weight: 900;
       letter-spacing: -0.03em;
-      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
     }
 
-    .app-brand strong {
-      display: block;
-      font-size: 16px;
-      line-height: 1.1;
-    }
-
-    .app-brand small {
-      display: block;
-      margin-top: 3px;
-      color: var(--muted);
+    .app-topbar-subtitle {
+      color: rgba(255, 255, 255, 0.78);
       font-size: 12px;
-      line-height: 1.25;
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 640px;
+    }
+
+    .app-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .app-topbar-actions .pdf-btn,
+    .app-topbar-actions .theme-toggle {
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      background: rgba(255, 255, 255, 0.11);
+      color: #fff;
+      border-radius: 8px;
+      padding: 7px 11px;
+      min-height: 34px;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: none;
+    }
+
+    .app-topbar-actions .pdf-btn:hover,
+    .app-topbar-actions .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: none;
+    }
+
+    .app-topbar-actions .version-badge {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .app-sidebar {
+      grid-column: 1;
+      grid-row: 2;
+      position: sticky;
+      top: 66px;
+      height: calc(100vh - 66px);
+      padding: 16px 14px;
+      border-right: 1px solid #dbe3ec;
+      background: #f8fafc;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    :root[data-theme="dark"] .app-sidebar {
+      background: #0f172a;
+      border-right-color: #243245;
+    }
+
+    .app-nav-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .app-nav-title {
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 900;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+
+    .app-brand {
+      display: none;
     }
 
     .app-sidebar-nav {
       display: grid;
-      gap: 8px;
+      gap: 3px;
     }
 
     .app-sidebar-nav a {
       display: flex;
       align-items: center;
-      gap: 9px;
-      padding: 10px 12px;
-      border: 1px solid transparent;
-      border-radius: 11px;
-      color: var(--text);
+      gap: 8px;
+      min-height: 34px;
+      padding: 7px 8px;
+      border: 0;
+      border-radius: 7px;
+      color: #17415f;
+      background: transparent;
       text-decoration: none;
       font-weight: 700;
-      font-size: 14px;
-      background: transparent;
-      transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+      font-size: 13px;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    :root[data-theme="dark"] .app-sidebar-nav a {
+      color: #bfdbfe;
     }
 
     .app-sidebar-nav a:hover {
-      background: var(--head-bg);
-      border-color: var(--line);
-      transform: translateX(2px);
+      background: #e7f0f8;
+      border-color: transparent;
+      transform: none;
+    }
+
+    :root[data-theme="dark"] .app-sidebar-nav a:hover {
+      background: #17243a;
     }
 
     .app-nav-icon {
-      width: 24px;
-      height: 24px;
-      border-radius: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
       display: inline-grid;
       place-items: center;
-      background: var(--accent-soft);
-      color: var(--accent-hover);
-      font-size: 13px;
+      background: #e8f3f1;
+      color: #4b6b63;
+      font-size: 11px;
+      font-weight: 900;
       flex: 0 0 auto;
     }
 
     .app-sidebar-footer {
       margin-top: auto;
-      padding-top: 14px;
+      padding: 12px 4px 0;
       border-top: 1px solid var(--line);
       display: grid;
-      gap: 8px;
+      gap: 7px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.35;
     }
 
@@ -1107,57 +1221,113 @@
 
     .wrap {
       grid-column: 2;
-      max-width: 1680px;
-      margin: 0 auto;
-      padding: 34px 42px 70px;
+      grid-row: 2;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 16px 20px 70px;
     }
 
     .hero {
-      background: linear-gradient(135deg, #17202a 0%, #22313d 58%, var(--accent) 100%);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #dce4ee;
+      border-radius: 10px;
+      padding: 13px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+      display: block;
     }
 
-    .hero p { color: rgba(255, 255, 255, 0.82); opacity: 1; }
-
     .hero h1 {
-      font-size: 30px;
-      letter-spacing: -0.03em;
+      margin: 0 0 3px;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0;
+      color: #1f2937;
+    }
+
+    .hero p {
+      margin: 0;
+      color: #64748b;
+      opacity: 1;
+      font-size: 13px;
+    }
+
+    :root[data-theme="dark"] .hero {
+      background: #172033;
+      color: var(--text);
+      border-color: #27364d;
+    }
+
+    :root[data-theme="dark"] .hero h1 {
+      color: var(--text);
     }
 
     .hero-actions {
-      gap: 8px;
+      display: none;
     }
 
     .card {
-      box-shadow: 0 7px 24px rgba(20, 32, 55, 0.055);
+      border-radius: 10px;
+      border: 1px solid #dce4ee;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.035);
+      margin-bottom: 14px;
+      padding: 15px;
     }
 
     :root[data-theme="dark"] .card {
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.30);
+      border-color: #27364d;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
     }
 
     .upload-card {
-      border-style: dashed;
-      background: linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--accent-soft) 8%), var(--card));
+      border-style: solid;
+      background: var(--card);
+      padding: 16px;
+    }
+
+    .upload-card h2 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .upload-card .upload-description {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
     }
 
     #analyze-form {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 9px;
     }
 
     #analyze-form input[type="file"] {
-      max-width: min(520px, 100%);
+      max-width: min(420px, 100%);
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #dbe3ec;
+      padding: 5px;
+      min-height: 38px;
+    }
+
+    #analyze-form button[type="submit"] {
+      min-height: 38px;
+      border-radius: 8px;
+      padding-inline: 14px;
+      font-weight: 800;
     }
 
     .upload-hint {
+      flex-basis: 100%;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.35;
+      margin-top: 3px;
     }
 
     .result-anchor {
@@ -1168,33 +1338,58 @@
 
     @media (max-width: 1200px) {
       body { grid-template-columns: 220px minmax(0, 1fr); }
-      .app-sidebar { padding: 18px 14px; }
-      .wrap { padding: 18px; }
+      .app-topbar { padding: 10px 14px; }
+      .app-sidebar { padding: 14px 10px; }
+      .wrap { padding: 14px; }
       .card { padding: 12px; }
       th, td { padding: 1px 3px; font-size: 12px; }
-      .hero h1 { font-size: 24px; }
+      .app-topbar-title { font-size: 19px; }
+      .app-topbar-subtitle { max-width: 420px; }
     }
 
     @media (max-width: 980px) {
-      body { display: block; }
+      body {
+        display: block;
+      }
+
+      .app-topbar {
+        position: sticky;
+        top: 0;
+        flex-wrap: wrap;
+        min-height: auto;
+      }
+
       .app-sidebar {
         position: relative;
+        top: auto;
         height: auto;
-        padding: 14px;
+        padding: 12px;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
+
       .app-sidebar-nav {
         grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       }
-      .app-sidebar-footer { display: none; }
-      .wrap { padding: 14px; }
+
+      .app-sidebar-footer {
+        display: none;
+      }
+
+      .wrap {
+        padding: 12px;
+      }
+
+      .app-topbar-subtitle {
+        white-space: normal;
+      }
     }
 
     @media (max-width: 900px) {
       table { min-width: 900px; }
       .stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
     }
+
   </style>
 </head>
 <body>
@@ -1202,21 +1397,40 @@
     <div class="build-overlay-card">Listen werden aufgebaut … bitte warten.</div>
   </div>
 
-  <aside class="app-sidebar" aria-label="Hauptnavigation">
-    <div class="app-brand">
-      <span class="app-logo">CS</span>
+  <header class="app-topbar">
+    <div class="app-topbar-left">
+      <div class="app-menu-button" aria-hidden="true">☰</div>
       <div>
-        <strong>ConfigScope</strong>
-        <small>Analyse-Workspace</small>
+        <div class="app-topbar-kicker">Analyse Workspace</div>
+        <h1 class="app-topbar-title">Co{% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit; color:inherit;">n</button>{% else %}n{% endif %}figScope</h1>
+        <div class="app-topbar-subtitle">Upload, Analyse und Kundenreporting für export.xml, Lizenzfile und performance.csv.</div>
       </div>
     </div>
-    <nav class="app-sidebar-nav">
-      <a href="#upload-card"><span class="app-nav-icon">↑</span><span>Upload</span></a>
-      {% if result %}<a href="#result-start"><span class="app-nav-icon">◎</span><span>Auswertung</span></a>{% endif %}
-      <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener"><span class="app-nav-icon">?</span><span>Anleitung</span></a>
-      {% if DEPLOY_DOWNLOAD_ENABLED %}<a href="#" data-app-link="download_bundle"><span class="app-nav-icon">↓</span><span>Deploy</span></a>{% endif %}
-      <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback"><span class="app-nav-icon">✉</span><span>Feedback</span></a>
-    </nav>
+    <div class="app-topbar-actions">
+      <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener" class="pdf-btn">Anleitung</a>
+      {% if DEPLOY_DOWNLOAD_ENABLED %}
+      <a href="#" data-app-link="download_bundle" class="pdf-btn">Deploy Download</a>
+      {% endif %}
+      <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback" class="pdf-btn">Feedback</a>
+      {% if not (result and result.xml_kind == 'licensefile') %}
+      <button type="button" id="pdf-export-open" class="pdf-btn">Auswertung</button>
+      {% endif %}
+      <button type="button" id="theme-toggle" class="theme-toggle">🌙 Dunkel</button>
+      <span class="version-badge">{{ APP_VERSION }}</span>
+    </div>
+  </header>
+
+  <aside class="app-sidebar" aria-label="Hauptnavigation">
+    <div class="app-nav-card">
+      <div class="app-nav-title">Menü / Navigation</div>
+      <nav class="app-sidebar-nav">
+        <a href="#upload-card"><span class="app-nav-icon">↑</span><span>Upload</span></a>
+        {% if result %}<a href="#result-start"><span class="app-nav-icon">◎</span><span>Auswertung</span></a>{% endif %}
+        <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener"><span class="app-nav-icon">?</span><span>Anleitung / Guide</span></a>
+        {% if DEPLOY_DOWNLOAD_ENABLED %}<a href="#" data-app-link="download_bundle"><span class="app-nav-icon">↓</span><span>Deploy</span></a>{% endif %}
+        <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback"><span class="app-nav-icon">✉</span><span>Feedback</span></a>
+      </nav>
+    </div>
     <div class="app-sidebar-footer">
       <div><span class="app-status-dot"></span>Lokal auswerten</div>
       <div>Keine absichtliche serverseitige Uploadspeicherung</div>
@@ -1226,25 +1440,13 @@
 
   <main class="wrap" id="app-main">
     <div class="hero">
-      <div>
-        <h1>Co{% if SCRIPT_ACCESS_CODE_ENABLED %}<button type="button" data-script-access-trigger="1" onclick="return window.__scriptAccessInlineClick && window.__scriptAccessInlineClick();" style="all:unset; cursor:pointer; font:inherit; font-weight:inherit; line-height:inherit; color:inherit;">n</button>{% else %}n{% endif %}figScope</h1>
-        <p>Upload, Analyse und Kundenreporting für export.xml, Lizenzfile und performance.csv.</p>
-      </div>
-      <div class="hero-actions">
-        <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener" class="pdf-btn">Anleitung</a>
-        {% if DEPLOY_DOWNLOAD_ENABLED %}
-        <a href="#" data-app-link="download_bundle" class="pdf-btn">Deploy Download</a>
-        {% endif %}
-        <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback" class="pdf-btn">Feedback</a>
-        {% if not (result and result.xml_kind == 'licensefile') %}
-        <button type="button" id="pdf-export-open" class="pdf-btn">Auswertung</button>
-        {% endif %}
-        <button type="button" id="theme-toggle" class="theme-toggle">🌙 Dunkel</button>
-        <span class="version-badge">{{ APP_VERSION }}</span>
-      </div>
+      <h1>Analyse starten</h1>
+      <p>CSV hochladen oder XML/Lizenzfile analysieren. Ergebnisse bleiben im Browser und können als Kundenreport exportiert werden.</p>
     </div>
 
     <div class="card upload-card" id="upload-card">
+      <h2>Datei importieren</h2>
+      <p class="upload-description">Wähle eine <code>export.xml</code>, ein Lizenzfile oder eine <code>performance.csv</code>. Für den Performance-Vergleich können maximal zwei CSV-Dateien gleichzeitig ausgewählt werden.</p>
       <form id="analyze-form" method="post" enctype="multipart/form-data">
         <input type="file" name="xml_file" accept=".xml,.csv" multiple required>
         <button type="submit">Analysieren</button>

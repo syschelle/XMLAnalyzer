@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.171`
+- `v0.172`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -182,3 +182,8 @@ The hidden trigger also has a robust fallback dialog with a copy button instead 
 ## Shared UI shell
 
 ConfigScope now uses a shared app-shell style inspired by the Schulungsplantool and Rolemapper UI direction: a left navigation area, compact cards, clearer workspace spacing and responsive behavior for smaller screens. This is a UI-only change and does not merge unrelated functional features from other projects.
+
+## Shared UI shell v0.172
+
+The ConfigScope UI now uses a closer shared application shell inspired by Rolemapper and Schulungsplantool:
+a full-width dark top bar, a light left navigation card and a calmer card-based workspace.
