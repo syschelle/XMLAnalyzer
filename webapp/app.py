@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.176"
+APP_VERSION = "v0.177"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -3574,7 +3574,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.176
+  APP_VERSION: v0.177
 
 jobs:
   build-export-xml-web:
@@ -3729,21 +3729,27 @@ The ScriptAccess code dialog now includes a clipboard copy action.
 The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.
 
 
-## DICOM Services inspired shell v0.176
+## DICOM Services inspired shell v0.177
 
 The ConfigScope UI now uses a safer DICOM Services inspired shell:
 a blue full-width top bar, horizontal navigation and a calm card-based workspace.
 The upload form and analysis flow remain unchanged.
 
-## DICOM Services inspired result workspace v0.176
+## DICOM Services inspired result workspace v0.177
 
 The result workspace now uses flatter DICOM Services inspired cards, compact metric tiles, sticky table headers, zebra rows, hover highlighting and a toolbar-style section navigation.
 The upload form and backend analysis flow remain unchanged.
 
-## DU-style dark mode and square controls v0.176
+## DU-style dark mode and square controls v0.177
 
 The dark theme now uses a darker DU-inspired visual language with cooler blue accents and more square buttons and inputs.
 This change is presentation-only and does not change the analysis logic.
+
+## Restored header blue and square controls v0.177
+
+The main header now uses the blue from the previous version again.
+Buttons and inputs are more square, the upload file-picker button now uses the same blue family,
+and section headers now use the same blue as the main header.
 
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
@@ -3780,7 +3786,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.176`
+- `v0.177`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
