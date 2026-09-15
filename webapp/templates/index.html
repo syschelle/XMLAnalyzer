@@ -991,7 +991,7 @@
     }
 
 
-    /* v0.182: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.183: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1263,7 +1263,7 @@
     }
 
 
-    /* v0.182: DICOM Services inspired result workspace */
+    /* v0.183: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1640,7 +1640,7 @@
 
 
 
-    /* v0.182: darker DU-style dark theme and square controls */
+    /* v0.183: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1825,7 +1825,7 @@
 
 
 
-    /* v0.182: restore header blue, square controls, blue section headers */
+    /* v0.183: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -1992,7 +1992,7 @@
     }
 
 
-    /* v0.182: square all buttons and strengthen table column separators */
+    /* v0.183: square all buttons and strengthen table column separators */
     button,
     .toggle-btn,
     .code-btn,
@@ -2049,7 +2049,7 @@
     }
 
 
-    /* v0.182: restore visibility of buttons in content toolbars */
+    /* v0.183: restore visibility of buttons in content toolbars */
     .card > .toolbar .toggle-btn,
     .card > .toolbar .code-btn,
     .card > .toolbar .pdf-btn,
@@ -3212,6 +3212,7 @@
       const HANGING_CONDITIONS_AGD_NAME = {{ (result.hanging_condition_sets_agd_download_name|default('conditions-export.AGD', true))|tojson if result else '"conditions-export.AGD"' }};
       const EXPORT_SCRIPTS_BUNDLE_URL = appUrl('export_scripts_bundle');
       const SCRIPT_ACCESS_JSON_URL = appUrl('script_access_code_json');
+      const CONFIGSCOPE_ICON_URL = {{ url_for('static', filename='configscope-icon.png')|tojson }};
 
       Array.from(document.querySelectorAll('[data-app-link]')).forEach(function (a) {
         const targetPath = a.getAttribute('data-app-link') || '';
@@ -3251,11 +3252,13 @@
           }).join('') : '<div class="muted">keine Screen-Information</div>';
           return '<div class="snapshot-block"><p class="snapshot-title">Snapshot: ' + esc(s.name || '') + '</p><div class="screens-row">' + screenHtml + '</div></div>';
         }).join('') : '<div class="muted">Keine Snapshot-Daten vorhanden.</div>';
-        return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hangingprotokoll – ' + esc(hp.name || '') + '</title><style>'
-          + ':root{--bg:#f3f6f5;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;--accent:#4b6b63;}body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}.wrap{max-width:100%;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#5b786f,#4b6b63 60%,#6c8c83);color:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:10px}.kv{border:1px solid var(--line);border-radius:8px;padding:8px}.kv .k{font-size:12px;color:var(--muted)}.kv .v{font-weight:600;margin-top:2px}.snapshot-block{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px;background:#f9fbfb}.snapshot-title{font-weight:700;margin:0 0 8px}.screens-row{display:flex;gap:10px;flex-wrap:wrap}.screen-card{border:1px solid var(--line);padding:10px;background:#fff;min-width:360px;flex:1 1 420px}.screen-name{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}.layout-grid{border-collapse:collapse}.layout-grid td{min-width:320px;height:88px;border:1px solid #9ca3af;background:#f9fafb;font-size:12px;color:#334155;text-align:left;vertical-align:top;padding:8px;white-space:nowrap}'
-          + '</style></head><body><div class="wrap"><div class="hero"><h1 style="margin:0 0 6px;font-size:22px;">' + esc(hp.name || '') + '</h1><div style="color:rgba(255,255,255,0.9)">Detailansicht aus der aktuell im Browser angezeigten Auswertung.</div></div><div class="card"><h2 style="margin:0 0 10px;font-size:18px;">Details</h2><div class="grid">'
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const themeAttr = dark ? ' data-theme="dark"' : '';
+        return '<!doctype html><html lang="de"' + themeAttr + '><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hangingprotokoll – ' + esc(hp.name || '') + '</title><link rel="icon" type="image/png" href="' + esc(CONFIGSCOPE_ICON_URL) + '"><style>'
+          + ':root{--bg:#f3f6fa;--card:#fff;--text:#22272a;--muted:#5c6770;--line:#c7cdd1;--blue:#0570c7;--blue-dark:#04599f;--row:#f7f7f8}:root[data-theme="dark"]{--bg:#0f1114;--card:#111317;--text:#eceff4;--muted:#a8b0bc;--line:#2c3138;--row:#15191e}*{box-sizing:border-box}body{margin:0;font-family:Lato,Inter,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}.app-header{height:50px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--blue-dark)}.app-left,.app-right{display:flex;align-items:center;gap:10px}.app-logo{width:40px;height:40px;object-fit:contain}.app-title{font-size:16px;font-weight:800}.app-header button{height:100%;border:0;border-radius:0;background:transparent;color:#fff;padding:0 12px;font-weight:700;cursor:pointer}.app-header button:hover{background:rgba(255,255,255,.12)}.version{font-size:12px;font-weight:800}.wrap{max-width:100%;margin:0 auto;padding:14px}.hero,.card{background:var(--card);border:1px solid var(--line);border-radius:2px;margin-bottom:14px;box-shadow:none}.hero{padding:14px;border-top:4px solid var(--blue)}.hero h1{margin:0 0 5px;font-size:21px}.muted{color:var(--muted)}.card{padding:0 12px 12px}.card>h2{margin:0 -12px 12px;padding:10px 12px;background:var(--blue);color:#fff;border-bottom:1px solid var(--blue-dark);font-size:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.kv{border:1px solid var(--line);border-radius:0;padding:8px;background:var(--row)}.kv .k{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800}.kv .v{font-weight:700;margin-top:2px}.snapshot-block{border:1px solid var(--line);border-radius:0;padding:10px;margin-top:10px;background:var(--row)}.snapshot-title{font-weight:800;margin:0 0 8px}.screens-row{display:flex;gap:10px;flex-wrap:wrap}.screen-card{border:1px solid var(--line);border-radius:0;padding:10px;background:var(--card);min-width:360px;flex:1 1 420px}.screen-name{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700}.layout-grid-wrap{margin-top:6px;overflow:auto}.layout-grid{border-collapse:collapse}.layout-grid td{min-width:320px;height:88px;border:1px solid var(--line);background:var(--card);font-size:12px;color:var(--text);text-align:left;vertical-align:top;padding:8px;white-space:nowrap}@media(max-width:700px){.screen-card{min-width:280px}.wrap{padding:10px}}'
+          + '</style></head><body><header class="app-header"><div class="app-left"><img class="app-logo" src="' + esc(CONFIGSCOPE_ICON_URL) + '" alt="ConfigScope"><div class="app-title">ConfigScope · Hangingprotokoll</div></div><div class="app-right"><button type="button" onclick="window.close()">Schließen</button><span class="version">' + esc({{ APP_VERSION|tojson }}) + '</span></div></header><div class="wrap"><div class="hero"><h1>' + esc(hp.name || '') + '</h1><div class="muted">Detailansicht aus der aktuell im Browser angezeigten Auswertung.</div></div><div class="card"><h2>Details</h2><div class="grid">'
           + kv('Aktiv', hp.active) + kv('Priors', hp.numberOfPriors) + kv('Priorität', hp.priority) + kv('Use Priors', hp.usePriors) + kv('Erstellt von', hp.createdBy) + kv('Geändert von', hp.lastModifiedBy)
-          + '</div></div><div class="card" style="margin-top:14px;"><h2 style="margin:0 0 10px;font-size:18px;">Snapshots (schematisch)</h2>' + snapshotHtml + '</div></div></body></html>';
+          + '</div></div><div class="card"><h2>Snapshots (schematisch)</h2>' + snapshotHtml + '</div></div></body></html>';
       }
 
       Array.from(document.querySelectorAll('[data-hanging-detail]')).forEach(function (a) {

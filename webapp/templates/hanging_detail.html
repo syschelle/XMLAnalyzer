@@ -4,120 +4,51 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hangingprotokoll – {{ hp.name }}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='configscope-icon.png') }}">
+  <script>
+    (function () {
+      const m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
+      const theme = m ? decodeURIComponent(m[1]) : 'light';
+      document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+    })();
+  </script>
   <style>
-    :root {
-      --bg: #f3f6f5;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --accent: #4b6b63;
-    }
-    body {
-      margin: 0;
-      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    .wrap {
-      max-width: 100%;
-      margin: 0 auto;
-      padding: 18px;
-    }
-    .hero {
-      background: linear-gradient(135deg, #5b786f, #4b6b63 60%, #6c8c83);
-      color: #fff;
-      border-radius: 12px;
-      padding: 16px 18px;
-      margin-bottom: 14px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 16px;
-    }
-    .muted { color: var(--muted); }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .kv {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px;
-    }
-    .kv .k { font-size: 12px; color: var(--muted); }
-    .kv .v { font-weight: 600; margin-top: 2px; }
-
-    .snapshot-block {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      margin-top: 12px;
-      background: #f9fbfb;
-    }
-
-    .snapshot-title {
-      font-weight: 700;
-      margin: 0 0 8px;
-    }
-
-    .snapshot-hint {
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .screens-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .screen-card {
-      border: 1px solid var(--line);
-      border-radius: 0;
-      padding: 10px;
-      background: #fff;
-      min-width: 360px;
-      flex: 1 1 420px;
-    }
-
-    .screen-name {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-
-    .layout-grid-wrap { margin-top: 6px; }
-
-
-    .layout-grid {
-      border-collapse: collapse;
-    }
-
-    .layout-grid td {
-      min-width: 320px;
-      height: 88px;
-      border: 1px solid #9ca3af;
-      background: #f9fafb;
-      font-size: 12px;
-      color: #334155;
-      text-align: left;
-      vertical-align: top;
-      padding: 8px;
-      white-space: nowrap;
-    }
+    :root{--bg:#f3f6fa;--card:#fff;--text:#22272a;--muted:#5c6770;--line:#c7cdd1;--blue:#0570c7;--blue-dark:#04599f;--row:#f7f7f8}
+    :root[data-theme="dark"]{--bg:#0f1114;--card:#111317;--text:#eceff4;--muted:#a8b0bc;--line:#2c3138;--row:#15191e}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Lato,Inter,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app-header{height:50px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--blue-dark)}
+    .app-header-left,.app-header-right{display:flex;align-items:center;gap:10px}.app-logo{width:40px;height:40px;object-fit:contain}.app-title{font-size:16px;font-weight:800}
+    .app-header button{height:100%;border:0;border-radius:0;background:transparent;color:#fff;padding:0 12px;font-weight:700;cursor:pointer}.app-header button:hover{background:rgba(255,255,255,.12)}
+    .version{font-size:12px;font-weight:800}.wrap{max-width:100%;margin:0 auto;padding:14px}
+    .hero,.card{background:var(--card);border:1px solid var(--line);border-radius:2px;margin-bottom:14px;box-shadow:none}
+    .hero{padding:14px;border-top:4px solid var(--blue)}.hero h1{margin:0 0 5px;font-size:21px}.muted{color:var(--muted)}
+    .card{padding:0 12px 12px}.card>h2{margin:0 -12px 12px;padding:10px 12px;background:var(--blue);color:#fff;border-bottom:1px solid var(--blue-dark);font-size:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.kv{border:1px solid var(--line);border-radius:0;padding:8px;background:var(--row)}
+    .kv .k{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800}.kv .v{font-weight:700;margin-top:2px}
+    .snapshot-block{border:1px solid var(--line);border-radius:0;padding:10px;margin-top:10px;background:var(--row)}
+    .snapshot-title{font-weight:800;margin:0 0 8px}.snapshot-hint{font-size:12px;font-weight:500}
+    .screens-row{display:flex;gap:10px;flex-wrap:wrap}.screen-card{border:1px solid var(--line);border-radius:0;padding:10px;background:var(--card);min-width:360px;flex:1 1 420px}
+    .screen-name{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700}.layout-grid-wrap{margin-top:6px;overflow:auto}.layout-grid{border-collapse:collapse}
+    .layout-grid td{min-width:320px;height:88px;border:1px solid var(--line);background:var(--card);font-size:12px;color:var(--text);text-align:left;vertical-align:top;padding:8px;white-space:nowrap}
+    @media(max-width:700px){.app-header{padding:0 8px}.screen-card{min-width:280px}.wrap{padding:10px}}
   </style>
 </head>
 <body>
+  <header class="app-header">
+    <div class="app-header-left">
+      <img class="app-logo" src="{{ url_for('static', filename='configscope-icon.png') }}" alt="ConfigScope">
+      <div class="app-title">ConfigScope · Hangingprotokoll</div>
+    </div>
+    <div class="app-header-right">
+      <button type="button" onclick="window.close()">Schließen</button>
+      <span class="version">{{ APP_VERSION }}</span>
+    </div>
+  </header>
   <div class="wrap">
     <div class="hero">
       <h1 style="margin:0 0 6px; font-size:22px;">{{ hp.name }}</h1>
-      <div class="muted" style="color:rgba(255,255,255,0.9)">Platzhalterseite für die zukünftige schematische Darstellung dieses Hangingprotokolls.</div>
+      <div class="muted">Detailansicht des Hangingprotokolls.</div>
     </div>
 
     <div class="card">
