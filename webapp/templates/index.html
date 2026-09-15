@@ -991,7 +991,7 @@
     }
 
 
-    /* v0.181: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.182: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1263,7 +1263,7 @@
     }
 
 
-    /* v0.181: DICOM Services inspired result workspace */
+    /* v0.182: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1640,7 +1640,7 @@
 
 
 
-    /* v0.181: darker DU-style dark theme and square controls */
+    /* v0.182: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1825,7 +1825,7 @@
 
 
 
-    /* v0.181: restore header blue, square controls, blue section headers */
+    /* v0.182: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -1992,7 +1992,7 @@
     }
 
 
-    /* v0.181: square all buttons and strengthen table column separators */
+    /* v0.182: square all buttons and strengthen table column separators */
     button,
     .toggle-btn,
     .code-btn,
@@ -2046,6 +2046,46 @@
     :root[data-theme="dark"] th:last-child,
     :root[data-theme="dark"] td:last-child {
       border-right: 0;
+    }
+
+
+    /* v0.182: restore visibility of buttons in content toolbars */
+    .card > .toolbar .toggle-btn,
+    .card > .toolbar .code-btn,
+    .card > .toolbar .pdf-btn,
+    .card > .toolbar button {
+      background: #ffffff;
+      border-color: #7eaee0;
+      color: #0570c7;
+      opacity: 1;
+    }
+
+    .card > .toolbar .toggle-btn:hover,
+    .card > .toolbar .code-btn:hover,
+    .card > .toolbar .pdf-btn:hover,
+    .card > .toolbar button:hover {
+      background: #e6f3fe;
+      border-color: #0570c7;
+      color: #033d6d;
+    }
+
+    :root[data-theme="dark"] .card > .toolbar .toggle-btn,
+    :root[data-theme="dark"] .card > .toolbar .code-btn,
+    :root[data-theme="dark"] .card > .toolbar .pdf-btn,
+    :root[data-theme="dark"] .card > .toolbar button {
+      background: #171b20;
+      border-color: #4d78a8;
+      color: #d7e7fb;
+      opacity: 1;
+    }
+
+    :root[data-theme="dark"] .card > .toolbar .toggle-btn:hover,
+    :root[data-theme="dark"] .card > .toolbar .code-btn:hover,
+    :root[data-theme="dark"] .card > .toolbar .pdf-btn:hover,
+    :root[data-theme="dark"] .card > .toolbar button:hover {
+      background: #202731;
+      border-color: #6f9acc;
+      color: #ffffff;
     }
 
     @media (max-width: 1100px) {
