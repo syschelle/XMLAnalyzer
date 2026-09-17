@@ -16,7 +16,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.184
+  APP_VERSION: v0.185
 
 jobs:
   build-export-xml-web:

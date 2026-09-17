@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Anleitung – ConfigScope</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='configscope-icon.png') }}">
+  <link rel="icon" type="image/png" href="{{ CONFIGSCOPE_ICON_DATA_URI }}">
   <script>
     (function () {
       const m = document.cookie.match(/(?:^|; )theme=([^;]+)/);
@@ -135,7 +135,7 @@
 <body>
   <header class="app-header">
     <div class="app-header-left">
-      <img class="app-logo" src="{{ url_for('static', filename='configscope-icon.png') }}" alt="ConfigScope">
+      <img class="app-logo" src="{{ CONFIGSCOPE_ICON_DATA_URI }}" alt="ConfigScope">
       <div class="app-title">ConfigScope</div>
       <nav class="app-nav">
         <a href="{{ url_for('index') }}">Analyse</a>
