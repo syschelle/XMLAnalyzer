@@ -20,7 +20,7 @@ import csv
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
-APP_VERSION = "v0.183"
+APP_VERSION = "v0.184"
 app.jinja_env.globals["APP_VERSION"] = APP_VERSION
 
 
@@ -595,8 +595,11 @@ def _build_agd_data_uri_from_descriptors(descriptor_xml_blocks):
 def _detect_xml_kind(root):
     raw_tag = (getattr(root, "tag", "") or "").strip()
     local_tag = raw_tag.split("}", 1)[-1] if "}" in raw_tag else raw_tag
-    if local_tag.lower() == "licensefile":
+    lowered = local_tag.lower()
+    if lowered == "licensefile":
         return "licensefile"
+    if lowered == "computerinfos":
+        return "hardwarexml"
     return "exportxml"
 
 
@@ -1870,6 +1873,173 @@ def _analyze_license_file(root):
     }
 
 
+
+def _analyze_hardware_file(root):
+    """Analyze standalone hardware.xml exports containing <computerInfos>/<computerInfo>."""
+    stale_cutoff = datetime.now() - timedelta(days=90)
+
+    def _split_csv_vals(value):
+        return [x.strip() for x in (value or "").split(",") if x and x.strip()]
+
+    def _join_unique(values, sep=", "):
+        out = []
+        seen = set()
+        for value in values:
+            text = (value or "").strip()
+            if not text:
+                continue
+            key = text.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(text)
+        return sep.join(out)
+
+    raw_devices = []
+    for hw in root.findall("computerInfo"):
+        last_updated = hw.attrib.get("lastUpdated", "")
+        last_updated_dt = _parse_last_updated(last_updated)
+        last_updated_date_key = last_updated_dt.strftime("%Y-%m-%d") if last_updated_dt else ""
+        licenses = _split_csv_vals(hw.attrib.get("availableLicenses", ""))
+
+        graphics_adapters = _join_unique([
+            node.attrib.get("name", "")
+            for node in hw.findall("graphicsAdapter")
+        ], sep=" | ")
+        harddrives = _join_unique([
+            node.attrib.get("name", "")
+            for node in hw.findall("harddrive")
+        ], sep=" | ")
+        monitors = _join_unique([
+            node.attrib.get("name", "")
+            for node in hw.findall("monitor")
+        ], sep=" | ")
+
+        raw_devices.append({
+            "path": hw.attrib.get("rolePath", ""),
+            "rolePath": hw.attrib.get("rolePath", ""),
+            "computerName": hw.attrib.get("computerName", ""),
+            "computerType": hw.attrib.get("computerType", ""),
+            "configuredAET": hw.attrib.get("configuredAET", ""),
+            "ip": hw.attrib.get("ip", ""),
+            "mac": hw.attrib.get("mac", ""),
+            "os": hw.attrib.get("os", ""),
+            "cpu": hw.attrib.get("cpu", ""),
+            "graphicsAdapter": graphics_adapters,
+            "harddrive": harddrives,
+            "monitor": monitors,
+            "ramSize": hw.attrib.get("ramSize", ""),
+            "serialNumber": hw.attrib.get("serialNumber", ""),
+            "softwareVersion": hw.attrib.get("softwareVersion", ""),
+            "availableLicenses": hw.attrib.get("availableLicenses", ""),
+            "lastUpdated": last_updated,
+            "lastUpdatedDateKey": last_updated_date_key,
+            "isStale": bool(last_updated_dt and last_updated_dt < stale_cutoff),
+            "container": hw.attrib.get("container", ""),
+            # Keep these keys compatible with the existing Workstation UI/filter code.
+            "otherSettings": "",
+            "loggingLevel": "",
+            "installContainer": hw.attrib.get("container", ""),
+            "applicationType": "",
+            "teleradiology": "ja" if "TELERADIOLOGY" in set(licenses) else "nein",
+            "hardwareXmlTooltip": "\n".join(_flatten_xml_values(hw)),
+        })
+
+    grouped = defaultdict(list)
+    for device in raw_devices:
+        key = (
+            (device.get("computerName", "") or "").strip().lower(),
+            (device.get("configuredAET", "") or "").strip().lower(),
+        )
+        grouped[key].append(device)
+
+    devices = []
+    for _, rows in grouped.items():
+        rows_sorted = sorted(rows, key=lambda x: x.get("path", ""))
+        merged = {
+            "path": _join_unique([r.get("path", "") for r in rows_sorted], sep=" | "),
+            "rolePath": _join_unique([r.get("rolePath", "") for r in rows_sorted], sep=" | "),
+            "computerName": _join_unique([r.get("computerName", "") for r in rows_sorted], sep=" | "),
+            "computerType": _join_unique([r.get("computerType", "") for r in rows_sorted], sep=" | "),
+            "configuredAET": _join_unique([r.get("configuredAET", "") for r in rows_sorted], sep=" | "),
+            "ip": _join_unique([r.get("ip", "") for r in rows_sorted]),
+            "mac": _join_unique([r.get("mac", "") for r in rows_sorted]),
+            "os": _join_unique([r.get("os", "") for r in rows_sorted], sep=" | "),
+            "cpu": _join_unique([r.get("cpu", "") for r in rows_sorted], sep=" | "),
+            "graphicsAdapter": _join_unique([r.get("graphicsAdapter", "") for r in rows_sorted], sep=" | "),
+            "harddrive": _join_unique([r.get("harddrive", "") for r in rows_sorted], sep=" | "),
+            "monitor": _join_unique([r.get("monitor", "") for r in rows_sorted], sep=" | "),
+            "ramSize": _join_unique([r.get("ramSize", "") for r in rows_sorted]),
+            "serialNumber": _join_unique([r.get("serialNumber", "") for r in rows_sorted]),
+            "softwareVersion": _join_unique([r.get("softwareVersion", "") for r in rows_sorted]),
+            "availableLicenses": _join_unique(
+                sorted({
+                    lic
+                    for r in rows_sorted
+                    for lic in _split_csv_vals(r.get("availableLicenses", ""))
+                })
+            ),
+            "lastUpdated": _join_unique([r.get("lastUpdated", "") for r in rows_sorted], sep=" | "),
+            "lastUpdatedDateKeys": _join_unique([r.get("lastUpdatedDateKey", "") for r in rows_sorted], sep=" "),
+            "isStale": any(bool(r.get("isStale")) for r in rows_sorted),
+            "container": _join_unique([r.get("container", "") for r in rows_sorted], sep=" | "),
+            "otherSettings": "",
+            "loggingLevel": "",
+            "installContainer": _join_unique([r.get("installContainer", "") for r in rows_sorted], sep=" | "),
+            "applicationType": "",
+            "teleradiology": "ja" if any(r.get("teleradiology") == "ja" for r in rows_sorted) else "nein",
+            "hardwareXmlTooltip": "\n\n---\n\n".join([
+                r.get("hardwareXmlTooltip", "")
+                for r in rows_sorted
+                if r.get("hardwareXmlTooltip", "")
+            ]),
+            "rawCount": len(rows_sorted),
+            "hasDuplicate": len(rows_sorted) > 1,
+        }
+        devices.append(merged)
+
+    devices.sort(key=lambda x: (
+        (x.get("computerName", "") or "").lower(),
+        (x.get("configuredAET", "") or "").lower(),
+    ))
+
+    license_columns = sorted({
+        lic
+        for device in devices
+        for lic in _split_csv_vals(device.get("availableLicenses", ""))
+        if lic
+    })
+
+    license_rows = []
+    for device in devices:
+        present = set(_split_csv_vals(device.get("availableLicenses", "")))
+        license_rows.append({
+            "computerName": device.get("computerName", ""),
+            "configuredAET": device.get("configuredAET", ""),
+            "mac": device.get("mac", ""),
+            "rawCount": device.get("rawCount", 1),
+            "hasDuplicate": bool(device.get("hasDuplicate", False)),
+            "licenseFlags": {
+                lic: ("ja" if lic in present else "nein")
+                for lic in license_columns
+            },
+        })
+
+    return {
+        "xml_kind": "hardwarexml",
+        "root": root.tag,
+        "workstation_devices": devices,
+        "workstation_stats": {
+            "raw_devices_total": len(raw_devices),
+            "devices_total": len(devices),
+            "duplicate_groups_total": sum(1 for d in devices if d.get("hasDuplicate")),
+            "stale_devices_total": sum(1 for d in devices if d.get("isStale")),
+        },
+        "workstation_license_columns": license_columns,
+        "workstation_license_rows": license_rows,
+    }
+
+
 def analyze_xml(file_storage):
     data = file_storage.read()
     root = ET.fromstring(data)
@@ -1877,6 +2047,8 @@ def analyze_xml(file_storage):
     xml_kind = _detect_xml_kind(root)
     if xml_kind == "licensefile":
         return _analyze_license_file(root)
+    if xml_kind == "hardwarexml":
+        return _analyze_hardware_file(root)
 
     roles = []
 
@@ -3335,7 +3507,7 @@ def index():
 
     files = [f for f in request.files.getlist("xml_file") if f and (f.filename or "").strip()]
     if not files:
-        return render_template("index.html", error="Bitte eine XML-Datei, ein Lizenzfile oder performance.csv auswählen.")
+        return render_template("index.html", error="Bitte export.xml, hardware.xml, ein Lizenzfile oder performance.csv auswählen.")
     if len(files) > 2:
         return render_template("index.html", error="Bitte maximal zwei Dateien auswählen. Der Vergleich ist nur für zwei performance.csv-Dateien vorgesehen.")
 
@@ -3346,7 +3518,7 @@ def index():
 
     if len(files) == 2:
         if not all(name.endswith(".csv") for name in lower_filenames):
-            return render_template("index.html", error="Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml und Lizenzfile bitte einzeln analysieren.")
+            return render_template("index.html", error="Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml, hardware.xml und Lizenzfile bitte einzeln analysieren.")
         try:
             parsed = []
             for f, filename in zip(files, filenames):
@@ -3382,6 +3554,8 @@ def index():
 
     if result.get("xml_kind") == "licensefile":
         detected_type = "Lizenzfile"
+    elif result.get("xml_kind") == "hardwarexml":
+        detected_type = "Hardware Workstations"
     elif result.get("xml_kind") == "performancecsv":
         detected_type = "Performance CSV"
     else:
@@ -3574,7 +3748,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: export-xml-web
-  APP_VERSION: v0.183
+  APP_VERSION: v0.184
 
 jobs:
   build-export-xml-web:
@@ -3729,59 +3903,65 @@ The ScriptAccess code dialog now includes a clipboard copy action.
 The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.
 
 
-## DICOM Services inspired shell v0.183
+## DICOM Services inspired shell v0.184
 
 The ConfigScope UI now uses a safer DICOM Services inspired shell:
 a blue full-width top bar, horizontal navigation and a calm card-based workspace.
 The upload form and analysis flow remain unchanged.
 
-## DICOM Services inspired result workspace v0.183
+## DICOM Services inspired result workspace v0.184
 
 The result workspace now uses flatter DICOM Services inspired cards, compact metric tiles, sticky table headers, zebra rows, hover highlighting and a toolbar-style section navigation.
 The upload form and backend analysis flow remain unchanged.
 
-## DU-style dark mode and square controls v0.183
+## DU-style dark mode and square controls v0.184
 
 The dark theme now uses a darker DU-inspired visual language with cooler blue accents and more square buttons and inputs.
 This change is presentation-only and does not change the analysis logic.
 
-## Restored header blue and square controls v0.183
+## Restored header blue and square controls v0.184
 
 The main header now uses the blue from the previous version again.
 Buttons and inputs are more square, the upload file-picker button now uses the same blue family,
 and section headers now use the same blue as the main header.
 
-## ConfigScope header icon v0.183
+## ConfigScope header icon v0.184
 
 The top-left "CS" marker has been replaced with the provided ConfigScope icon.
 The same icon is also used as the browser favicon.
 This is a UI-only change and does not affect analysis functionality.
 
-## Updated ConfigScope icon v0.183
+## Updated ConfigScope icon v0.184
 
 The ConfigScope icon used in the top-left header area and as browser favicon has been updated.
 This is a branding/UI-only change and does not affect analysis functionality.
 
-## Transparent header icon v0.183
+## Transparent header icon v0.184
 
 The ConfigScope icon used in the top-left header area and as browser favicon now uses
 a transparent-background PNG so the dark border/background is no longer visible in the app.
 This is a UI-only change and does not affect analysis functionality.
 
-## Square controls and clearer table headers v0.183
+## Square controls and clearer table headers v0.184
 
 This release makes the remaining important buttons and inputs consistently square.
 It also strengthens vertical column separators in table headers and table cells so column assignments are easier to identify in both light and dark mode.
 
-## Visible content toolbar buttons v0.183
+## Visible content toolbar buttons v0.184
 
 Fixed a UI regression where toolbar buttons below blue section headers could render with white text on a white background.
 Content toolbar buttons now use visible blue text/borders in light mode and readable light-blue text on dark controls in dark mode.
 
-## Guide and Hanging detail UI v0.183
+## Guide and Hanging detail UI v0.184
 
 The German guide and Hanging Protocol detail view now use the same ConfigScope/DU-style application shell as the main analysis page.
 The Hanging detail popup generated from the current browser result was updated as well, including dark-mode inheritance, blue section headers, square controls and the ConfigScope icon.
+
+## Standalone hardware.xml analysis v0.184
+
+ConfigScope now recognizes standalone `hardware.xml` files with a `computerInfos` root element.
+The result contains a Workstation-style hardware table and a Workstation license matrix.
+The Deploy tab has been removed from the main UI navigation while the backend download feature remains unchanged.
 
 ## Local start with build from source
 Use this variant when Docker should build the image locally from `webapp/Dockerfile`.
@@ -3818,7 +3998,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.183`
+- `v0.184`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed

@@ -165,7 +165,7 @@
     <div class="card">
       <h2>1) Schnellstart</h2>
       <ol>
-        <li>Datei auswählen (<code>.xml</code> oder <code>performance.csv</code>).</li>
+        <li>Datei auswählen (<code>export.xml</code>, <code>hardware.xml</code>, Lizenzfile oder <code>performance.csv</code>).</li>
         <li>Auf <strong>Analysieren</strong> klicken.</li>
         <li>Oben die Dateityp-Erkennung prüfen (<em>Konfigurationsfile</em>, <em>Lizenzfile</em> oder <em>Performance CSV</em>).</li>
         <li>Über die Sprungleiste zu den gewünschten Bereichen wechseln.</li>
@@ -408,3 +408,15 @@
   </script>
 </body>
 </html>
+
+    <div class="card">
+      <h2>19) Hardware Workstations aus hardware.xml</h2>
+      <p>ConfigScope erkennt eigenständige <code>hardware.xml</code>-Dateien mit einem <code>computerInfos</code>-Root-Element und wertet die enthaltenen Workstations unabhängig von einer <code>export.xml</code> aus.</p>
+      <ul>
+        <li>Hardware-Tabelle mit Computername, Workstation-Typ, AET, IP, MAC, Betriebssystem, CPU, Grafikkarten, Festplatten, Monitoren, RAM, Seriennummer, Softwareversion, Last Updated, Container und Role Path.</li>
+        <li>Mehrere Grafikkarten, Laufwerke und Monitore einer Workstation werden zusammengefasst.</li>
+        <li>Die bestehenden Workstation-Funktionen für Suche, alte Workstations und Duplikate stehen auch hier zur Verfügung.</li>
+        <li>Die in der Datei enthaltenen Lizenzen werden zusätzlich als Workstations-Lizenzmatrix dargestellt.</li>
+        <li>Der Navigationsreiter <strong>Deploy</strong> wurde aus der Hauptnavigation entfernt.</li>
+      </ul>
+    </div>

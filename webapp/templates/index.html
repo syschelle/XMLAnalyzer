@@ -991,7 +991,7 @@
     }
 
 
-    /* v0.183: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.184: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1263,7 +1263,7 @@
     }
 
 
-    /* v0.183: DICOM Services inspired result workspace */
+    /* v0.184: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1640,7 +1640,7 @@
 
 
 
-    /* v0.183: darker DU-style dark theme and square controls */
+    /* v0.184: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1825,7 +1825,7 @@
 
 
 
-    /* v0.183: restore header blue, square controls, blue section headers */
+    /* v0.184: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -1992,7 +1992,7 @@
     }
 
 
-    /* v0.183: square all buttons and strengthen table column separators */
+    /* v0.184: square all buttons and strengthen table column separators */
     button,
     .toggle-btn,
     .code-btn,
@@ -2049,7 +2049,7 @@
     }
 
 
-    /* v0.183: restore visibility of buttons in content toolbars */
+    /* v0.184: restore visibility of buttons in content toolbars */
     .card > .toolbar .toggle-btn,
     .card > .toolbar .code-btn,
     .card > .toolbar .pdf-btn,
@@ -2142,7 +2142,6 @@
         <a class="active" href="#upload-card">Upload</a>
         {% if result %}<a href="#result-start">Auswertung</a>{% endif %}
         <a href="{{ url_for('anleitung') }}" data-app-link="anleitung" target="_blank" rel="noopener">Anleitung</a>
-        {% if DEPLOY_DOWNLOAD_ENABLED %}<a href="#" data-app-link="download_bundle">Deploy</a>{% endif %}
         <a href="mailto:sylvio.schelle@dedalus.com?subject=analyzer%20Feedback">Feedback</a>
       </nav>
     </div>
@@ -2158,16 +2157,16 @@
   <div class="wrap">
     <div class="hero">
       <h1>Analyse Workspace</h1>
-      <p>CSV hochladen oder XML/Lizenzfile analysieren. Ergebnisse bleiben im Browser und können als Kundenreport exportiert werden.</p>
+      <p>CSV hochladen oder XML-/Hardware-/Lizenzdatei analysieren. Ergebnisse bleiben im Browser und können als Kundenreport exportiert werden.</p>
     </div>
 
     <div class="card upload-card" id="upload-card">
       <h2>Datei importieren</h2>
-      <p class="upload-description">Wähle eine <code>export.xml</code>, ein Lizenzfile oder eine <code>performance.csv</code>. Für den Performance-Vergleich können maximal zwei CSV-Dateien gleichzeitig ausgewählt werden.</p>
+      <p class="upload-description">Wähle eine <code>export.xml</code>, <code>hardware.xml</code>, ein Lizenzfile oder eine <code>performance.csv</code>. Für den Performance-Vergleich können maximal zwei CSV-Dateien gleichzeitig ausgewählt werden.</p>
       <form id="analyze-form" method="post" enctype="multipart/form-data">
         <input type="file" name="xml_file" accept=".xml,.csv" multiple required>
         <button type="submit">Analysieren</button>
-        <span class="upload-hint"><strong>Upload-Limit:</strong> 200 MB · unterstützt: export.xml, Lizenzfile, performance.csv · für Performance-Vergleich max. 2 CSV-Dateien auswählen</span>
+        <span class="upload-hint"><strong>Upload-Limit:</strong> 200 MB · unterstützt: export.xml, hardware.xml, Lizenzfile, performance.csv · für Performance-Vergleich max. 2 CSV-Dateien auswählen</span>
         {% if detected_type %}
         <span style="margin-left:10px;"><strong>Dateityp-Erkennung:</strong> {{ detected_type }}</span>
         {% endif %}
@@ -2189,7 +2188,7 @@
               const allCsv = files.every(function (f) { return (f.name || '').toLowerCase().endsWith('.csv'); });
               if (!allCsv) {
                 e.preventDefault();
-                alert('Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml und Lizenzfile bitte einzeln analysieren.');
+                alert('Der Vergleich mit zwei Dateien ist nur für performance.csv-Dateien möglich. export.xml, hardware.xml und Lizenzfile bitte einzeln analysieren.');
               }
             }
           });
@@ -2646,6 +2645,139 @@
           <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#2563eb;"></span>Blau = First Display</span>
           <span class="perf-chart-legend-item"><span class="perf-chart-swatch" style="background:#dc2626;"></span>Rot = Full Study</span>
         </div>
+      </div>
+    </div>
+
+    {% elif result.xml_kind == 'hardwarexml' %}
+    <div class="section-jump">
+      <a href="#sec-hardware-overview">Übersicht</a>
+      <a href="#sec-workstations">Hardware Workstations</a>
+      <a href="#sec-workstations-license">Workstations Lizenzen</a>
+    </div>
+
+    <div class="card" id="sec-hardware-overview">
+      <h2>Hardware Workstations: {{ filename }}</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Workstations</div><div class="v">{{ result.workstation_stats.devices_total }}</div></div>
+        <div class="stat"><div class="k">Roh-Einträge</div><div class="v">{{ result.workstation_stats.raw_devices_total }}</div></div>
+        <div class="stat"><div class="k">Alte Workstations</div><div class="v">{{ result.workstation_stats.stale_devices_total }}</div></div>
+        <div class="stat"><div class="k">Duplikatgruppen</div><div class="v">{{ result.workstation_stats.duplicate_groups_total }}</div></div>
+        <div class="stat"><div class="k">Lizenztypen</div><div class="v">{{ result.workstation_license_columns|length }}</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="sec-workstations">
+      <div class="h2-row">
+        <h2>Hardware Workstations (<span id="ws-visible-count">{{ result.workstation_stats.devices_total }}</span> / Roh: {{ result.workstation_stats.raw_devices_total }})</h2>
+        <span class="old-ws-hint">alte Workstation = Last Updated &gt; 3 Monate von heute</span>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="toggle-old-workstations" class="toggle-btn">Alte Workstations ausblenden</button>
+        <button type="button" id="only-old-workstations" class="toggle-btn">Nur Alte Workstations</button>
+        <button type="button" id="ws-dup-toggle" class="toggle-btn">Nur Duplikate anzeigen</button>
+        <input type="text" id="workstation-search" class="search-input" placeholder="Workstation suchen (Name, Typ, IP, MAC, AET, OS, CPU ...)" />
+      </div>
+      <div class="table-wrap">
+        <table id="hardware-workstations-table">
+          <tr>
+            <th>Computer</th>
+            <th>Workstation-Typ</th>
+            <th>AET</th>
+            <th>IP</th>
+            <th>MAC</th>
+            <th>Betriebssystem</th>
+            <th>CPU</th>
+            <th>Graphics Adapter</th>
+            <th>Festplatten</th>
+            <th>Monitor</th>
+            <th>RAM</th>
+            <th>Serial Number</th>
+            <th>Software Version</th>
+            <th>Last Updated</th>
+            <th>Container</th>
+            <th>Role Path</th>
+            <th>Teleradiology</th>
+          </tr>
+          <tr>
+            <th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th>
+            <th id="ws-filter-software-version"></th>
+            <th id="ws-filter-last-updated"></th>
+            <th id="ws-filter-install"></th>
+            <th></th>
+            <th id="ws-filter-teleradiology"></th>
+          </tr>
+          {% for d in result.workstation_devices %}
+          <tr class="ws-row {% if d.isStale %}stale stale-row{% endif %}"
+              data-dup="{{ 'ja' if d.hasDuplicate else 'nein' }}"
+              data-raw-count="{{ d.rawCount }}"
+              data-software-version="{{ d.softwareVersion|e }}"
+              data-last-updated-keys="{{ d.lastUpdatedDateKeys|e }}"
+              data-logging=""
+              data-install="{{ d.installContainer|e }}"
+              data-app=""
+              data-teleradiology="{{ d.teleradiology|e }}">
+            <td title="{{ d.path|e }}">{{ d.computerName }}</td>
+            <td>{{ d.computerType }}</td>
+            <td class="aet-tooltip-cell" data-tooltip="{{ d.hardwareXmlTooltip|e }}">{{ d.configuredAET }}</td>
+            <td>{{ d.ip }}</td>
+            <td class="mac-cell">{{ d.mac }}</td>
+            <td>{{ d.os }}</td>
+            <td>{{ d.cpu }}</td>
+            <td>{{ d.graphicsAdapter }}</td>
+            <td>{{ d.harddrive }}</td>
+            <td>{{ d.monitor }}</td>
+            <td>{{ d.ramSize }}</td>
+            <td>{{ d.serialNumber }}</td>
+            <td>{{ d.softwareVersion }}</td>
+            <td>{{ d.lastUpdated }}</td>
+            <td>{{ d.container }}</td>
+            <td>{{ d.rolePath }}</td>
+            <td>{{ d.teleradiology }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="sec-workstations-license">
+      <h2>Workstations Lizenzen (<span id="ws-license-visible-count">{{ result.workstation_license_rows|length }}</span>)</h2>
+      <div class="toolbar">
+        <button type="button" id="ws-license-dup-toggle" class="toggle-btn">Nur Duplikate anzeigen</button>
+      </div>
+      <div class="table-wrap">
+        <table id="ws-license-table">
+          <tr>
+            <th>Computer</th><th>AET</th><th>MAC</th>
+            {% for lic in result.workstation_license_columns %}<th>{{ lic }}</th>{% endfor %}
+          </tr>
+          <tr>
+            <th id="ws-license-filter-computer"></th>
+            <th id="ws-license-filter-aet"></th>
+            <th id="ws-license-filter-mac"></th>
+            {% for lic in result.workstation_license_columns %}
+            <th>
+              <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;">
+                <input type="checkbox" class="ws-license-col-check" data-lic-index="{{ loop.index0 }}">
+                ja
+              </label>
+            </th>
+            {% endfor %}
+          </tr>
+          {% for d in result.workstation_license_rows %}
+          <tr class="ws-license-row"
+              data-dup="{{ 'ja' if d.hasDuplicate else 'nein' }}"
+              data-raw-count="{{ d.rawCount }}"
+              {% for lic in result.workstation_license_columns %}data-lic-{{ loop.index0 }}="{{ d.licenseFlags.get(lic, 'nein')|e }}"{% endfor %}>
+            <td>{{ d.computerName }}</td>
+            <td>{{ d.configuredAET }}</td>
+            <td class="mac-cell">{{ d.mac }}</td>
+            {% for lic in result.workstation_license_columns %}
+            {% set val = d.licenseFlags.get(lic, 'nein') %}
+            <td class="{{ 'cap-yes' if val != 'nein' else 'cap-no' }}">{{ val }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
       </div>
     </div>
 
@@ -3372,8 +3504,7 @@
       const rows = Array.from(document.querySelectorAll('.ws-row'));
 
       if (btn && onlyOldBtn && wsDupBtn && countEl && searchInput && rows.length
-          && filterHosts.softwareVersion && filterHosts.lastUpdated
-          && filterHosts.logging && filterHosts.install && filterHosts.app && filterHosts.teleradiology) {
+          && filterHosts.softwareVersion && filterHosts.lastUpdated) {
         let hideOld = false;
         let oldOnly = false;
         let dupOnly = false;
@@ -3478,12 +3609,11 @@
         const softwareVersionInput = buildSoftwareVersionInput(filterHosts.softwareVersion);
         const lastUpdatedFilter = buildLastUpdatedSelect(filterHosts.lastUpdated);
 
-        const valueFilters = [
-          buildSelect('logging.level', 'data-logging', filterHosts.logging),
-          buildSelect('Install.Container', 'data-install', filterHosts.install),
-          buildSelect('Starter.ApplicationType', 'data-app', filterHosts.app),
-          buildSelect('Teleradiology', 'data-teleradiology', filterHosts.teleradiology)
-        ];
+        const valueFilters = [];
+        if (filterHosts.logging) valueFilters.push({ field: 'logging', filter: buildSelect('logging.level', 'data-logging', filterHosts.logging) });
+        if (filterHosts.install) valueFilters.push({ field: 'install', filter: buildSelect('Install.Container', 'data-install', filterHosts.install) });
+        if (filterHosts.app) valueFilters.push({ field: 'app', filter: buildSelect('Starter.ApplicationType', 'data-app', filterHosts.app) });
+        if (filterHosts.teleradiology) valueFilters.push({ field: 'teleradiology', filter: buildSelect('Teleradiology', 'data-teleradiology', filterHosts.teleradiology) });
 
         function applyFilters() {
           if (pendingFilterFrame) {
@@ -3497,12 +3627,10 @@
             const softwareVersionNeedle = softwareVersionExclude
               ? softwareVersionFilter.slice(1).trim()
               : softwareVersionFilter;
-            const selected = {
-              logging: norm(valueFilters[0].el.value),
-              install: norm(valueFilters[1].el.value),
-              app: norm(valueFilters[2].el.value),
-              teleradiology: norm(valueFilters[3].el.value),
-            };
+            const selected = {};
+            valueFilters.forEach(function (entry) {
+              selected[entry.field] = norm(entry.filter.el.value);
+            });
             const lastUpdatedMode = norm(lastUpdatedFilter.value);
 
             let visible = 0;
@@ -3568,8 +3696,8 @@
           if (searchDebounce) clearTimeout(searchDebounce);
           searchDebounce = setTimeout(applyFilters, 120);
         });
-        valueFilters.forEach(function (vf) {
-          vf.el.addEventListener('change', applyFilters);
+        valueFilters.forEach(function (entry) {
+          entry.filter.el.addEventListener('change', applyFilters);
         });
         lastUpdatedFilter.addEventListener('change', applyFilters);
         applyFilters();
