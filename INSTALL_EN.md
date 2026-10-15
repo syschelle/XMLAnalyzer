@@ -91,7 +91,7 @@ webapp/Dockerfile
 
 The workflow pushes these tags to GitHub Container Registry:
 
-- `v0.186`
+- `v0.187`
 - `sha-<short-sha>`
 - `latest` for the current published image
 - the Git tag name when a `v*` tag is pushed
@@ -180,61 +180,61 @@ The ScriptAccess code dialog now includes a clipboard copy action.
 The hidden trigger also has a robust fallback dialog with a copy button instead of showing the code only in an alert.
 
 
-## DICOM Services inspired shell v0.186
+## DICOM Services inspired shell v0.187
 
 The ConfigScope UI now uses a safer DICOM Services inspired shell:
 a blue full-width top bar, horizontal navigation and a calm card-based workspace.
 The upload form and analysis flow remain unchanged.
 
-## DICOM Services inspired result workspace v0.186
+## DICOM Services inspired result workspace v0.187
 
 The result workspace now uses flatter DICOM Services inspired cards, compact metric tiles, sticky table headers, zebra rows, hover highlighting and a toolbar-style section navigation.
 The upload form and backend analysis flow remain unchanged.
 
-## DU-style dark mode and square controls v0.186
+## DU-style dark mode and square controls v0.187
 
 The dark theme now uses a darker DU-inspired visual language with cooler blue accents and more square buttons and inputs.
 This change is presentation-only and does not change the analysis logic.
 
-## Restored header blue and square controls v0.186
+## Restored header blue and square controls v0.187
 
 The main header now uses the blue from the previous version again.
 Buttons and inputs are more square, the upload file-picker button now uses the same blue family,
 and section headers now use the same blue as the main header.
 
-## ConfigScope header icon v0.186
+## ConfigScope header icon v0.187
 
 The top-left "CS" marker has been replaced with the provided ConfigScope icon.
 The same icon is also used as the browser favicon.
 This is a UI-only change and does not affect analysis functionality.
 
-## Updated ConfigScope icon v0.186
+## Updated ConfigScope icon v0.187
 
 The ConfigScope icon used in the top-left header area and as browser favicon has been updated.
 This is a branding/UI-only change and does not affect analysis functionality.
 
-## Transparent header icon v0.186
+## Transparent header icon v0.187
 
 The ConfigScope icon used in the top-left header area and as browser favicon now uses
 a transparent-background PNG so the dark border/background is no longer visible in the app.
 This is a UI-only change and does not affect analysis functionality.
 
-## Square controls and clearer table headers v0.186
+## Square controls and clearer table headers v0.187
 
 This release makes the remaining important buttons and inputs consistently square.
 It also strengthens vertical column separators in table headers and table cells so column assignments are easier to identify in both light and dark mode.
 
-## Visible content toolbar buttons v0.186
+## Visible content toolbar buttons v0.187
 
 Fixed a UI regression where toolbar buttons below blue section headers could render with white text on a white background.
 Content toolbar buttons now use visible blue text/borders in light mode and readable light-blue text on dark controls in dark mode.
 
-## Guide and Hanging detail UI v0.186
+## Guide and Hanging detail UI v0.187
 
 The German guide and Hanging Protocol detail view now use the same ConfigScope/DU-style application shell as the main analysis page.
 The Hanging detail popup generated from the current browser result was updated as well, including dark-mode inheritance, blue section headers, square controls and the ConfigScope icon.
 
-## Standalone hardware.xml analysis v0.186
+## Standalone hardware.xml analysis v0.187
 
 ConfigScope now recognizes standalone `hardware.xml` files with a `computerInfos` root element.
 
@@ -255,12 +255,12 @@ Existing Workstation search, stale-device and duplicate controls are reused.
 
 The Deploy tab has been removed from the main UI navigation. The backend download feature is not removed by this UI change.
 
-## Embedded ConfigScope icon v0.186
+## Embedded ConfigScope icon v0.187
 
 The ConfigScope header icon and favicon are now embedded directly into the application as a compact PNG data URI.
 This removes the runtime dependency on `/static/configscope-icon.png` and avoids missing icons caused by static-file delivery or proxy/browser caching.
 
-## Per-section CSV export v0.186
+## Per-section CSV export v0.187
 
 Every table-based result section now receives a `CSV Export` action next to the existing `Excel Export`.
 
@@ -270,3 +270,17 @@ The CSV export:
 - uses UTF-8 with BOM;
 - uses semicolon (`;`) as delimiter for convenient use with German Excel installations;
 - derives the filename from the section title.
+
+## Enterprise inheritance status v0.187
+
+ConfigScope now shows a compact inheritance-status column for Archives, Storage Nodes, Scripts, standard/scheduled Worklists and Import/Export Workflows.
+
+Statuses:
+- Green: inherited from Enterprise without an effective local deviation
+- Yellow: locally added without an Enterprise definition for the same object ID
+- Orange: an existing Enterprise value is overridden locally
+- Red: Enterprise base combined with local overrides and/or additional local properties
+
+Hovering over a status indicator for two seconds opens an inline popover containing the complete legend and the concrete detected deviations where available.
+
+The XML export does not expose a direct `inherit=false` flag; the status is derived from actual object-ID/property definitions found in `Enterprise` and its child roles.

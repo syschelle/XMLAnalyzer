@@ -431,3 +431,16 @@
         <li>Der Dateiname wird automatisch aus dem Rubrikentitel erzeugt.</li>
       </ul>
     </div>
+
+    <div class="card">
+      <h2>22) Vererbungsstatus gegenüber Enterprise</h2>
+      <p>Archive, Speicherknoten, Scripts, Standard-/geplante Arbeitslisten sowie Import- und Export-Workflows zeigen links einen kompakten Vererbungsstatus.</p>
+      <ul>
+        <li><strong>Grün – Vererbt:</strong> Enterprise-Definition ohne wirksame lokale Abweichung.</li>
+        <li><strong>Gelb – Lokal ergänzt:</strong> Objekt-ID ist nicht in Enterprise definiert, sondern nur lokal.</li>
+        <li><strong>Orange – Enterprise überschrieben:</strong> vorhandener Enterprise-Wert wird lokal abweichend gesetzt.</li>
+        <li><strong>Rot – Gemischt:</strong> Enterprise-Basis wird mit lokalen Overrides und/oder zusätzlichen Eigenschaften kombiniert.</li>
+        <li>Nach zwei Sekunden Verweildauer über dem Statuspunkt erscheint ein Inline-Infofenster mit der Legende und – sofern vorhanden – den konkret erkannten Abweichungen.</li>
+      </ul>
+      <p>Die XML enthält kein explizites <code>inherit=false</code>-Flag. Der Status wird daher anhand der tatsächlichen Definitionen derselben Objekt-ID in <code>Enterprise</code> und den darunterliegenden Rollen berechnet.</p>
+    </div>
