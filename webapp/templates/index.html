@@ -991,7 +991,7 @@
     }
 
 
-    /* v0.187: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.188: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1263,7 +1263,7 @@
     }
 
 
-    /* v0.187: DICOM Services inspired result workspace */
+    /* v0.188: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1640,7 +1640,7 @@
 
 
 
-    /* v0.187: darker DU-style dark theme and square controls */
+    /* v0.188: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1825,7 +1825,7 @@
 
 
 
-    /* v0.187: restore header blue, square controls, blue section headers */
+    /* v0.188: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -1992,7 +1992,7 @@
     }
 
 
-    /* v0.187: square all buttons and strengthen table column separators */
+    /* v0.188: square all buttons and strengthen table column separators */
     button,
     .toggle-btn,
     .code-btn,
@@ -2049,7 +2049,7 @@
     }
 
 
-    /* v0.187: restore visibility of buttons in content toolbars */
+    /* v0.188: restore visibility of buttons in content toolbars */
     .card > .toolbar .toggle-btn,
     .card > .toolbar .code-btn,
     .card > .toolbar .pdf-btn,
@@ -2089,20 +2089,27 @@
     }
 
 
-    /* v0.187: compact Enterprise inheritance status */
+    /* v0.188: compact Enterprise inheritance status */
+    .inheritance-header,
     .inheritance-cell {
+      width: 30px;
+      min-width: 30px;
+      max-width: 30px;
+      padding-left: 9px !important;
+      padding-right: 9px !important;
+      text-align: center;
       white-space: nowrap;
-      min-width: 138px;
     }
     .inheritance-indicator {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      gap: 0;
       position: relative;
       cursor: help;
       outline: none;
-      font-size: 12px;
-      font-weight: 700;
+      width: 12px;
+      height: 18px;
     }
     .inheritance-dot {
       width: 10px;
@@ -2928,12 +2935,12 @@
       <h2>Archive (<span id="archive-visible-count">{{ result.archives|length }}</span>/{{ result.archives|length }}) <span class="dup-hint">Duplikate = gleicher Hintergrund</span></h2>
       <div class="table-wrap">
         <table>
-          <tr><th>Vererbung</th><th class="sortable-th" data-archive-sort="name">Name <span class="sort-indicator"></span></th><th class="sortable-th" data-archive-sort="role">Rolle <span class="sort-indicator"></span></th><th>Typ</th><th>Host</th><th>Port</th><th class="sortable-th" data-archive-sort="calledAET">CalledAET <span class="sort-indicator"></span></th><th class="sortable-th" data-archive-sort="callingAET">CallingAET <span class="sort-indicator"></span></th><th>CallingAET2</th><th>Secure Connection</th><th>automaticStudyMonitoring</th><th>useCGet</th></tr>
+          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th class="sortable-th" data-archive-sort="name">Name <span class="sort-indicator"></span></th><th class="sortable-th" data-archive-sort="role">Rolle <span class="sort-indicator"></span></th><th>Typ</th><th>Host</th><th>Port</th><th class="sortable-th" data-archive-sort="calledAET">CalledAET <span class="sort-indicator"></span></th><th class="sortable-th" data-archive-sort="callingAET">CallingAET <span class="sort-indicator"></span></th><th>CallingAET2</th><th>Secure Connection</th><th>automaticStudyMonitoring</th><th>useCGet</th></tr>
           <tr class="filter-row"><th></th><th><input type="text" id="archive-name-search" class="search-input" placeholder="Name suchen..." /></th><th><select id="archive-role-search" class="search-input"><option value="">Rolle: alle</option></select></th><th></th><th></th><th></th><th><input type="text" id="archive-called-aet-search" class="search-input" placeholder="CalledAET suchen..." /></th><th><input type="text" id="archive-calling-aet-search" class="search-input" placeholder="CallingAET suchen..." /></th><th></th><th></th><th></th><th></th></tr>
           {% set archive_dup_palette = ['#BFDBFE', '#FCA5A5', '#C4B5FD', '#86EFAC', '#F9A8D4', '#A7F3D0', '#FBCFE8', '#99F6E4'] %}
           {% for a in result.archives %}
           <tr class="archive-row {% if a.isDuplicate %}dp-duplicate{% endif %}" data-name="{{ a.name|e }}" data-role="{{ a.role|e }}" data-roles='{{ a.roles|tojson }}' data-calling-aet="{{ a.callingAET|e }}" data-called-aet="{{ a.calledAET|e }}" data-dup="{{ 'ja' if a.isDuplicate else 'nein' }}" {% if a.isDuplicate %}style="--dp-dup-bg: {{ archive_dup_palette[(a.duplicateGroup or 0) % (archive_dup_palette|length)] }};"{% endif %}>
-            <td class="inheritance-cell"><span class="inheritance-indicator inheritance-{{ a.inheritanceStatus }}" tabindex="0" role="button" data-inheritance-status="{{ a.inheritanceStatus|e }}" data-inheritance-label="{{ a.inheritanceLabel|e }}" data-inheritance-detail="{{ a.inheritanceDetail|e }}" data-inheritance-changes="{{ a.inheritanceChanges|e }}" data-inheritance-roles="{{ a.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span><span>{{ a.inheritanceLabel }}</span></span></td><td>{{ a.name }}</td><td>{{ a.role }}</td><td>{{ a.type }}</td><td>{{ a.host }}</td>
+            <td class="inheritance-cell" data-export-value="{{ a.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ a.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ a.inheritanceLabel|e }}" data-inheritance-status="{{ a.inheritanceStatus|e }}" data-inheritance-label="{{ a.inheritanceLabel|e }}" data-inheritance-detail="{{ a.inheritanceDetail|e }}" data-inheritance-changes="{{ a.inheritanceChanges|e }}" data-inheritance-roles="{{ a.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td><td>{{ a.name }}</td><td>{{ a.role }}</td><td>{{ a.type }}</td><td>{{ a.host }}</td>
             <td>{{ a.port }}</td><td>{{ a.calledAET }}</td><td>{{ a.callingAET }}</td><td>{{ a.callingAET2 }}</td><td>{{ a.secureConnection }}</td><td>{{ a.automaticStudyMonitoring }}</td><td>{{ a.useCGet }}</td>
           </tr>
           {% endfor %}
@@ -2945,12 +2952,12 @@
       <h2>Speichern (<span id="store-visible-count">{{ result.dicom_endpoints|length }}</span>/{{ result.dicom_endpoints|length }}) <span class="dup-hint">Duplikate = gleicher Hintergrund</span></h2>
       <div class="table-wrap">
         <table>
-          <tr><th>Vererbung</th><th class="sortable-th" data-store-sort="description">Description <span class="sort-indicator"></span></th><th class="sortable-th" data-store-sort="role">Rolle <span class="sort-indicator"></span></th><th>Host</th><th>Port</th><th class="sortable-th" data-store-sort="callingAET">CallingAET <span class="sort-indicator"></span></th><th class="sortable-th" data-store-sort="calledAET">CalledAET <span class="sort-indicator"></span></th><th>Secure</th><th>C-MOVE</th><th>close_on_each</th><th>disableDirectImport</th></tr>
+          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th class="sortable-th" data-store-sort="description">Description <span class="sort-indicator"></span></th><th class="sortable-th" data-store-sort="role">Rolle <span class="sort-indicator"></span></th><th>Host</th><th>Port</th><th class="sortable-th" data-store-sort="callingAET">CallingAET <span class="sort-indicator"></span></th><th class="sortable-th" data-store-sort="calledAET">CalledAET <span class="sort-indicator"></span></th><th>Secure</th><th>C-MOVE</th><th>close_on_each</th><th>disableDirectImport</th></tr>
           <tr class="filter-row"><th></th><th><input type="text" id="store-description-search" class="search-input" placeholder="Description suchen..." /></th><th><select id="store-role-search" class="search-input"><option value="">Rolle: alle</option></select></th><th></th><th></th><th><input type="text" id="store-calling-aet-search" class="search-input" placeholder="CallingAET suchen..." /></th><th><input type="text" id="store-called-aet-search" class="search-input" placeholder="CalledAET suchen..." /></th><th></th><th></th><th></th><th></th></tr>
           {% set store_dup_palette = ['#BFDBFE', '#FCA5A5', '#C4B5FD', '#86EFAC', '#F9A8D4', '#A7F3D0', '#FBCFE8', '#99F6E4'] %}
           {% for e in result.dicom_endpoints %}
           <tr class="store-row {% if e.isDuplicate %}dp-duplicate{% endif %}" data-description="{{ e.description|e }}" data-role="{{ e.role|e }}" data-roles='{{ e.roles|tojson }}' data-calling-aet="{{ e.callingAET|e }}" data-called-aet="{{ e.calledAET|e }}" data-dup="{{ 'ja' if e.isDuplicate else 'nein' }}" {% if e.isDuplicate %}style="--dp-dup-bg: {{ store_dup_palette[(e.duplicateGroup or 0) % (store_dup_palette|length)] }};"{% endif %}>
-            <td class="inheritance-cell"><span class="inheritance-indicator inheritance-{{ e.inheritanceStatus }}" tabindex="0" role="button" data-inheritance-status="{{ e.inheritanceStatus|e }}" data-inheritance-label="{{ e.inheritanceLabel|e }}" data-inheritance-detail="{{ e.inheritanceDetail|e }}" data-inheritance-changes="{{ e.inheritanceChanges|e }}" data-inheritance-roles="{{ e.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span><span>{{ e.inheritanceLabel }}</span></span></td><td>{{ e.description }}</td><td>{{ e.role }}</td><td>{{ e.host }}</td><td>{{ e.port }}</td>
+            <td class="inheritance-cell" data-export-value="{{ e.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ e.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ e.inheritanceLabel|e }}" data-inheritance-status="{{ e.inheritanceStatus|e }}" data-inheritance-label="{{ e.inheritanceLabel|e }}" data-inheritance-detail="{{ e.inheritanceDetail|e }}" data-inheritance-changes="{{ e.inheritanceChanges|e }}" data-inheritance-roles="{{ e.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td><td>{{ e.description }}</td><td>{{ e.role }}</td><td>{{ e.host }}</td><td>{{ e.port }}</td>
             <td>{{ e.callingAET }}</td><td>{{ e.calledAET }}</td><td>{{ e.secure }}</td><td>{{ e.use_cmove }}</td><td>{{ e.close_on_each }}</td><td>{{ e.disableDirectImport }}</td>
           </tr>
           {% endfor %}
@@ -2962,10 +2969,10 @@
       <h2>Scripts ({{ result.scripts|length }})</h2>
       <div class="table-wrap">
         <table>
-          <tr><th>Vererbung</th><th>Name</th><th>Show in LTA</th><th>Code</th><th>Code anzeigen</th><th>Icon</th><th>SVG Vorschau</th><th>Download</th></tr>
+          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>Name</th><th>Show in LTA</th><th>Code</th><th>Code anzeigen</th><th>Icon</th><th>SVG Vorschau</th><th>Download</th></tr>
           {% for s in result.scripts %}
           <tr>
-            <td class="inheritance-cell"><span class="inheritance-indicator inheritance-{{ s.inheritanceStatus }}" tabindex="0" role="button" data-inheritance-status="{{ s.inheritanceStatus|e }}" data-inheritance-label="{{ s.inheritanceLabel|e }}" data-inheritance-detail="{{ s.inheritanceDetail|e }}" data-inheritance-changes="{{ s.inheritanceChanges|e }}" data-inheritance-roles="{{ s.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span><span>{{ s.inheritanceLabel }}</span></span></td>
+            <td class="inheritance-cell" data-export-value="{{ s.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ s.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ s.inheritanceLabel|e }}" data-inheritance-status="{{ s.inheritanceStatus|e }}" data-inheritance-label="{{ s.inheritanceLabel|e }}" data-inheritance-detail="{{ s.inheritanceDetail|e }}" data-inheritance-changes="{{ s.inheritanceChanges|e }}" data-inheritance-roles="{{ s.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td>
             <td>{{ s.name }}</td>
             <td>{{ s.showInLTA }}</td>
             <td>{{ "ja" if s.hasCode else "nein" }}</td>
@@ -3002,13 +3009,13 @@
       <h2>Arbeitsliste Standard (<span id="worklist-visible-count">{{ result.worklist_bundles|length }}</span>)</h2>
       <div class="table-wrap">
         <table id="worklist-table">
-          <tr><th>Vererbung</th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Modality</th><th>Zeitraum</th><th>Filter-Name</th><th>SearchType</th></tr>
+          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Modality</th><th>Zeitraum</th><th>Filter-Name</th><th>SearchType</th></tr>
           <tr>
             <th></th><th></th><th></th><th id="worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
           </tr>
           {% for b in result.worklist_bundles %}
           <tr class="worklist-row" data-roles="{{ b.roles|e }}">
-            <td class="inheritance-cell"><span class="inheritance-indicator inheritance-{{ b.inheritanceStatus }}" tabindex="0" role="button" data-inheritance-status="{{ b.inheritanceStatus|e }}" data-inheritance-label="{{ b.inheritanceLabel|e }}" data-inheritance-detail="{{ b.inheritanceDetail|e }}" data-inheritance-changes="{{ b.inheritanceChanges|e }}" data-inheritance-roles="{{ b.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span><span>{{ b.inheritanceLabel }}</span></span></td>
+            <td class="inheritance-cell" data-export-value="{{ b.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ b.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ b.inheritanceLabel|e }}" data-inheritance-status="{{ b.inheritanceStatus|e }}" data-inheritance-label="{{ b.inheritanceLabel|e }}" data-inheritance-detail="{{ b.inheritanceDetail|e }}" data-inheritance-changes="{{ b.inheritanceChanges|e }}" data-inheritance-roles="{{ b.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td>
             <td>{{ b.title }}</td>
             <td>{{ b.type }}</td>
             <td>{{ b.roles }}</td>
@@ -3027,13 +3034,13 @@
       <h2>Arbeitsliste Geplant (<span id="scheduled-worklist-visible-count">{{ result.scheduled_worklist_bundles|length }}</span>)</h2>
       <div class="table-wrap">
         <table id="scheduled-worklist-table">
-          <tr><th>Vererbung</th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Geplante Tage</th><th>Owner</th><th>SearchType</th><th>Advanced Filter (Kurz)</th></tr>
+          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Geplante Tage</th><th>Owner</th><th>SearchType</th><th>Advanced Filter (Kurz)</th></tr>
           <tr>
             <th></th><th></th><th></th><th id="scheduled-worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
           </tr>
           {% for b in result.scheduled_worklist_bundles %}
           <tr class="scheduled-worklist-row" data-roles="{{ b.roles|e }}">
-            <td class="inheritance-cell"><span class="inheritance-indicator inheritance-{{ b.inheritanceStatus }}" tabindex="0" role="button" data-inheritance-status="{{ b.inheritanceStatus|e }}" data-inheritance-label="{{ b.inheritanceLabel|e }}" data-inheritance-detail="{{ b.inheritanceDetail|e }}" data-inheritance-changes="{{ b.inheritanceChanges|e }}" data-inheritance-roles="{{ b.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span><span>{{ b.inheritanceLabel }}</span></span></td>
+            <td class="inheritance-cell" data-export-value="{{ b.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ b.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ b.inheritanceLabel|e }}" data-inheritance-status="{{ b.inheritanceStatus|e }}" data-inheritance-label="{{ b.inheritanceLabel|e }}" data-inheritance-detail="{{ b.inheritanceDetail|e }}" data-inheritance-changes="{{ b.inheritanceChanges|e }}" data-inheritance-roles="{{ b.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td>
             <td>{{ b.title }}</td>
             <td>{{ b.type }}</td>
             <td>{{ b.roles }}</td>
@@ -3053,7 +3060,7 @@
       <div class="table-wrap">
         <table id="import-workflows-table">
           <tr>
-            <th>Vererbung</th><th>Name</th><th>Type</th><th>Rollen</th><th>Enabled</th><th>includeInContextMenu</th>
+            <th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>Name</th><th>Type</th><th>Rollen</th><th>Enabled</th><th>includeInContextMenu</th>
             {% for col in result.import_workflow_columns %}<th title="{{ col }}">{{ result.import_workflow_column_labels.get(col, col) }}</th>{% endfor %}
           </tr>
           <tr>
@@ -3062,7 +3069,7 @@
           </tr>
           {% for w in result.import_workflows %}
           <tr class="iw-row" data-roles="{{ w.roles|e }}">
-            <td class="inheritance-cell"><span class="inheritance-indicator inheritance-{{ w.inheritanceStatus }}" tabindex="0" role="button" data-inheritance-status="{{ w.inheritanceStatus|e }}" data-inheritance-label="{{ w.inheritanceLabel|e }}" data-inheritance-detail="{{ w.inheritanceDetail|e }}" data-inheritance-changes="{{ w.inheritanceChanges|e }}" data-inheritance-roles="{{ w.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span><span>{{ w.inheritanceLabel }}</span></span></td>
+            <td class="inheritance-cell" data-export-value="{{ w.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ w.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ w.inheritanceLabel|e }}" data-inheritance-status="{{ w.inheritanceStatus|e }}" data-inheritance-label="{{ w.inheritanceLabel|e }}" data-inheritance-detail="{{ w.inheritanceDetail|e }}" data-inheritance-changes="{{ w.inheritanceChanges|e }}" data-inheritance-roles="{{ w.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td>
             <td>{{ w.name }}</td><td>{{ w.type }}</td><td>{{ w.roles }}</td><td>{{ w.enabled }}</td><td>{{ w.includeInContextMenu }}</td>
             {% for col in result.import_workflow_columns %}<td>{{ w.props.get(col, '') }}</td>{% endfor %}
           </tr>
@@ -3076,7 +3083,7 @@
       <div class="table-wrap">
         <table id="export-workflows-table">
           <tr>
-            <th>Vererbung</th><th>Name</th><th>Type</th><th>Rollen</th><th>Enabled</th><th>includeInContextMenu</th>
+            <th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>Name</th><th>Type</th><th>Rollen</th><th>Enabled</th><th>includeInContextMenu</th>
             {% for col in result.export_workflow_columns %}<th title="{{ col }}">{{ result.export_workflow_column_labels.get(col, col) }}</th>{% endfor %}
           </tr>
           <tr>
@@ -3085,7 +3092,7 @@
           </tr>
           {% for w in result.export_workflows %}
           <tr class="ew-row" data-roles="{{ w.roles|e }}">
-            <td class="inheritance-cell"><span class="inheritance-indicator inheritance-{{ w.inheritanceStatus }}" tabindex="0" role="button" data-inheritance-status="{{ w.inheritanceStatus|e }}" data-inheritance-label="{{ w.inheritanceLabel|e }}" data-inheritance-detail="{{ w.inheritanceDetail|e }}" data-inheritance-changes="{{ w.inheritanceChanges|e }}" data-inheritance-roles="{{ w.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span><span>{{ w.inheritanceLabel }}</span></span></td>
+            <td class="inheritance-cell" data-export-value="{{ w.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ w.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ w.inheritanceLabel|e }}" data-inheritance-status="{{ w.inheritanceStatus|e }}" data-inheritance-label="{{ w.inheritanceLabel|e }}" data-inheritance-detail="{{ w.inheritanceDetail|e }}" data-inheritance-changes="{{ w.inheritanceChanges|e }}" data-inheritance-roles="{{ w.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td>
             <td>{{ w.name }}</td><td>{{ w.type }}</td><td>{{ w.roles }}</td><td>{{ w.enabled }}</td><td>{{ w.includeInContextMenu }}</td>
             {% for col in result.export_workflow_columns %}<td>{{ w.props.get(col, '') }}</td>{% endfor %}
           </tr>
@@ -3474,7 +3481,7 @@
       const HANGING_CONDITIONS_AGD_NAME = {{ (result.hanging_condition_sets_agd_download_name|default('conditions-export.AGD', true))|tojson if result else '"conditions-export.AGD"' }};
       const EXPORT_SCRIPTS_BUNDLE_URL = appUrl('export_scripts_bundle');
       const SCRIPT_ACCESS_JSON_URL = appUrl('script_access_code_json');
-      // v0.187: inheritance status popover after 2 seconds hover.
+      // v0.188: inheritance status popover after 2 seconds hover.
       const inheritancePopover = document.getElementById('inheritance-popover');
       const inheritancePopoverCurrent = document.getElementById('inheritance-popover-current');
       const inheritancePopoverDetail = document.getElementById('inheritance-popover-detail');
@@ -4097,7 +4104,7 @@
             if (tr.querySelector('select, input, button')) return;
             const cells = Array.from(tr.querySelectorAll('th,td'));
             if (!cells.length) return;
-            rows.push(cells.map(function (c) { return (c.innerText || '').trim(); }));
+            rows.push(cells.map(function (c) { return (c.dataset && c.dataset.exportValue != null ? c.dataset.exportValue : (c.innerText || '')).trim(); }));
           });
 
           if (!rows.length) throw new Error('Keine sichtbaren Zeilen');
@@ -4144,7 +4151,7 @@
             const cells = Array.from(tr.querySelectorAll('th,td'));
             if (!cells.length) return;
             rows.push(cells.map(function (c) {
-              return (c.innerText || '')
+              return (c.dataset && c.dataset.exportValue != null ? c.dataset.exportValue : (c.innerText || ''))
                 .replace(/\r?\n+/g, ' ')
                 .replace(/\s+/g, ' ')
                 .trim();
