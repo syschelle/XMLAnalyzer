@@ -991,7 +991,7 @@
     }
 
 
-    /* v0.185: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.186: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1263,7 +1263,7 @@
     }
 
 
-    /* v0.185: DICOM Services inspired result workspace */
+    /* v0.186: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1640,7 +1640,7 @@
 
 
 
-    /* v0.185: darker DU-style dark theme and square controls */
+    /* v0.186: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1825,7 +1825,7 @@
 
 
 
-    /* v0.185: restore header blue, square controls, blue section headers */
+    /* v0.186: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -1992,7 +1992,7 @@
     }
 
 
-    /* v0.185: square all buttons and strengthen table column separators */
+    /* v0.186: square all buttons and strengthen table column separators */
     button,
     .toggle-btn,
     .code-btn,
@@ -2049,7 +2049,7 @@
     }
 
 
-    /* v0.185: restore visibility of buttons in content toolbars */
+    /* v0.186: restore visibility of buttons in content toolbars */
     .card > .toolbar .toggle-btn,
     .card > .toolbar .code-btn,
     .card > .toolbar .pdf-btn,
@@ -3887,6 +3887,54 @@
         }
       }
 
+      function exportVisibleTableToCsv(tableEl, titleText, btnEl) {
+        const old = btnEl ? btnEl.textContent : '';
+        if (btnEl) btnEl.textContent = 'Erstelle...';
+        try {
+          const rows = [];
+          tableEl.querySelectorAll('tr').forEach(function (tr) {
+            if (tr.style && tr.style.display === 'none') return;
+            if (tr.querySelector('select, input, button')) return;
+            const cells = Array.from(tr.querySelectorAll('th,td'));
+            if (!cells.length) return;
+            rows.push(cells.map(function (c) {
+              return (c.innerText || '')
+                .replace(/\r?\n+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            }));
+          });
+
+          if (!rows.length) throw new Error('Keine sichtbaren Zeilen');
+
+          function csvCell(value) {
+            const text = String(value == null ? '' : value);
+            return '"' + text.replace(/"/g, '""') + '"';
+          }
+
+          const csv = '\uFEFF' + rows.map(function (row) {
+            return row.map(csvCell).join(';');
+          }).join('\r\n');
+
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const safeName = (titleText || 'export').replace(/[^A-Za-z0-9._-]+/g, '_');
+          a.href = url;
+          a.download = safeName + '.csv';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+
+          if (btnEl) btnEl.textContent = 'Fertig';
+        } catch (e) {
+          if (btnEl) btnEl.textContent = 'Fehler';
+        } finally {
+          if (btnEl) setTimeout(function () { btnEl.textContent = old || 'CSV Export'; }, 1300);
+        }
+      }
+
       const tableWraps = Array.from(document.querySelectorAll('.table-wrap'));
       tableWraps.forEach(function (wrap) {
         const table = wrap.querySelector('table');
@@ -3942,6 +3990,17 @@
           exportVisibleTableToExcel(table, headingText, btn);
         });
 
+        const csvBtn = document.createElement('button');
+        csvBtn.type = 'button';
+        csvBtn.className = 'code-btn';
+        csvBtn.style.marginLeft = '8px';
+        csvBtn.textContent = 'CSV Export';
+        csvBtn.title = 'Aktuell sichtbare bzw. gefilterte Tabellenzeilen als UTF-8 CSV exportieren';
+
+        csvBtn.addEventListener('click', function () {
+          exportVisibleTableToCsv(table, headingText, csvBtn);
+        });
+
         if (card.id === 'sec-archives') {
           const archiveDupFilter = document.createElement('button');
           archiveDupFilter.type = 'button';
@@ -3963,6 +4022,7 @@
         }
 
         heading.appendChild(btn);
+        heading.appendChild(csvBtn);
 
         if (card.id === 'sec-hanging-condition-sets' && HANGING_CONDITIONS_AGD_URI) {
           const allAgdLink = document.createElement('a');
