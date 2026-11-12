@@ -991,7 +991,7 @@
     }
 
 
-    /* v0.188: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
+    /* v0.189: DICOM Services inspired topbar/content shell - CSS-only functional-safe adaptation */
     body {
       min-height: 100vh;
       background: #e3e6e8;
@@ -1263,7 +1263,7 @@
     }
 
 
-    /* v0.188: DICOM Services inspired result workspace */
+    /* v0.189: DICOM Services inspired result workspace */
     .result-anchor {
       scroll-margin-top: 68px;
     }
@@ -1640,7 +1640,7 @@
 
 
 
-    /* v0.188: darker DU-style dark theme and square controls */
+    /* v0.189: darker DU-style dark theme and square controls */
     :root {
       --radius: 6px;
     }
@@ -1825,7 +1825,7 @@
 
 
 
-    /* v0.188: restore header blue, square controls, blue section headers */
+    /* v0.189: restore header blue, square controls, blue section headers */
     .hero,
     .card,
     .table-wrap,
@@ -1992,7 +1992,7 @@
     }
 
 
-    /* v0.188: square all buttons and strengthen table column separators */
+    /* v0.189: square all buttons and strengthen table column separators */
     button,
     .toggle-btn,
     .code-btn,
@@ -2049,7 +2049,7 @@
     }
 
 
-    /* v0.188: restore visibility of buttons in content toolbars */
+    /* v0.189: restore visibility of buttons in content toolbars */
     .card > .toolbar .toggle-btn,
     .card > .toolbar .code-btn,
     .card > .toolbar .pdf-btn,
@@ -2089,7 +2089,7 @@
     }
 
 
-    /* v0.188: compact Enterprise inheritance status */
+    /* v0.189: compact Enterprise inheritance status */
     .inheritance-header,
     .inheritance-cell {
       width: 30px;
@@ -3009,13 +3009,14 @@
       <h2>Arbeitsliste Standard (<span id="worklist-visible-count">{{ result.worklist_bundles|length }}</span>)</h2>
       <div class="table-wrap">
         <table id="worklist-table">
-          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Modality</th><th>Zeitraum</th><th>Filter-Name</th><th>SearchType</th></tr>
+          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>BundleID</th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Modality</th><th>Zeitraum</th><th>Filter-Name</th><th>SearchType</th></tr>
           <tr>
-            <th></th><th></th><th></th><th id="worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
+            <th></th><th></th><th></th><th></th><th id="worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
           </tr>
           {% for b in result.worklist_bundles %}
           <tr class="worklist-row" data-roles="{{ b.roles|e }}">
             <td class="inheritance-cell" data-export-value="{{ b.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ b.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ b.inheritanceLabel|e }}" data-inheritance-status="{{ b.inheritanceStatus|e }}" data-inheritance-label="{{ b.inheritanceLabel|e }}" data-inheritance-detail="{{ b.inheritanceDetail|e }}" data-inheritance-changes="{{ b.inheritanceChanges|e }}" data-inheritance-roles="{{ b.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td>
+            <td title="Config-Bundle-ID: {{ b.configBundleId|e }}">{{ b.bundleId }}</td>
             <td>{{ b.title }}</td>
             <td>{{ b.type }}</td>
             <td>{{ b.roles }}</td>
@@ -3034,13 +3035,14 @@
       <h2>Arbeitsliste Geplant (<span id="scheduled-worklist-visible-count">{{ result.scheduled_worklist_bundles|length }}</span>)</h2>
       <div class="table-wrap">
         <table id="scheduled-worklist-table">
-          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Geplante Tage</th><th>Owner</th><th>SearchType</th><th>Advanced Filter (Kurz)</th></tr>
+          <tr><th class="inheritance-header" data-export-value="Vererbung" aria-label="Vererbungsstatus"></th><th>BundleID</th><th>Titel</th><th>Typ</th><th>Rollen-Zuordnung</th><th>Query-Node</th><th>Geplante Tage</th><th>Owner</th><th>SearchType</th><th>Advanced Filter (Kurz)</th></tr>
           <tr>
-            <th></th><th></th><th></th><th id="scheduled-worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
+            <th></th><th></th><th></th><th></th><th id="scheduled-worklist-role-filter-host"></th><th></th><th></th><th></th><th></th><th></th>
           </tr>
           {% for b in result.scheduled_worklist_bundles %}
           <tr class="scheduled-worklist-row" data-roles="{{ b.roles|e }}">
             <td class="inheritance-cell" data-export-value="{{ b.inheritanceLabel|e }}"><span class="inheritance-indicator inheritance-{{ b.inheritanceStatus }}" tabindex="0" role="button" aria-label="Vererbungsstatus: {{ b.inheritanceLabel|e }}" data-inheritance-status="{{ b.inheritanceStatus|e }}" data-inheritance-label="{{ b.inheritanceLabel|e }}" data-inheritance-detail="{{ b.inheritanceDetail|e }}" data-inheritance-changes="{{ b.inheritanceChanges|e }}" data-inheritance-roles="{{ b.inheritanceRoles|e }}"><span class="inheritance-dot" aria-hidden="true"></span></span></td>
+            <td title="Config-Bundle-ID: {{ b.configBundleId|e }}">{{ b.bundleId }}</td>
             <td>{{ b.title }}</td>
             <td>{{ b.type }}</td>
             <td>{{ b.roles }}</td>
@@ -3220,7 +3222,7 @@
     <div class="card" id="sec-user-bundles">
       <h2>Profile (<span id="user-bundle-visible-count">{{ result.user_worklist_profiles|length }}</span>/{{ result.user_worklist_profiles|length }}, Bundles: {{ result.user_worklist_stats.valid_bundles_total }})</h2>
       <div class="toolbar">
-        <input type="text" id="user-bundle-search" class="search-input" placeholder="Profile suchen (Owner, Titel, Rolle, Query Node ...)">
+        <input type="text" id="user-bundle-search" class="search-input" placeholder="Profile suchen (Owner, BundleID, Titel, Rolle, Query Node ...)">
       </div>
       <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">
         <strong>Anzahl {{ compare_label_b }}undles</strong> = Anzahl der gefundenen <code>listtext.lta.worklist.library.user.bundles#...</code>-Gruppen pro Owner.
@@ -3231,11 +3233,12 @@
       </p>
       <div class="table-wrap">
         <table id="user-bundles-table">
-          <tr><th>Owner-ID</th><th>Owner-Name</th><th>Anzahl {{ compare_label_b }}undles</th><th>Suchtypen</th><th>Query Nodes</th><th>Modalitäten</th><th>Zeiträume</th><th>Rollen</th><th>Titel (Auszug)</th></tr>
+          <tr><th>Owner-ID</th><th>Owner-Name</th><th>BundleIDs</th><th>Anzahl {{ compare_label_b }}undles</th><th>Suchtypen</th><th>Query Nodes</th><th>Modalitäten</th><th>Zeiträume</th><th>Rollen</th><th>Titel (Auszug)</th></tr>
           {% for u in result.user_worklist_profiles %}
           <tr class="user-bundle-row" data-search="{{ u.searchText|e }}">
             <td>{{ u.ownerId }}</td>
             <td>{{ u.ownerName }}</td>
+            <td>{{ u.bundleIds }}</td>
             <td>{{ u.bundleCount }}</td>
             <td>{{ u.searchTypes }}</td>
             <td>{{ u.queryNodes }}</td>
@@ -3481,7 +3484,7 @@
       const HANGING_CONDITIONS_AGD_NAME = {{ (result.hanging_condition_sets_agd_download_name|default('conditions-export.AGD', true))|tojson if result else '"conditions-export.AGD"' }};
       const EXPORT_SCRIPTS_BUNDLE_URL = appUrl('export_scripts_bundle');
       const SCRIPT_ACCESS_JSON_URL = appUrl('script_access_code_json');
-      // v0.188: inheritance status popover after 2 seconds hover.
+      // v0.189: inheritance status popover after 2 seconds hover.
       const inheritancePopover = document.getElementById('inheritance-popover');
       const inheritancePopoverCurrent = document.getElementById('inheritance-popover-current');
       const inheritancePopoverDetail = document.getElementById('inheritance-popover-detail');
